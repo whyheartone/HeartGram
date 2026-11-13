@@ -11,4 +11,10 @@
     <string name="HGPluginUnknownSource">Unknown source</string>
     <string name="HGPluginUnknownSourceInfo">This plugin did not come from a verified HeartGram source. Review the permissions below before installing.</string>
     <string name="HGBadgeEdit">Edit badge</string>
+    <string name="HGIconMidnight">Neon</string>
+    <string name="HGIconSnow">Snow</string>
+    <string name="HGIconLavender">Lilac</string>
+    <string name="HGIconOcean">Cosmos</string>
+    <string name="HGIconMint">Mint</string>
+    <string name="HGIconSunset">Poster</string>
 </resources>

@@ -224,9 +224,24 @@ public final class MessageAnimations {
                 }
                 animatedIds.add(id);
             }
+            android.util.Log.d("HeartGramAnim", "attach msg id=" + id + " size=" + v.getWidth() + "x" + v.getHeight());
             whenMeasured(v, () -> animMessage(v), 6);
         } catch (Throwable t) {
             android.util.Log.w("HeartGramAnim", "анимация сообщения: " + t);
+        }
+    }
+
+    /** Из onDetachedFromWindow: ячейка уходит в переработку, анимацию обрываем и возвращаем вид в норму. */
+    public static void onDetach(View v) {
+        if (!enabled()) {
+            return;
+        }
+        try {
+            v.animate().cancel();
+            reset(v);
+            android.util.Log.d("HeartGramAnim", "detach " + v.getClass().getSimpleName() + " " + System.identityHashCode(v));
+        } catch (Throwable t) {
+            android.util.Log.w("HeartGramAnim", "detach: " + t);
         }
     }
 

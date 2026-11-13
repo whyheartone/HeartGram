@@ -34,7 +34,7 @@ import java.util.concurrent.Executors;
 public final class MediaGlow {
     public static final String[] SIZES = {"Маленький", "Средний", "Большой", "Огромный"};
     /** Поля размытой копии в px копии: чем больше, тем дальше ореол выходит за картинку. */
-    private static final int[] PADS = {8, 14, 22, 32};
+    private static final int[] PADS = {12, 22, 36, 56};
     private static final int CORE = 48;
     /** Как часто брать кадр видео; за сколько ореол «дотекает» до нового кадра; как часто перерисовывать, мс. */
     private static final long SAMPLE_MS = 160, IDLE_MS = 500, FLOW_MS = 260, FRAME_MS = 33;
@@ -185,6 +185,21 @@ public final class MediaGlow {
         blit(canvas, glowFor(b, pad), pad, r, alpha);
     }
 
+    private static android.graphics.ColorMatrixColorFilter boostFilter;
+
+    /** Тёмные фото давали еле заметный ореол: слегка поднимаем яркость и насыщенность. */
+    private static android.graphics.ColorMatrixColorFilter boost() {
+        if (boostFilter == null) {
+            android.graphics.ColorMatrix m = new android.graphics.ColorMatrix();
+            m.setSaturation(1.5f);
+            android.graphics.ColorMatrix b = new android.graphics.ColorMatrix(new float[]{
+                    1.8f, 0, 0, 0, 24, 0, 1.8f, 0, 0, 24, 0, 0, 1.8f, 0, 24, 0, 0, 0, 1, 0});
+            m.postConcat(b);
+            boostFilter = new android.graphics.ColorMatrixColorFilter(m);
+        }
+        return boostFilter;
+    }
+
     /** Ядро копии совпадает с картинкой, поля уходят наружу. */
     private static void blit(Canvas canvas, Bitmap glow, int pad, RectF r, float alpha) {
         if (glow == null || r == null || r.width() <= 0 || r.height() <= 0 || alpha <= 0f) {
@@ -193,7 +208,8 @@ public final class MediaGlow {
         float gx = r.width() * pad / Math.max(1, glow.getWidth() - 2 * pad);
         float gy = r.height() * pad / Math.max(1, glow.getHeight() - 2 * pad);
         rect.set(r.left - gx, r.top - gy, r.right + gx, r.bottom + gy);
-        paint.setAlpha((int) (200 * Math.max(0f, Math.min(1f, alpha))));
+        paint.setColorFilter(boost());
+        paint.setAlpha((int) (255 * Math.max(0f, Math.min(1f, alpha))));
         canvas.drawBitmap(glow, null, rect, paint);
     }
 

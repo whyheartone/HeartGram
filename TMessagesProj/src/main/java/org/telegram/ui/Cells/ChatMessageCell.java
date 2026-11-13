@@ -5941,6 +5941,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     @Override
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
+        app.heartgram.animations.MessageAnimations.onDetach(this);
 
         if (observersGroup != null) {
             observersGroup.removeAllObservers();

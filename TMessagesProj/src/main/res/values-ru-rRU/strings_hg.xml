@@ -11,4 +11,10 @@
     <string name="HGPluginUnknownSource">Неизвестный источник</string>
     <string name="HGPluginUnknownSourceInfo">Этот плагин пришёл не из проверенного источника HeartGram. Проверьте разрешения ниже, прежде чем ставить.</string>
     <string name="HGBadgeEdit">Изменить значок</string>
+    <string name="HGIconMidnight">Неон</string>
+    <string name="HGIconSnow">Снег</string>
+    <string name="HGIconLavender">Сирень</string>
+    <string name="HGIconOcean">Космос</string>
+    <string name="HGIconMint">Мята</string>
+    <string name="HGIconSunset">Постер</string>
 </resources>
