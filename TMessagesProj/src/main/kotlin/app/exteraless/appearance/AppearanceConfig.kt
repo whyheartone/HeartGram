@@ -538,7 +538,8 @@ object AppearanceConfig {
     @JvmStatic
     fun folderNameAsTitle(): Boolean =
         NekoConfig.tabsTitleType.Int() == NekoXConfig.TITLE_TYPE_ICON &&
-            app.heartgram.HeartGramPrefs.folderTitleInHeader()
+            app.heartgram.HeartGramPrefs.folderTitleInHeader() &&
+            titleText.Int() == 0 // выбран юзернейм, имя или свой текст: заголовок остаётся им, а не названием папки
 
     /** Прятать ли эмодзи-статус в шапке списка чатов. */
     @JvmStatic
