@@ -425,39 +425,44 @@ public final class WsProxy {
         }
     }
 
-    private static String targetIp(int dc) {
+    /** Адреса шлюзов для дата-центра по порядку: ручной, общий шлюз веб-клиента, обычный адрес ДЦ. */
+    private static List<String> targetIps(int dc) {
+        List<String> ips = new ArrayList<>();
         String custom = WsProxyManager.dcOverride(dc);
         if (custom != null) {
-            return custom;
+            ips.add(custom);
         }
-        if (dc == 2 || dc == 4) {
-            return GATEWAY_IP;
+        if (!ips.contains(GATEWAY_IP)) {
+            ips.add(GATEWAY_IP);
         }
-        return DC_DEFAULT_IPS.get(dc);
+        String own = DC_DEFAULT_IPS.get(dc);
+        if (own != null && !ips.contains(own)) {
+            ips.add(own);
+        }
+        return ips;
     }
 
     private static WsClient openWs(int dc, boolean media) {
-        String ip = targetIp(dc);
-        if (ip == null) {
-            return null;
-        }
         int gateway = dc == 203 ? 2 : dc;
         String[] domains = media
                 ? new String[]{"kws" + gateway + "-1.web.telegram.org", "kws" + gateway + ".web.telegram.org"}
                 : new String[]{"kws" + gateway + ".web.telegram.org"};
         boolean fronting = WsProxyManager.fronting();
-        for (String domain : domains) {
-            boolean[] modes = tryFrontingFirst ? new boolean[]{true, false} : new boolean[]{false, true};
-            for (boolean fronted : modes) {
-                if (fronted && !fronting) {
-                    continue;
-                }
-                try {
-                    WsClient ws = WsClient.connect(ip, domain, fronted ? FRONTING_SNI : null, "/apiws", fronted ? 7000 : 8000);
-                    tryFrontingFirst = fronted;
-                    return ws;
-                } catch (IOException e) {
-                    Log.d(TAG, "ДЦ" + dc + " " + domain + (fronted ? " (фронтинг)" : "") + ": " + e);
+        for (String ip : targetIps(dc)) {
+            for (String domain : domains) {
+                boolean[] modes = tryFrontingFirst ? new boolean[]{true, false} : new boolean[]{false, true};
+                for (boolean fronted : modes) {
+                    if (fronted && !fronting) {
+                        continue;
+                    }
+                    try {
+                        WsClient ws = WsClient.connect(ip, domain, fronted ? FRONTING_SNI : null, "/apiws", 5000);
+                        tryFrontingFirst = fronted;
+                        Log.d(TAG, "ДЦ" + dc + " " + domain + " через " + ip + (fronted ? " (фронтинг)" : ""));
+                        return ws;
+                    } catch (IOException e) {
+                        Log.d(TAG, "ДЦ" + dc + " " + domain + " через " + ip + (fronted ? " (фронтинг)" : "") + ": " + e);
+                    }
                 }
             }
         }
