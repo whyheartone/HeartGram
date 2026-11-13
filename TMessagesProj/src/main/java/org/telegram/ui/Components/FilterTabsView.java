@@ -1596,10 +1596,16 @@ public class FilterTabsView extends FrameLayout {
 
     private boolean hgUnderPass;
 
+    /** HeartGram: вызывается при каждой отрисовке панели (DialogsActivity обрезает под ней списки чатов). */
+    public Runnable hgOnDraw;
+
     /** HeartGram: в видах «Вкладки» и «Кнопки» нет общей подложки и штатной прямоугольной подсветки нажатия. */
     @Override
     public void draw(@NonNull Canvas canvas) {
         final int style = app.heartgram.HeartGramPrefs.folderStyle();
+        if (hgOnDraw != null) {
+            hgOnDraw.run();
+        }
         Drawable bg = getBackground();
         if (bg != null) {
             bg.setAlpha(style != 0 ? 0 : 255);

@@ -3004,6 +3004,36 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private Drawable premiumStar;
     private Drawable ghostDrawable;
 
+    /**
+     * HeartGram: в видах «Вкладки» и «Кнопки» у панели папок нет подложки, поэтому каждый список чатов
+     * обрезается по нижнему краю панели, и чаты не видны между кнопками. В виде «Telegram» обрезки нет.
+     */
+    private void hgClipListsUnderTabs() {
+        if (viewPages == null || filterTabsView == null) {
+            return;
+        }
+        final boolean flat = app.heartgram.HeartGramPrefs.folderStyle() != 0 && filterTabsView.getVisibility() == View.VISIBLE;
+        final int[] tabs = new int[2], list = new int[2];
+        filterTabsView.getLocationOnScreen(tabs);
+        for (ViewPage page : viewPages) {
+            if (page == null || page.listView == null) {
+                continue;
+            }
+            if (!flat) {
+                if (page.listView.getClipBounds() != null) {
+                    page.listView.setClipBounds(null);
+                }
+                continue;
+            }
+            page.listView.getLocationOnScreen(list);
+            int top = Math.max(0, tabs[1] + filterTabsView.getHeight() - list[1]);
+            android.graphics.Rect cb = page.listView.getClipBounds();
+            if (cb == null || cb.top != top || cb.bottom != page.listView.getHeight() || cb.right != page.listView.getWidth()) {
+                page.listView.setClipBounds(new android.graphics.Rect(0, top, page.listView.getWidth(), page.listView.getHeight()));
+            }
+        }
+    }
+
     private void updateTitleText() {
         if (actionBar == null || actionBarTitleNax == null || onlySelect || folderId != 0 || communityId != 0) {
             return;
@@ -5316,6 +5346,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             filterTabsViewBackground.setPadding(dp(6.666f));
             filterTabsView.setPadding(0, dp(7), 0, dp(7));
             filterTabsView.setBlurredBackground(filterTabsViewBackground);
+            filterTabsView.hgOnDraw = this::hgClipListsUnderTabs;
             contentView.addView(filterTabsView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 36 + 7 + 7, Gravity.TOP, 4, 0, 4, 0));
         }
 
