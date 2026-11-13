@@ -113,6 +113,7 @@ public class DrawerMenuView extends ScrollView {
         }
         // exteraless plugins: пункты плагинов (DRAWER_MENU) в конце шторки.
         app.exteraless.plugins.menus.MenuInjector.appendDrawerItems(container, currentAccount, onItemClick);
+        app.heartgram.tiles.ChatTiles.styleDrawer(container);
     }
 
     public void updateColors() {
@@ -124,6 +125,7 @@ public class DrawerMenuView extends ScrollView {
                 child.setBackgroundColor(Theme.getDividerColor(null));
             }
         }
+        app.heartgram.tiles.ChatTiles.styleDrawer(container);
         updateGradient();
     }
 

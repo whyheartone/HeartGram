@@ -97,6 +97,44 @@ public final class ChatTiles {
         }
     }
 
+    /** Пункты бокового меню плитками (те же цвет, скругление и зазор, что у чатов). */
+    public static void styleDrawer(android.view.ViewGroup container) {
+        if (!enabled()) {
+            return;
+        }
+        int n = container.getChildCount();
+        int tile = tileColor();
+        int selector = Theme.getColor(Theme.key_listSelector);
+        float big = AndroidUtilities.dp(radius()), small = AndroidUtilities.dp(Math.min(INNER_RADIUS_DP, radius()));
+        for (int i = 0; i < n; i++) {
+            View v = container.getChildAt(i);
+            if (!(v instanceof app.exteraless.drawer.DrawerMenuItemView)) {
+                v.setBackgroundColor(0); // разделитель групп: пустой зазор вместо линии
+                continue;
+            }
+            boolean first = i == 0 || !(container.getChildAt(i - 1) instanceof app.exteraless.drawer.DrawerMenuItemView);
+            boolean last = i == n - 1 || !(container.getChildAt(i + 1) instanceof app.exteraless.drawer.DrawerMenuItemView);
+            float up = first ? big : small, low = last ? big : small;
+            float[] radii = {up, up, up, up, low, low, low, low};
+            android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+            bg.setColor(tile);
+            bg.setCornerRadii(radii);
+            android.graphics.drawable.ShapeDrawable mask = new android.graphics.drawable.ShapeDrawable(
+                    new android.graphics.drawable.shapes.RoundRectShape(radii, null, null));
+            v.setBackground(new android.graphics.drawable.RippleDrawable(
+                    android.content.res.ColorStateList.valueOf(selector), bg, mask));
+            android.view.ViewGroup.LayoutParams lp = v.getLayoutParams();
+            if (lp instanceof android.view.ViewGroup.MarginLayoutParams) {
+                android.view.ViewGroup.MarginLayoutParams m = (android.view.ViewGroup.MarginLayoutParams) lp;
+                m.leftMargin = AndroidUtilities.dp(10);
+                m.rightMargin = AndroidUtilities.dp(10);
+                m.topMargin = first ? AndroidUtilities.dp(2) : AndroidUtilities.dp(1);
+                m.bottomMargin = last ? AndroidUtilities.dp(2) : AndroidUtilities.dp(1);
+                v.setLayoutParams(m);
+            }
+        }
+    }
+
     /** Подключается к списку чатов при его создании. */
     public static void attach(RecyclerView list) {
         list.addItemDecoration(new RecyclerView.ItemDecoration() {
