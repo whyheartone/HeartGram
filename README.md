@@ -4,7 +4,7 @@
 (открытая реализация возможностей exteraGram на базе NagramX и Telegram for Android 13.2.1).
 Сверху добавляем свои функции и то, что хорошо работает в AyuGram и DiveGram.
 
-**Спасибо exteraless, NagramX, exteraGram, AyuGram и DiveGram** — без их открытого кода этого проекта не было бы.
+Подробнее о том, чему мы обязаны, — в разделе [Благодарности](#благодарности).
 
 > Это неофициальный клиент, он не связан с Telegram FZ-LLC. Ты сам отвечаешь за свои данные и аккаунт.
 
@@ -40,6 +40,27 @@ Python 3.11 (для Chaquopy), `nasm`. Подмодули: `git clone --recurse-
 | `LOCAL_PROPERTIES` | base64 от файла со строками `KEYSTORE_PASS`, `ALIAS_NAME`, `ALIAS_PASS`, а также (необязательно) `TELEGRAM_APP_ID`, `TELEGRAM_APP_HASH` |
 
 Отчёты о падениях никуда не отправляются: проект Firebase в репозитории чужой (exteraless), собственный подключим позже.
+
+## Благодарности
+
+HeartGram стоит на открытом коде этих проектов, без него его бы не было. Спасибо авторам:
+
+- [exteraless](https://github.com/exteraless/exteraless) — основа клиента (открытая реализация возможностей exteraGram на Telegram 13.2.1);
+- [NagramX](https://github.com/risin42/NagramX), на которой построен exteraless;
+- [exteraGram](https://github.com/exteraSquad/exteraGram);
+- [AyuGram](https://github.com/AyuGram/AyuGram4A);
+- [Cherrygram](https://github.com/arsLan4k1390/Cherrygram);
+- [Dr4iv3rNope / NotSoAndroidAyuGram](https://github.com/Dr4iv3rNope/NotSoAndroidAyuGram);
+- [Inugram](https://github.com/teidesu/inugram);
+- [Nagram](https://github.com/NextAlone/Nagram);
+- [Nekogram](https://github.com/Nekogram/Nekogram);
+- [OctoGram](https://github.com/OctoGramApp/OctoGram);
+- DiveGram — за идеи и наработки;
+- [Telegram для Android](https://github.com/DrKLO/Telegram) — исходная основа всех форков.
+
+**Дизайн.** Иконки и оформление, унаследованные от exteraGram, созданы его дизайнером
+[@the8055u](https://t.me/the8055u) и студией [@BlueprintDsgn](https://t.me/BlueprintDsgn).
+Права на эти материалы принадлежат авторам.
 
 ## Лицензия
 
