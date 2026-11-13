@@ -479,7 +479,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         setTheme(R.style.Theme_TMessages);
         try {
-            setTaskDescription(new ActivityManager.TaskDescription(null, null, Theme.getColor(Theme.key_actionBarDefault) | 0xff000000));
+            app.heartgram.TaskIcon.apply(this, Theme.getColor(Theme.key_actionBarDefault) | 0xff000000);
         } catch (Throwable ignore) {
 
         }
@@ -7885,7 +7885,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
             Boolean nightTheme = (Boolean) args[0];
             if (!nightTheme) {
                 try {
-                    setTaskDescription(new ActivityManager.TaskDescription(null, null, Theme.getColor(Theme.key_actionBarDefault) | 0xff000000));
+                    app.heartgram.TaskIcon.apply(this, Theme.getColor(Theme.key_actionBarDefault) | 0xff000000);
                 } catch (Exception ignore) {
 
                 }
