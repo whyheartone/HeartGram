@@ -1212,11 +1212,13 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         }
         final org.telegram.tgnet.TLObject hgPeer = parentFragment == null ? null : parentFragment.getCurrentUser() != null
                 ? parentFragment.getCurrentUser() : parentFragment.getCurrentChat();
-        final long hgDocument = !scam && !fake && !verified && !premium && DialogObject.getEmojiStatusDocumentId(emojiStatus) == 0
+        final boolean hgSelf = hgPeer instanceof TLRPC.User && UserObject.isUserSelf((TLRPC.User) hgPeer);
+        final long hgDocument = !hgSelf && !scam && !fake && !verified && !premium && DialogObject.getEmojiStatusDocumentId(emojiStatus) == 0
                 ? app.heartgram.badges.HeartGramBadges.documentFor(hgPeer) : 0;
         if (hgDocument != 0) {
             // значок HeartGram там, где был бы эмодзи-статус
             emojiStatusDrawable.set(hgDocument, animated);
+            emojiStatusDrawable.setParticles(true, animated);
             emojiStatusDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
             titleTextView.setRightDrawable(emojiStatusDrawable);
             titleTextView.setRightDrawableOnClick(v -> app.heartgram.badges.HeartGramBadges.openBadge(parentFragment, hgPeer));
@@ -1227,6 +1229,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             }
         } else if (premium || DialogObject.getEmojiStatusDocumentId(emojiStatus) != 0) {
             titleTextView.setRightDrawableOnClick(null);
+            emojiStatusDrawable.setParticles(false, animated);
             if (titleTextView.getRightDrawable() instanceof AnimatedEmojiDrawable.WrapSizeDrawable &&
                 ((AnimatedEmojiDrawable.WrapSizeDrawable) titleTextView.getRightDrawable()).getDrawable() instanceof AnimatedEmojiDrawable) {
                 ((AnimatedEmojiDrawable) ((AnimatedEmojiDrawable.WrapSizeDrawable) titleTextView.getRightDrawable()).getDrawable()).removeView(titleTextView);

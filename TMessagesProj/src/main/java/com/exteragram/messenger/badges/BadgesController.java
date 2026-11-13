@@ -164,6 +164,9 @@ public final class BadgesController {
         if (chat == null || badge == null) {
             return;
         }
+        if (app.heartgram.badges.HeartGramBadges.openBadge(fragment, chat)) {
+            return;
+        }
         showBadgeBulletin(fragment, badge, formatBadgeText(badge, chat.title), resourcesProvider, account, containerLayout);
     }
 
@@ -176,6 +179,9 @@ public final class BadgesController {
                                   Theme.ResourcesProvider resourcesProvider, int account,
                                   FrameLayout containerLayout, Boolean showButton) {
         if (user == null || badge == null) {
+            return;
+        }
+        if (app.heartgram.badges.HeartGramBadges.openBadge(fragment, user)) {
             return;
         }
         showBadgeBulletin(fragment, badge, formatBadgeText(badge, UserObject.getUserName(user)), resourcesProvider, account, containerLayout);

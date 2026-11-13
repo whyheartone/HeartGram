@@ -39,6 +39,9 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
     private int pluginsRow;
     private int otherRow;
     private int heartgramRow;
+    private int privacyHeaderRow;
+    private int ayuRow;
+    private int privacyDividerRow;
     private int categoriesDividerRow;
 
     private int linksHeaderRow;
@@ -57,13 +60,17 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
 
         aboutRow = addRow("about");
 
+        privacyHeaderRow = addRow("privacyHeader");
+        ayuRow = addRow("ayu");
+        privacyDividerRow = addRow();
+
         categoriesHeaderRow = addRow("categoriesHeader");
         generalRow = addRow("general");
         appearanceRow = addRow("appearance");
+        heartgramRow = addRow("heartgram");
         chatsRow = addRow("chats");
         pluginsRow = addRow("plugins");
         otherRow = addRow("other");
-        heartgramRow = addRow("heartgram");
         categoriesDividerRow = addRow();
 
         linksHeaderRow = addRow("linksHeader");
@@ -103,7 +110,6 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
         if (actionBar != null) {
             final org.telegram.ui.ActionBar.ActionBarMenu menu = actionBar.createMenu();
             menu.addItem(MENU_SEARCH, R.drawable.outline_header_search, getResourceProvider());
-            menu.addItem(MENU_CLOUD, R.drawable.cloud_sync, getResourceProvider());
             actionBar.setActionBarMenuOnItemClick(new org.telegram.ui.ActionBar.ActionBar.ActionBarMenuOnItemClick() {
                 @Override
                 public void onItemClick(int id) {
@@ -194,6 +200,8 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new OpenExteraOtherActivity());
         } else if (position == heartgramRow) {
             presentFragment(new app.heartgram.settings.HeartGramSettingsActivity());
+        } else if (position == ayuRow) {
+            presentFragment(new OpenExteraAyuMomentsActivity());
         } else if (position == channelRow) {
             getMessagesController().openByUserName("heartgramclient", this, 1);
         } else if (position == sourceRow) {
@@ -233,6 +241,8 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
                     HeaderCell cell = (HeaderCell) holder.itemView;
                     if (position == designHeaderRow) {
                         cell.setText(getString(R.string.OpenExteraDesignSection));
+                    } else if (position == privacyHeaderRow) {
+                        cell.setText(app.heartgram.HeartGramLabels.privacy());
                     } else if (position == categoriesHeaderRow) {
                         cell.setText(getString(R.string.OpenExteraCategories));
                     } else if (position == linksHeaderRow) {
@@ -250,10 +260,12 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndIcon(getString(R.string.OpenExteraChats), R.drawable.msg_discussion, true);
                     } else if (position == pluginsRow) {
                         cell.setTextAndIcon(getString(R.string.OpenExteraPlugins), R.drawable.msg_plugins, true);
+                    } else if (position == ayuRow) {
+                        cell.setTextAndIcon(app.heartgram.HeartGramLabels.ayu(), R.drawable.ayu_ghost, false);
                     } else if (position == otherRow) {
-                        cell.setTextAndIcon(getString(R.string.OpenExteraOther), R.drawable.msg_fave, true);
+                        cell.setTextAndIcon(getString(R.string.OpenExteraOther), R.drawable.msg_fave, false);
                     } else if (position == heartgramRow) {
-                        cell.setTextAndIcon("HeartGram", R.drawable.msg_fave, false);
+                        cell.setTextAndIcon("HeartGram", R.drawable.msg_customize, true);
                     } else if (position == channelRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.ProfileChannel),
                                 "@heartgramclient", R.drawable.msg_channel, true);
@@ -295,10 +307,10 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
         public int getItemViewType(int position) {
             if (position == aboutRow) {
                 return TYPE_ABOUT;
-            } else if (position == categoriesHeaderRow || position == linksHeaderRow
+            } else if (position == categoriesHeaderRow || position == privacyHeaderRow || position == linksHeaderRow
                     || position == designHeaderRow) {
                 return TYPE_HEADER;
-            } else if (position == categoriesDividerRow || position == linksDividerRow) {
+            } else if (position == categoriesDividerRow || position == privacyDividerRow || position == linksDividerRow) {
                 // Промежуток между секциями — тень фиксированной высоты. TextInfoPrivacyCell
                 // здесь держал высоту под подпись, которой нет, и оставлял пустое поле.
                 return TYPE_SHADOW;

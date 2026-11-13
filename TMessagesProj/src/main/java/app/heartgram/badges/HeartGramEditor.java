@@ -185,7 +185,8 @@ public final class HeartGramEditor {
         box.addView(key);
         new AlertDialog.Builder(activity)
                 .setTitle(tr("Ключ правки", "Edit key"))
-                .setMessage(tr("Ключ выдаёт админ HeartGram. Вводится один раз, дальше вход запоминается на 30 дней.",
+                .setMessage(tr("Автовход через бота не удался (", "Auto sign-in via the bot failed (") + HeartGramApi.initError + ")\n\n"
+                        + tr("Ключ выдаёт админ HeartGram. Вводится один раз, дальше вход запоминается на 30 дней.",
                         "The key is issued by a HeartGram admin. Enter it once, the login is remembered for 30 days."))
                 .setView(box)
                 .setNegativeButton(tr("Отмена", "Cancel"), null)
@@ -562,7 +563,15 @@ public final class HeartGramEditor {
         @Override
         protected void onDraw(Canvas canvas) {
             drawable.setBounds(0, 0, getWidth(), getHeight());
+            boolean colorable = drawable.canOverrideColor();
+            if (colorable) {
+                drawable.setColorFilter(new android.graphics.PorterDuffColorFilter(
+                        Theme.getColor(Theme.key_featuredStickers_addButton), android.graphics.PorterDuff.Mode.SRC_IN));
+            }
             drawable.draw(canvas);
+            if (colorable) {
+                drawable.setColorFilter(null);
+            }
         }
     }
 
@@ -580,9 +589,7 @@ public final class HeartGramEditor {
                 phase[i] = random.nextFloat() * 6.28f;
                 speed[i] = 0.6f + random.nextFloat() * 1.4f;
             }
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setStrokeWidth(dp(1.4f));
+            paint.setStyle(Paint.Style.FILL);
             paint.setColor(0xFFFFFFFF);
         }
 
@@ -594,8 +601,7 @@ public final class HeartGramEditor {
                 float a = 0.15f + 0.65f * (0.5f + 0.5f * (float) Math.sin(phase[i] + t * speed[i]));
                 paint.setAlpha((int) (a * 255));
                 float cx = x[i] * w, cy = y[i] * h, r = dp(size[i]);
-                canvas.drawLine(cx - r, cy, cx + r, cy, paint);
-                canvas.drawLine(cx, cy - r, cx, cy + r, paint);
+                HeartGramBadgeSheet.drawStar(canvas, cx, cy, r, paint);
             }
             postInvalidateOnAnimation();
         }

@@ -161,10 +161,17 @@ final class HeartGramApi {
 
     // ── вход по подписи Telegram (мини-приложение бота без показа окна) ─────────
 
+    /** Последняя ошибка Telegram и причина, по которой не сработал автовход (для экрана ключа). */
+    static volatile String lastTlError = "";
+    static volatile String initError = "";
+
     private static TLObject ask(TLObject request) throws Exception {
         final TLObject[] out = new TLObject[1];
         final CountDownLatch latch = new CountDownLatch(1);
         ConnectionsManager.getInstance(UserConfig.selectedAccount).sendRequest(request, (response, error) -> {
+            if (error != null) {
+                lastTlError = error.code + " " + error.text;
+            }
             out[0] = response;
             latch.countDown();
         });
@@ -176,17 +183,21 @@ final class HeartGramApi {
 
     /** initData мини-приложения бота или null. */
     static String initData() {
+        initError = "";
+        lastTlError = "";
         try {
             Response cfg = call("GET", "/api/ext/auth/config", null, null);
             JSONObject c = cfg.json();
             String bot = c.optString("botUsername"), url = c.optString("webAppUrl");
             if (!cfg.ok() || bot.isEmpty() || url.isEmpty()) {
+                initError = "сервер: " + cfg.code;
                 return null;
             }
             TLRPC.TL_contacts_resolveUsername resolve = new TLRPC.TL_contacts_resolveUsername();
             resolve.username = bot;
             TLObject peer = ask(resolve);
             if (!(peer instanceof TLRPC.TL_contacts_resolvedPeer)) {
+                initError = "бот не найден: " + lastTlError;
                 return null;
             }
             TLRPC.TL_contacts_resolvedPeer resolved = (TLRPC.TL_contacts_resolvedPeer) peer;
@@ -200,12 +211,14 @@ final class HeartGramApi {
             web.flags |= 8;
             TLObject res = ask(web);
             if (!(res instanceof TLRPC.TL_webViewResultUrl) && !(res instanceof TLRPC.TL_simpleWebViewResultUrl)) {
+                initError = "мини-приложение не открылось: " + lastTlError;
                 return null;
             }
             String link = res instanceof TLRPC.TL_simpleWebViewResultUrl
                     ? ((TLRPC.TL_simpleWebViewResultUrl) res).url : ((TLRPC.TL_webViewResultUrl) res).url;
             int i = link == null ? -1 : link.indexOf("tgWebAppData=");
             if (i < 0) {
+                initError = "в ответе нет подписи Telegram";
                 return null;
             }
             String d = link.substring(i + "tgWebAppData=".length());

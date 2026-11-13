@@ -172,6 +172,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
-          name: HeartGram-${{ env.NATIVE_TARGET }}${{ github.event.inputs.package != '' && '-test' || '' }}-debug
+          name: HeartGram-${{ env.NATIVE_TARGET }}${{ github.event.inputs.package != '' && '-test' || '' }}-beta
           path: ${{ env.APK_DIR }}/*.apk
           retention-days: 14

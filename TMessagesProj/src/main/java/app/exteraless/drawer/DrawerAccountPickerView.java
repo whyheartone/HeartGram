@@ -557,17 +557,21 @@ public class DrawerAccountPickerView extends FrameLayout {
             final long emojiStatusId = DialogObject.getEmojiStatusDocumentId(user.emoji_status);
             final boolean premium = MessagesController.getInstance(account).isPremiumUser(user);
             Drawable rightDrawable = null;
+            final long hgDocument = emojiStatusId == 0 && !premium ? app.heartgram.badges.HeartGramBadges.documentFor(user) : 0;
             if (emojiStatusId != 0) {
                 premiumStatusDrawable.set(emojiStatusId, false);
                 rightDrawable = premiumStatusDrawable;
             } else if (premium) {
                 premiumStatusDrawable.set(PremiumGradient.getInstance().premiumStarDrawableMini, false);
                 rightDrawable = premiumStatusDrawable;
+            } else if (hgDocument != 0) {
+                premiumStatusDrawable.set(hgDocument, false);
+                rightDrawable = premiumStatusDrawable;
             } else {
                 premiumStatusDrawable.set((Drawable) null, false);
             }
             premiumStatusDrawable.setColor(statusColor);
-            premiumStatusDrawable.setParticles(DialogObject.isEmojiStatusCollectible(user.emoji_status), false);
+            premiumStatusDrawable.setParticles(DialogObject.isEmojiStatusCollectible(user.emoji_status) || hgDocument != 0, false);
             nameView.setRightDrawable(rightDrawable);
 
             unreadBadge.bind(account, nameView);

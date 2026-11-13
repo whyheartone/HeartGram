@@ -22,6 +22,9 @@ import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
 import org.telegram.ui.ActionBar.BaseFragment;
+import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.BulletinFactory;
+import app.heartgram.HeartGramLabels;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -205,8 +208,33 @@ public final class HeartGramBadges {
         return info;
     }
 
-    /** Нажатие на значок: окно значка, если не вышло открыть, то всплывающая подпись. */
-    public static void openBadge(BaseFragment fragment, TLObject object) {
+    /**
+     * Нажатие на значок: всплывающая подпись с кнопкой «Подробнее», она открывает окно значка.
+     * true, если обработали (значок наш).
+     */
+    public static boolean openBadge(final BaseFragment fragment, final TLObject object) {
+        BadgeDTO badge = badgeFor(object);
+        Info info = infoFor(object);
+        if (badge == null || info == null || fragment == null || fragment.getParentActivity() == null) {
+            return false;
+        }
+        TLRPC.Document document = AnimatedEmojiDrawable.findDocument(UserConfig.selectedAccount, badge.getDocumentId());
+        if (document == null) {
+            HeartGramBadgeSheet.show(fragment, object);
+            return true;
+        }
+        CharSequence text = TextUtils.isEmpty(info.text)
+                ? HeartGramBadgeSheet.title(info)
+                : HeartGramMarkup.render(fragment.getParentActivity(), info.text);
+        BulletinFactory.of(fragment)
+                .createEmojiBulletin(document, text,
+                        HeartGramLabels.tr("Подробнее", "Details"), () -> HeartGramBadgeSheet.show(fragment, object))
+                .show();
+        return true;
+    }
+
+    /** Старый вызов: открыть окно значка сразу. */
+    public static void openSheet(BaseFragment fragment, TLObject object) {
         BadgeDTO badge = badgeFor(object);
         if (badge == null || fragment == null) {
             return;

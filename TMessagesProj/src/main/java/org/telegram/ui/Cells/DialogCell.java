@@ -1621,7 +1621,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                     nameLayoutEllipsizeByGradient = true;
                                     emojiStatus.center = LocaleController.isRTL;
                                     emojiStatus.set(hgBadge.getDocumentId(), false);
-                                    emojiStatus.setParticles(false, false);
+                                    emojiStatus.setParticles(true, false);
                                 }
                             }
                         }
@@ -1659,7 +1659,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                 nameLayoutEllipsizeByGradient = true;
                                 emojiStatus.center = LocaleController.isRTL;
                                 emojiStatus.set(hgBadge.getDocumentId(), false);
-                                emojiStatus.setParticles(false, false);
+                                emojiStatus.setParticles(true, false);
                             }
                         }
                     }

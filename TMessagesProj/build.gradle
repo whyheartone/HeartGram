@@ -292,6 +292,7 @@ androidComponents {
                     .replace('TMessagesProj', first)
                     .replace('-release', '')
                     .replace('-staging', '')
+                    .replace('-debug', '-beta')
             )
         }
     }

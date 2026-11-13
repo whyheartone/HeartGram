@@ -121,6 +121,10 @@ public final class HeartGramBadgeSheet {
         return true;
     }
 
+    static CharSequence title(HeartGramBadges.Info info) {
+        return titleFor(info, null);
+    }
+
     private static CharSequence titleFor(HeartGramBadges.Info info, TLObject peer) {
         String project = info.project;
         switch (info.kind) {
@@ -133,6 +137,22 @@ public final class HeartGramBadgeSheet {
             default:
                 return LocaleController.formatString(R.string.HGBadgeClient, project);
         }
+    }
+
+    private static final android.graphics.Path starPath = new android.graphics.Path();
+
+    /** Четырёхлучевая искорка (✦). */
+    static void drawStar(Canvas canvas, float cx, float cy, float r, Paint paint) {
+        android.graphics.Path p = starPath;
+        p.reset();
+        float k = r * 0.18f;
+        p.moveTo(cx, cy - r);
+        p.quadTo(cx + k, cy - k, cx + r, cy);
+        p.quadTo(cx + k, cy + k, cx, cy + r);
+        p.quadTo(cx - k, cy + k, cx - r, cy);
+        p.quadTo(cx - k, cy - k, cx, cy - r);
+        p.close();
+        canvas.drawPath(p, paint);
     }
 
     private static TextView text(Context context, CharSequence value, int sp, boolean bold, int color) {
@@ -174,7 +194,15 @@ public final class HeartGramBadgeSheet {
         @Override
         protected void onDraw(Canvas canvas) {
             drawable.setBounds(0, 0, getWidth(), getHeight());
+            boolean colorable = drawable.canOverrideColor();
+            if (colorable) {
+                drawable.setColorFilter(new android.graphics.PorterDuffColorFilter(
+                        Theme.getColor(Theme.key_featuredStickers_addButton), android.graphics.PorterDuff.Mode.SRC_IN));
+            }
             drawable.draw(canvas);
+            if (colorable) {
+                drawable.setColorFilter(null);
+            }
         }
     }
 
@@ -193,9 +221,7 @@ public final class HeartGramBadgeSheet {
                 phase[i] = random.nextFloat() * 6.28f;
                 speed[i] = 0.6f + random.nextFloat() * 1.4f;
             }
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setStrokeWidth(dp(1.4f));
+            paint.setStyle(Paint.Style.FILL);
             paint.setColor(0xFFFFFFFF);
         }
 
@@ -207,8 +233,7 @@ public final class HeartGramBadgeSheet {
                 float a = 0.15f + 0.65f * (0.5f + 0.5f * (float) Math.sin(phase[i] + t * speed[i]));
                 paint.setAlpha((int) (a * 255));
                 float cx = x[i] * w, cy = y[i] * h, r = dp(size[i]);
-                canvas.drawLine(cx - r, cy, cx + r, cy, paint);
-                canvas.drawLine(cx, cy - r, cx, cy + r, paint);
+                drawStar(canvas, cx, cy, r, paint);
             }
             postInvalidateOnAnimation();
         }
