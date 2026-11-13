@@ -116,14 +116,16 @@ def mono_nothing():
     # Nothing: точечная матрица в видимой части, сердце горит белым
     img = Image.new("RGB", (S, S), (10, 10, 10))
     d = ImageDraw.Draw(img)
-    grid = 24
-    cell = visible * 0.86 / grid
-    x0 = y0 = (S - cell * grid) / 2
+    cell = visible * 0.86 / 24      # шаг точек как раньше, но матрица на весь холст: точки видны и за краем маски
+    grid = int(S / cell) + 3
+    x0 = y0 = S / 2 - cell * grid / 2
     mask = Image.new("L", (S, S), 0)
     ImageDraw.Draw(mask).polygon(heart_points(S / 2, S / 2, heart_w * 1.0), fill=255)
     for gy in range(grid):
         for gx in range(grid):
             cx, cy = x0 + cell * (gx + 0.5), y0 + cell * (gy + 0.5)
+            if cx < -cell or cy < -cell or cx > S + cell or cy > S + cell:
+                continue
             box = mask.crop((int(cx - cell / 2), int(cy - cell / 2), int(cx + cell / 2), int(cy + cell / 2)))
             data = list(box.getdata())
             cov = sum(data) / (255.0 * max(1, len(data)))

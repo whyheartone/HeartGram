@@ -95,7 +95,11 @@ public class IconPreviewView extends View {
         if (shapeSize != size) {
             shapeSize = size;
             float dp = size / AndroidUtilities.density;
-            shape.set(IconShapeHelper.getFinalIconShapePath(dp, dp, dp * 0.28f));
+            // HeartGram: в выборе иконок квадраты со скруглением, а не маска лаунчера (на многих телефонах она круглая)
+            Path square = new Path();
+            float radius = size * 0.24f;
+            square.addRoundRect(new android.graphics.RectF(0, 0, size, size), radius, radius, Path.Direction.CW);
+            shape.set(square);
         }
         canvas.save();
         canvas.translate((getWidth() - size) / 2f, (getHeight() - size) / 2f);
