@@ -55,6 +55,7 @@ HeartGram стоит на открытом коде этих проектов, �
 - [Nagram](https://github.com/NextAlone/Nagram);
 - [Nekogram](https://github.com/Nekogram/Nekogram);
 - [OctoGram](https://github.com/OctoGramApp/OctoGram);
+- [tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy) (Flowseal, MIT) — схема встроенного обхода блокировок: локальный прокси, который переносит трафик Telegram в WebSocket. Текст лицензии: [docs/licenses/tg-ws-proxy-LICENSE.txt](docs/licenses/tg-ws-proxy-LICENSE.txt);
 - DiveGram — за идеи и наработки;
 - [Telegram для Android](https://github.com/DrKLO/Telegram) — исходная основа всех форков.
 
