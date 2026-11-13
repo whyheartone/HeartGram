@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="Feed">Strumień</string>
+    <string name="FeedAllChannelsExcluded">Wszystkie kanały są wykluczone ze strumienia.</string>
+    <string name="FeedBottomTab">Pokaż w dolnych zakładkach</string>
+    <string name="FeedBottomTabInfo">Pokaż strumień jako zakładkę na dolnym pasku zamiast zakładki Kontakty.</string>
+    <string name="FeedChannelHidden">Ukryto **%1$s** w strumieniu</string>
+    <string name="FeedChannels">Kanały</string>
+    <string name="FeedChannelsInfo">Odznacz kanał, aby ukryć jego posty w strumieniu. Nowe kanały są pokazywane automatycznie.</string>
+    <string name="FeedHiddenChannels">Ukryte</string>
+    <string name="FeedHideChannel">Ukryj w strumieniu</string>
+    <string name="FeedUnreadCounter">Licznik nieprzeczytanych postów</string>
+    <string name="FeedIncludeArchived">Pokaż czaty z archiwum</string>
+    <string name="FeedIncludeArchivedInfo">Dołącz do strumienia także kanały z zarchiwizowanych czatów.</string>
+    <string name="FeedMarkAllRead">Oznacz wszystko jako przeczytane</string>
+    <string name="FeedMarkAllReadConfirm">Oznaczyć wszystkie posty z kanałów w strumieniu jako przeczytane? Zostaną one oznaczone jako przeczytane również w oryginalnych kanałach.</string>
+    <string name="FeedMarkAllReadDone">Wszystkie posty oznaczono jako przeczytane</string>
+    <string name="FeedNoPosts">Nie ma jeszcze żadnych postów.</string>
+    <string name="FeedSettings">Ustawienia strumienia</string>
+    <string name="FeedShownChannels">Pokazywane w strumieniu</string>
+    <string name="HideFeedTab">Ukryj zakładkę strumienia</string>
+    <string name="FeedAddNewChannels">Dodawaj nowe kanały</string>
+    <string name="FeedAddNewChannelsOnInfo">Nowe obserwowane kanały automatycznie pojawiają się w kanale aktualności.</string>
+    <string name="FeedAddNewChannelsOffInfo">Nowe kanały pozostają ukryte, dopóki nie zaznaczysz ich poniżej.</string>
+    <string name="FeedCategories">Kategorie</string>
+    <string name="FeedCategoriesInfo">Kategorie są wyświetlane jako karty u góry kanału. Przeciągnij, aby zmienić kolejność, dotknij oka, aby ukryć kartę.</string>
+    <string name="FeedCategoryAddChannels">Dodaj kanały</string>
+    <string name="FeedCategoryChannelsInfo">Posty z wybranych kanałów są widoczne po otwarciu tej kategorii, nawet jeśli kanał jest ukryty we Wszystkich. Kanał może należeć do kilku kategorii.</string>
+    <string name="FeedCategoryCreate">Utwórz kategorię</string>
+    <string name="FeedCategoryDelete">Usuń kategorię</string>
+    <string name="FeedCategoryDeleteConfirm">Usunąć kategorię **%1$s**? Jej kanały pozostaną w kanale aktualności.</string>
+    <string name="FeedCategoryEdit">Edytuj kategorię</string>
+    <string name="FeedCategoryEmpty">Brak kanałów w tej kategorii.</string>
+    <string name="FeedCategoryEmptyInfo">Dodaj do niej kanały, a ich posty pojawią się tutaj.</string>
+    <string name="FeedCategoryHiddenInfo">Kategoria **%1$s** jest ukryta. Możesz ją przywrócić w ustawieniach.</string>
+    <string name="FeedCategoryHide">Ukryj kategorię</string>
+    <string name="FeedCategoryName">Nazwa kategorii</string>
+    <string name="FeedCategoryNew">Nowa kategoria</string>
+    <string name="FeedCategoryShow">Pokaż kategorię</string>
+    <string name="FeedCategoryUnsavedChanges">Ta kategoria została zmieniona. Zapisać zmiany?</string>
+    <string name="FeedHiddenFromAll">Ukryte we Wszystkich</string>
+    <string name="FeedAllChannelsExcludedInfo">Ukryte kanały nadal są widoczne w swoich kategoriach.</string>
+</resources>

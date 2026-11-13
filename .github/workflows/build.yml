@@ -1,0 +1,165 @@
+name: Build
+
+on:
+  push:
+    branches: [main, dev]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch:
+    inputs:
+      native_target:
+        description: 'ABI: arm64-v8a, x86_64 или universal (оба ABI в одном APK)'
+        required: false
+        default: 'arm64-v8a'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+  CCACHE_HARDLINK: "true"
+  CCACHE_NOHASHDIR: "true"
+  CCACHE_MAXSIZE: "2G"
+
+jobs:
+  # Проверка самих workflow: опечатка в YAML не должна стоить 20 минут сборки.
+  workflows:
+    name: Lint workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+      - name: actionlint
+        uses: raven-actions/actionlint@v2
+        with:
+          files: .github/workflows/*.yml
+
+  # Быстрая проверка без нативной части: Java и Kotlin должны компилироваться (около 1–3 минут после прогрева кэша).
+  # Ловит синтаксические и типовые ошибки раньше, чем начнётся 30-минутная сборка NDK.
+  static:
+    name: Compile check (Java + Kotlin)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NATIVE_TARGET: "arm64-v8a"
+      HG_LIST_URL: ${{ secrets.HG_LIST_URL }}
+      HG_SEAL_KEY: ${{ secrets.HG_SEAL_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          submodules: recursive
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Python for Chaquopy
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Point Chaquopy at that Python
+        run: echo "CHAQUOPY_BUILD_PYTHON=$(which python3.11 || which python)" >> "$GITHUB_ENV"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Set up Android SDK Tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "build-tools;36.0.0 ndk;27.2.12479018 platforms;android-37.0"
+      - name: Configure Android SDK Path
+        run: echo "sdk.dir=${ANDROID_HOME}" >> local.properties
+      - name: Compile Kotlin and Java
+        run: |
+          export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
+          ./gradlew --stacktrace :TMessagesProj:compileDebugKotlin :TMessagesProj:compileDebugJavaWithJavac
+
+  apk:
+    name: APK (${{ github.event.inputs.native_target || 'arm64-v8a' }})
+    needs: [static, workflows]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      NATIVE_TARGET: ${{ github.event.inputs.native_target || 'arm64-v8a' }}
+      HG_LIST_URL: ${{ secrets.HG_LIST_URL }}
+      HG_SEAL_KEY: ${{ secrets.HG_SEAL_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          submodules: recursive
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Set up Python for Chaquopy
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Point Chaquopy at that Python
+        run: echo "CHAQUOPY_BUILD_PYTHON=$(which python3.11 || which python)" >> "$GITHUB_ENV"
+      - name: Set up Ccache
+        uses: hendrikmuhs/ccache-action@v1.2.23
+        with:
+          key: android-ndk-${{ env.NATIVE_TARGET }}
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+      - name: Set up Android SDK Tools
+        uses: android-actions/setup-android@v4
+        with:
+          packages: "build-tools;36.0.0 ndk;27.2.12479018 platforms;android-37.0"
+      - name: Install native build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes nasm
+      - name: Configure Android SDK Path
+        run: echo "sdk.dir=${ANDROID_HOME}" >> local.properties
+      - name: Modify Gradle JVM Args
+        run: |
+          MEMORY_KB=$(awk '/MemTotal/ {print $2}' /proc/meminfo)
+          MEMORY_GB=$((MEMORY_KB / 1024 / 1024))
+          echo "Detected memory size: ${MEMORY_GB}GB"
+          if [ $MEMORY_GB -ge 12 ]; then
+            sed -i '/^org\.gradle\.jvmargs=/d' gradle.properties
+            echo "org.gradle.jvmargs=-Xmx8G -XX:MaxMetaspaceSize=2G -XX:+UseParallelGC -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" >> gradle.properties
+          fi
+      - name: Restore signing key
+        env:
+          RELEASE_KEYSTORE: ${{ secrets.RELEASE_KEYSTORE }}
+        run: |
+          if [ -n "$RELEASE_KEYSTORE" ]; then
+            echo "$RELEASE_KEYSTORE" | base64 -d > TMessagesProj/release.keystore
+            echo "signing key restored"
+          else
+            echo "RELEASE_KEYSTORE не задан: сборка подпишется отладочным ключом"
+          fi
+      - name: Assemble debug APK
+        run: |
+          export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
+          ./gradlew --stacktrace TMessagesProj:assembleDebug
+          APK_DIR=$(dirname "$(find TMessagesProj/build/outputs/apk -name '*.apk' | head -1)")
+          echo "APK_DIR=$APK_DIR" >> "$GITHUB_ENV"
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: HeartGram-${{ env.NATIVE_TARGET }}-debug
+          path: ${{ env.APK_DIR }}/*.apk
+          retention-days: 14

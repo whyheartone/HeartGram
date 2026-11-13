@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="Feed">Лента</string>
+    <string name="FeedAllChannelsExcluded">Все каналы исключены из ленты.</string>
+    <string name="FeedBottomTab">Показывать в нижних вкладках</string>
+    <string name="FeedBottomTabInfo">Лента появится на нижней панели вместо вкладки «Контакты».</string>
+    <string name="FeedChannelHidden">**%1$s** скрыт из ленты</string>
+    <string name="FeedChannels">Каналы</string>
+    <string name="FeedChannelsInfo">Снимите галочку, чтобы скрыть посты канала из ленты. Новые каналы показываются автоматически.</string>
+    <string name="FeedHiddenChannels">Скрытые</string>
+    <string name="FeedHideChannel">Скрыть из ленты</string>
+    <string name="FeedUnreadCounter">Счётчик непрочитанных</string>
+    <string name="FeedIncludeArchived">Показывать чаты из архива</string>
+    <string name="FeedIncludeArchivedInfo">Также добавлять в ленту каналы из архивированных чатов.</string>
+    <string name="FeedMarkAllRead">Отметить всё прочитанным</string>
+    <string name="FeedMarkAllReadConfirm">Отметить все посты в каналах ленты прочитанными? Они также будут отмечены прочитанными в исходных каналах.</string>
+    <string name="FeedMarkAllReadDone">Все посты отмечены прочитанными</string>
+    <string name="FeedNoPosts">В ленте пока нет постов.</string>
+    <string name="FeedSettings">Настройки ленты</string>
+    <string name="FeedShownChannels">Показаны в ленте</string>
+    <string name="HideFeedTab">Скрыть вкладку ленты</string>
+    <string name="FeedAddNewChannels">Добавлять новые каналы</string>
+    <string name="FeedAddNewChannelsOnInfo">Новые каналы, на которые вы подписаны, сразу появляются в ленте.</string>
+    <string name="FeedAddNewChannelsOffInfo">Новые каналы скрыты, пока вы не отметите их ниже.</string>
+    <string name="FeedCategories">Категории</string>
+    <string name="FeedCategoriesInfo">Категории показываются вкладками вверху ленты. Перетащите, чтобы изменить порядок, нажмите на глаз, чтобы скрыть вкладку.</string>
+    <string name="FeedCategoryAddChannels">Добавить каналы</string>
+    <string name="FeedCategoryChannelsInfo">Посты выбранных каналов показываются, когда открыта эта категория, даже если канал скрыт из вкладки «Все». Канал может быть в нескольких категориях.</string>
+    <string name="FeedCategoryCreate">Создать категорию</string>
+    <string name="FeedCategoryDelete">Удалить категорию</string>
+    <string name="FeedCategoryDeleteConfirm">Удалить категорию **%1$s**? Её каналы останутся в ленте.</string>
+    <string name="FeedCategoryEdit">Изменить категорию</string>
+    <string name="FeedCategoryEmpty">В этой категории нет каналов.</string>
+    <string name="FeedCategoryEmptyInfo">Добавьте в неё каналы, и здесь появятся их посты.</string>
+    <string name="FeedCategoryHiddenInfo">Категория **%1$s** скрыта. Вернуть её можно в настройках ленты.</string>
+    <string name="FeedCategoryHide">Скрыть категорию</string>
+    <string name="FeedCategoryName">Название категории</string>
+    <string name="FeedCategoryNew">Новая категория</string>
+    <string name="FeedCategoryShow">Показать категорию</string>
+    <string name="FeedCategoryUnsavedChanges">Вы изменили эту категорию. Сохранить изменения?</string>
+    <string name="FeedHiddenFromAll">Скрыты из «Все»</string>
+    <string name="FeedAllChannelsExcludedInfo">Скрытые каналы по-прежнему показываются в своих категориях.</string>
+</resources>
