@@ -163,7 +163,8 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         glyphDividerRow = -1;
 
         resetSettingsRow = addRow("resetSettings");
-        deleteAccountRow = addRow("deleteAccount");
+        // «Удалить аккаунт» спрятан: необратимо удаляет аккаунт Telegram, код оставлен
+        deleteAccountRow = -1;
         bottomDividerRow = addRow();
     }
 
@@ -616,7 +617,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                     } else if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
                         String[] it = supportItems.get(position - supportStartRow);
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        cell.setTextAndValueAndIcon(supportTitle(it), it[1] == null ? "" : it[1], R.drawable.msg_fave, position < supportStartRow + supportItems.size() - 1);
+                        cell.setTextAndValue(supportTitle(it), it[1] == null ? "" : it[1], position < supportStartRow + supportItems.size() - 1);
                     } else if (position == ayuMomentsRow) {
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndIcon(getString(R.string.OEGeneralAyuMoments), R.drawable.ayu_ghost, false);

@@ -69,7 +69,7 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
         appearanceRow = addRow("appearance");
         chatsRow = addRow("chats");
         pluginsRow = addRow("plugins");
-        wsProxyRow = addRow("wsProxy");
+        wsProxyRow = -1; // «Обход блокировок» теперь внутри «Прочее»
         otherRow = addRow("other");
         categoriesDividerRow = addRow();
 

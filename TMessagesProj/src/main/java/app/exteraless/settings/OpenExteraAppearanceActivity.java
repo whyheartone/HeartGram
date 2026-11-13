@@ -141,6 +141,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private int foldersPreviewRow;
     private int folderStyleRow;
     private int folderTitleRow = -1;
+    private int folderPillHeightRow = -1;
     private int tabTitleStyleRow;
     private int startupFolderRow;
     private int tabCounterRow;
@@ -208,6 +209,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         foldersPreviewRow = addRow("foldersPreview");
         folderStyleRow = addRow("folderStyle");
         folderTitleRow = addRow("folderTitle");
+        folderPillHeightRow = app.heartgram.HeartGramPrefs.folderStyle() == 2 ? addRow("folderPillHeight") : -1;
         tabTitleStyleRow = addRow("tabTitleStyle");
         startupFolderRow = getMessagesController().getDialogFilters().size() > 1 ? addRow("startupFolder") : -1;
         tabCounterRow = addRow("tabCounter");
@@ -635,6 +637,27 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
+        if (position == folderPillHeightRow) {
+            final int[] heights = {24, 28, 32, 36, 40};
+            CharSequence[] names = new CharSequence[heights.length];
+            for (int i = 0; i < heights.length; i++) {
+                names[i] = heights[i] + " dp";
+            }
+            if (getParentActivity() != null) {
+                AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
+                b.setTitle(app.heartgram.HeartGramLabels.tr("Высота кнопки", "Button height"));
+                b.setItems(names, (d, which) -> {
+                    app.heartgram.HeartGramPrefs.prefs().edit().putInt("folder_pill_h", heights[which]).apply();
+                    if (listAdapter != null) {
+                        listAdapter.notifyDataSetChanged();
+                    }
+                    org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface);
+                });
+                b.setNegativeButton(getString(R.string.Cancel), null);
+                showDialog(b.create());
+            }
+            return;
+        }
         if (position == folderTitleRow) {
             boolean on = !app.heartgram.HeartGramPrefs.folderTitleInHeader();
             app.heartgram.HeartGramPrefs.prefs().edit().putBoolean("folder_title_header", on).apply();
@@ -972,8 +995,16 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     view = chatListPreviewCell;
                     break;
                 case TYPE_FOLDER_STYLE:
-                    view = new app.heartgram.folders.FolderStyleView(mContext, () ->
-                            org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface));
+                    view = new app.heartgram.folders.FolderStyleView(mContext, () -> {
+                        org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface);
+                        // у вида «Кнопки» появляется строка «Высота кнопки»
+                        AndroidUtilities.runOnUIThread(() -> {
+                            updateRows();
+                            if (listAdapter != null) {
+                                listAdapter.notifyDataSetChanged();
+                            }
+                        }, 150);
+                    });
                     break;
                 case TYPE_FOLDERS:
                     foldersPreviewCell = new FoldersPreviewCell(mContext, resourcesProvider);
@@ -1138,7 +1169,10 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_SETTINGS: {
                     TextSettingsCell cell = (TextSettingsCell) holder.itemView;
-                    if (position == tilesRadiusRow) {
+                    if (position == folderPillHeightRow) {
+                        cell.setTextAndValue(app.heartgram.HeartGramLabels.tr("Высота кнопки", "Button height"),
+                                app.heartgram.HeartGramPrefs.folderPillHeight() + " dp", true);
+                    } else if (position == tilesRadiusRow) {
                         cell.setTextAndValue(app.heartgram.HeartGramLabels.tr("Скругление плиток", "Tile corner radius"),
                                 app.heartgram.tiles.ChatTiles.radius() + " dp", true);
                     } else if (position == tilesGapRow) {
@@ -1264,7 +1298,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     || position == md3PlayerRow || position == md3MiniPlayerRow
                     || position == iosNavBarRow || position == iosChatHeaderRow) {
                 return TYPE_ROUND_CHECK;
-            } else if (position == tilesRadiusRow || position == tilesGapRow || position == dividerStyleRow || position == glassOutlineRow
+            } else if (position == folderPillHeightRow || position == tilesRadiusRow || position == tilesGapRow || position == dividerStyleRow || position == glassOutlineRow
                     || position == tabTitleStyleRow
                     || position == startupFolderRow
                     || position == tabCounterRow || position == titleTextRow) {

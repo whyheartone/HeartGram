@@ -184,7 +184,7 @@ public final class HeartGramBadgeSheet {
     private static final class EmojiView extends View {
         private final AnimatedEmojiDrawable drawable;
         private final java.util.function.IntConsumer onColor;
-        private boolean attached, tinted;
+        private boolean attached, tinted, sampling;
         private int frames;
 
         EmojiView(Context context, long documentId, java.util.function.IntConsumer onColor) {
@@ -196,12 +196,20 @@ public final class HeartGramBadgeSheet {
         /** Средний цвет непрозрачных пикселей эмодзи, чуть осветлённый; false, пока эмодзи не загрузилось. */
         private boolean computeColor() {
             try {
+                if (getWidth() <= 0 || getHeight() <= 0) {
+                    return false;
+                }
                 final int size = 40;
                 android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
-                android.graphics.Rect old = new android.graphics.Rect(drawable.getBounds());
-                drawable.setBounds(0, 0, size, size);
-                drawable.draw(new Canvas(bmp));
-                drawable.setBounds(old);
+                // рисуем саму вьюшку (без подложки) в маленький битмап: берём ровно то, что видно на экране
+                Canvas c = new Canvas(bmp);
+                c.scale(size / (float) getWidth(), size / (float) getHeight());
+                sampling = true;
+                try {
+                    draw(c);
+                } finally {
+                    sampling = false;
+                }
                 int[] px = new int[size * size];
                 bmp.getPixels(px, 0, size, 0, 0, size, size);
                 bmp.recycle();
@@ -245,6 +253,10 @@ public final class HeartGramBadgeSheet {
         @Override
         protected void onDraw(Canvas canvas) {
             drawable.setBounds(0, 0, getWidth(), getHeight());
+            if (sampling) {
+                drawable.draw(canvas);
+                return;
+            }
             // силуэт цвета фона под эмодзи: звёзды уходят за значок и не просвечивают сквозь прозрачные места
             int bg = Theme.getColor(Theme.key_dialogBackground);
             float[] m = {
@@ -259,6 +271,11 @@ public final class HeartGramBadgeSheet {
             if (colorable) {
                 drawable.setColorFilter(new android.graphics.PorterDuffColorFilter(
                         Theme.getColor(Theme.key_featuredStickers_addButton), android.graphics.PorterDuff.Mode.SRC_IN));
+                // эмодзи подстраивается под тему телефона, звёзды берут тот же цвет
+                if (!tinted) {
+                    tinted = true;
+                    onColor.accept(Theme.getColor(Theme.key_featuredStickers_addButton));
+                }
             }
             drawable.draw(canvas);
             if (colorable) {

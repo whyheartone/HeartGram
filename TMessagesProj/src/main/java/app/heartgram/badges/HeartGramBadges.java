@@ -274,14 +274,31 @@ public final class HeartGramBadges {
                 : HeartGramMarkup.render(fragment.getParentActivity(), info.text);
         if ("official".equals(info.kind)) {
             // официальный ресурс: только подпись, без «Подробнее»
-            BulletinFactory.of(fragment).createEmojiBulletin(document, text).show();
+            raise(BulletinFactory.of(fragment).createEmojiBulletin(document, text).show());
             return true;
         }
-        BulletinFactory.of(fragment)
+        raise(BulletinFactory.of(fragment)
                 .createEmojiBulletin(document, text,
                         HeartGramLabels.tr("Подробнее", "Details"), () -> HeartGramBadgeSheet.show(fragment, object))
-                .show();
+                .show());
         return true;
+    }
+
+    /** Подпись значка выезжает чуть выше, чтобы пилюля была видна целиком (внизу её закрывает край экрана). */
+    private static void raise(org.telegram.ui.Components.Bulletin bulletin) {
+        try {
+            if (bulletin == null || bulletin.getLayout() == null) {
+                return;
+            }
+            final android.view.View parent = (android.view.View) bulletin.getLayout().getParent();
+            if (parent != null && parent.getLayoutParams() instanceof android.view.ViewGroup.MarginLayoutParams) {
+                android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) parent.getLayoutParams();
+                lp.bottomMargin += AndroidUtilities.dp(36);
+                parent.setLayoutParams(lp);
+            }
+        } catch (Throwable t) {
+            Log.w(TAG, "подпись значка: " + t);
+        }
     }
 
     /** Старый вызов: открыть окно значка сразу. */
