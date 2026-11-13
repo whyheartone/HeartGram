@@ -43,18 +43,18 @@ Python 3.11 (для Chaquopy), `nasm`. Подмодули: `git clone --recurse-
 
 HeartGram стоит на открытом коде этих проектов. Спасибо авторам:
 
-- [exteraless](https://github.com/exteraless/exteraless) — основа клиента;
-- [NagramX](https://github.com/risin42/NagramX);
-- [exteraGram](https://github.com/exteraSquad/exteraGram);
-- [AyuGram](https://github.com/AyuGram/AyuGram4A);
-- [Cherrygram](https://github.com/arsLan4k1390/Cherrygram);
-- [Dr4iv3rNope / NotSoAndroidAyuGram](https://github.com/Dr4iv3rNope/NotSoAndroidAyuGram);
-- [Inugram](https://github.com/teidesu/inugram);
-- [Nagram](https://github.com/NextAlone/Nagram);
-- [Nekogram](https://github.com/Nekogram/Nekogram);
-- [OctoGram](https://github.com/OctoGramApp/OctoGram);
-- [DiveGram](https://github.com/Snegovikio/DiveGram-Android);
-- [tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy) (Flowseal, MIT) — схема встроенного обхода блокировок. Текст лицензии: [docs/licenses/tg-ws-proxy-LICENSE.txt](docs/licenses/tg-ws-proxy-LICENSE.txt).
+- [exteraless](https://github.com/exteraless/exteraless) — основа клиента
+- [NagramX](https://github.com/risin42/NagramX)
+- [exteraGram](https://github.com/exteraSquad/exteraGram)
+- [AyuGram](https://github.com/AyuGram/AyuGram4A)
+- [Cherrygram](https://github.com/arsLan4k1390/Cherrygram)
+- [Dr4iv3rNope / NotSoAndroidAyuGram](https://github.com/Dr4iv3rNope/NotSoAndroidAyuGram)
+- [Inugram](https://github.com/teidesu/inugram)
+- [Nagram](https://github.com/NextAlone/Nagram)
+- [Nekogram](https://github.com/Nekogram/Nekogram)
+- [OctoGram](https://github.com/OctoGramApp/OctoGram)
+- [DiveGram](https://github.com/Snegovikio/DiveGram-Android)
+- [tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy)
 
 **Дизайн.** Иконки и оформление, унаследованные от exteraGram, созданы его дизайнером
 [@the8055u](https://t.me/the8055u) и студией [@BlueprintDsgn](https://t.me/BlueprintDsgn).
