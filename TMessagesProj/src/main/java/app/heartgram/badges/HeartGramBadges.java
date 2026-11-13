@@ -102,6 +102,16 @@ public final class HeartGramBadges {
         final Set<Long> trusted = new HashSet<>();
     }
 
+    /** Эмодзи значка HeartGram? Такие крутятся без остановки, обычные статусы Telegram — два раза. */
+    public static boolean isBadgeDocument(long documentId) {
+        if (documentId == 0) {
+            return false;
+        }
+        String id = String.valueOf(documentId);
+        Snapshot s = snapshot;
+        return s.emoji.containsValue(id) || s.customEmoji.containsValue(id);
+    }
+
     /** Способы поддержки из API: {название, подробности, ссылка}. */
     public static List<String[]> supportItems() {
         return new ArrayList<>(snapshot.support);

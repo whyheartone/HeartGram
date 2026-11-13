@@ -763,7 +763,11 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private void updateAutoRepeat(ImageReceiver imageReceiver) {
-        if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
+        if (cacheType == CACHE_TYPE_EMOJI_STATUS && app.heartgram.HeartGramPrefs.prefs().getBoolean("status_loop", true)
+                && app.heartgram.badges.HeartGramBadges.isBadgeDocument(documentId)) {
+            // HeartGram: значок крутится без остановки
+            imageReceiver.setAutoRepeatCount(0);
+        } else if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
             imageReceiver.setAutoRepeatCount(2);
         } else if (cacheType == CACHE_TYPE_FORUM_TOPIC_LARGE || cacheType == CACHE_TYPE_SAVED_REACTION || cacheType == CACHE_TYPE_AVATAR_CONSTRUCTOR_PREVIEW || cacheType == CACHE_TYPE_TAB_STRIP || cacheType == CACHE_TYPE_ALERT_PREVIEW_TAB_STRIP || cacheType == CACHE_TYPE_FORUM_TOPIC_PULL_DOWN) {
             imageReceiver.setAutoRepeatCount(1);
