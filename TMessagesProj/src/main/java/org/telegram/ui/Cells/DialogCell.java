@@ -1613,6 +1613,17 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         } else {
                             drawVerified = !forbidVerified && chat.verified;
                             drawBotVerified = !forbidVerified && chat.bot_verification_icon != 0;
+                            // значок HeartGram: проверенному каналу второй значок не нужен
+                            if (!drawVerified && !drawBotVerified) {
+                                com.exteragram.messenger.api.dto.BadgeDTO hgBadge = com.exteragram.messenger.badges.BadgesController.INSTANCE.getBadge(chat);
+                                if (hgBadge != null) {
+                                    drawPremium = true;
+                                    nameLayoutEllipsizeByGradient = true;
+                                    emojiStatus.center = LocaleController.isRTL;
+                                    emojiStatus.set(hgBadge.getDocumentId(), false);
+                                    emojiStatus.setParticles(false, false);
+                                }
+                            }
                         }
                     } else if (user != null) {
                         dialogBotVerificationIcon = DialogObject.getBotVerificationIcon(user);
@@ -1637,6 +1648,17 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             } else {
                                 nameLayoutEllipsizeByGradient = true;
                                 emojiStatus.set(PremiumGradient.getInstance().premiumStarDrawableMini, false);
+                                emojiStatus.setParticles(false, false);
+                            }
+                        }
+                        // значок HeartGram в слоте статуса, если у человека нет премиум-статуса и галочки
+                        if (!drawPremium && !drawVerified && drawScam == 0 && !UserObject.isUserSelf(user)) {
+                            com.exteragram.messenger.api.dto.BadgeDTO hgBadge = com.exteragram.messenger.badges.BadgesController.INSTANCE.getBadge(user);
+                            if (hgBadge != null) {
+                                drawPremium = true;
+                                nameLayoutEllipsizeByGradient = true;
+                                emojiStatus.center = LocaleController.isRTL;
+                                emojiStatus.set(hgBadge.getDocumentId(), false);
                                 emojiStatus.setParticles(false, false);
                             }
                         }
