@@ -381,6 +381,12 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
     private int hidePremiumSectionRow = -1;
     private int hideHelpSectionRow = -1;
     private int hidingSettingsDividerRow = -1;
+    private final app.heartgram.settings.HeartGramSettingsRows hgRows = new app.heartgram.settings.HeartGramSettingsRows();
+    private int hgStart = -1;
+
+    private boolean isHgRow(int position) {
+        return hgStart >= 0 && position >= hgStart && position < hgStart + hgRows.count();
+    }
 
     public OpenExteraChatsActivity() {
         this(SCREEN_CHATS);
@@ -537,6 +543,13 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         wideChannelPostsRow = addRow("wideChannelPosts");
         wideFeedPostsRow = addRow("wideFeedPosts");
         channelPostsDividerRow = addRow();
+
+        // HeartGram: анимации и свечение медиа живут здесь, отдельного раздела нет
+        hgRows.build();
+        hgStart = rowCount;
+        for (int i = 0; i < hgRows.count(); i++) {
+            addRow();
+        }
     }
 
     private void updateMenuRows() {
@@ -1696,6 +1709,10 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
+        if (screen == SCREEN_CHATS && isHgRow(position)) {
+            hgRows.click(this, view, position - hgStart, this::reloadList);
+            return;
+        }
         // Клик по телу строки-группы только сворачивает её; мастер-переключатель живёт
         // в правой зоне TextCheckCell2 за разделителем.
         if (position == repliesGroupRow) {
@@ -2410,6 +2427,10 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public void onBindViewHolder(RecyclerView.ViewHolder holder, int position, boolean partial) {
+            if (screen == SCREEN_CHATS && isHgRow(position)) {
+                hgRows.bind(holder, position - hgStart);
+                return;
+            }
             switch (holder.getItemViewType()) {
                 case TYPE_SET_REACTION:
                     ((DoubleTapCell.SetReactionCell) holder.itemView).update(false);
@@ -3036,6 +3057,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
+            if (screen == SCREEN_CHATS && isHgRow(position)) return hgRows.viewType(position - hgStart);
             if (position == stickerSizeRow) return TYPE_STICKER_SIZE;
             if (position == stickerShapeRow) return TYPE_STICKER_SHAPE;
             if (position == doubleTapRow) return TYPE_DOUBLE_TAP;

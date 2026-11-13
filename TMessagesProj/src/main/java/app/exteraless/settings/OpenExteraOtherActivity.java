@@ -66,6 +66,10 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
 
     private static final int ETG_IMPORT_REQUEST_CODE = 22;
 
+    private int supportHeaderRow = -1;
+    private int supportStartRow = -1;
+    private int supportDividerRow = -1;
+    private java.util.List<String[]> supportItems = new java.util.ArrayList<>();
     private int googleHeaderRow;
     private int crashReportsRow;
     private int contentCaptureRow;
@@ -128,23 +132,23 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         // «nu.gpu.nagram», а у нас com.exteraless.app — переключатель стоял
         // мёртвым. На его месте вход в настройки NagramX, выключенный по
         // умолчанию.
-        googleHeaderRow = addRow("googleHeader");
-        crashReportsRow = addRow("crashReports");
-        contentCaptureRow = addRow("contentCapture");
-        googleDividerRow = addRow();
+        // HeartGram: отчёты о сбоях и доступ к тексту экрана спрятаны, пока нет своего Firebase.
+        // Код оставлен: вернуть строки можно, заменив -1 на addRow(...).
+        googleHeaderRow = crashReportsRow = contentCaptureRow = googleDividerRow = -1;
+        nagramHeaderRow = nagramSettingsRow = ayuMomentsRow = nagramDividerRow = -1;
+        experimentalHeaderRow = localPremiumRow = experimentalDividerRow = -1;
+        unlimitedPinnedDialogsRow = voiceEnhancementsRow = enhancedVideoBitrateRow = sensitiveContentRow = -1;
 
-        nagramHeaderRow = addRow("nagramHeader");
-        nagramSettingsRow = -1;
-        ayuMomentsRow = addRow("ayuMoments");
-        nagramDividerRow = addRow();
-
-        experimentalHeaderRow = addRow("experimentalHeader");
-        localPremiumRow = addRow("localPremium");
-        unlimitedPinnedDialogsRow = -1;
-        voiceEnhancementsRow = -1;
-        enhancedVideoBitrateRow = -1;
-        sensitiveContentRow = addRow("sensitiveDisableFiltering", "SensitiveDisableFiltering");
-        experimentalDividerRow = addRow();
+        supportItems = app.heartgram.badges.HeartGramBadges.supportItems();
+        supportHeaderRow = supportStartRow = supportDividerRow = -1;
+        if (!supportItems.isEmpty()) {
+            supportHeaderRow = addRow("supportHeader");
+            supportStartRow = rowCount;
+            for (int i = 0; i < supportItems.size(); i++) {
+                addRow();
+            }
+            supportDividerRow = addRow();
+        }
 
         backupHeaderRow = addRow("backupHeader");
         exportEtgRow = addRow("exportEtgSettings");
@@ -191,6 +195,10 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
+        if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
+            openSupport(supportItems.get(position - supportStartRow));
+            return;
+        }
         if (position == crashReportsRow) {
             boolean enabled = GeneralConfig.crashReports.toggleConfigBool();
             if (view instanceof TextCheckCell) {
@@ -237,6 +245,19 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             showResetSettingsDialog();
         } else if (position == deleteAccountRow) {
             showDeleteAccountDialog();
+        }
+    }
+
+    private void openSupport(String[] item) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        String url = item[2];
+        if (url != null && !url.isEmpty()) {
+            org.telegram.messenger.browser.Browser.openUrl(getParentActivity(), url);
+        } else if (item[1] != null && !item[1].isEmpty()) {
+            org.telegram.messenger.AndroidUtilities.addToClipboard(item[1]);
+            org.telegram.ui.Components.BulletinFactory.of(this).createCopyBulletin(item[1]).show();
         }
     }
 
@@ -501,7 +522,9 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             switch (holder.getItemViewType()) {
                 case TYPE_HEADER: {
                     HeaderCell cell = (HeaderCell) holder.itemView;
-                    if (position == backupHeaderRow) {
+                    if (position == supportHeaderRow) {
+                        cell.setText(app.heartgram.HeartGramLabels.tr("Поддержка", "Support"));
+                    } else if (position == backupHeaderRow) {
                         cell.setText(getString(R.string.OEGeneralBackupHeader));
                     } else if (position == nagramHeaderRow) {
                         cell.setText(getString(R.string.OEGeneralNagramHeader));
@@ -553,7 +576,11 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_TEXT: {
                     TextCell cell = (TextCell) holder.itemView;
-                    if (position == ayuMomentsRow) {
+                    if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
+                        String[] it = supportItems.get(position - supportStartRow);
+                        cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
+                        cell.setTextAndValueAndIcon(it[0], it[1] == null ? "" : it[1], R.drawable.msg_fave, position < supportStartRow + supportItems.size() - 1);
+                    } else if (position == ayuMomentsRow) {
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndIcon(getString(R.string.OEGeneralAyuMoments), R.drawable.ayu_ghost, false);
                     } else if (position == exportEtgRow) {
@@ -594,6 +621,15 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
+            if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
+                return TYPE_TEXT;
+            }
+            if (position == supportHeaderRow) {
+                return TYPE_HEADER;
+            }
+            if (position == supportDividerRow) {
+                return TYPE_SHADOW;
+            }
             if (position == nagramHeaderRow || position == googleHeaderRow
                     || position == experimentalHeaderRow || position == backupHeaderRow) {
                 return TYPE_HEADER;

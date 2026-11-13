@@ -114,6 +114,10 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
     private int deletedMarkRow;
     private int deletedMarkColorRow;
     private int forwardProtectedRow;
+    private int localPremiumRow = -1;
+    private int sensitiveContentRow = -1;
+    private boolean sensitiveEnabled;
+    private boolean sensitiveCanChange;
     private int exportDbRow;
     private int importDbRow;
     private int disableAllRow;
@@ -195,6 +199,8 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
         otherHeaderRow = addRow("ayuOtherHeader");
         regexRow = addRow(NaConfig.INSTANCE.getRegexFiltersEnabled().getKey());
         forwardProtectedRow = addRow(NaConfig.INSTANCE.getForwardProtectedAsCopy().getKey());
+        localPremiumRow = addRow("localPremium");
+        sensitiveContentRow = addRow("sensitiveDisableFiltering", "SensitiveDisableFiltering");
         exportDbRow = addRow("databaseExport");
         importDbRow = addRow("databaseImport");
         otherDividerRow = addRow();
@@ -228,6 +234,27 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
     @Override
     protected String getKey() {
         return "exteraless_ayumoments";
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        org.telegram.tgnet.tl.TL_account.contentSettings cached = getMessagesController().getContentSettings();
+        if (cached != null) {
+            sensitiveEnabled = cached.sensitive_enabled;
+            sensitiveCanChange = cached.sensitive_can_change;
+        } else {
+            sensitiveEnabled = getMessagesController().showSensitiveContent();
+        }
+        getMessagesController().getContentSettings(settings -> {
+            if (settings != null) {
+                sensitiveEnabled = settings.sensitive_enabled;
+                sensitiveCanChange = settings.sensitive_can_change;
+                if (listAdapter != null) {
+                    listAdapter.notifyDataSetChanged();
+                }
+            }
+        });
     }
 
     @Override
@@ -300,6 +327,21 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
             showDeletedMarkColorPicker();
         } else if (position == forwardProtectedRow) {
             toggleAyuConfig(view, NaConfig.INSTANCE.getForwardProtectedAsCopy(), false);
+        } else if (position == localPremiumRow) {
+            boolean on = NekoConfig.localPremium.toggleConfigBool();
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(on);
+            }
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+        } else if (position == sensitiveContentRow) {
+            if (sensitiveCanChange && getParentActivity() != null) {
+                sensitiveEnabled = !sensitiveEnabled;
+                getMessagesController().setContentSettings(sensitiveEnabled);
+                if (view instanceof TextCheckCell) {
+                    ((TextCheckCell) view).setChecked(sensitiveEnabled);
+                }
+            }
         } else if (position == exportDbRow) {
             AyuData.exportAyuDatabase(this);
         } else if (position == importDbRow) {
@@ -751,6 +793,13 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
                         bindAyuCheck(cell, NaConfig.INSTANCE.getTranslucentDeletedMessages(), true);
                     } else if (position == deletedIconRow) {
                         bindAyuCheck(cell, NaConfig.INSTANCE.getUseDeletedIcon(), deletedMarkColorRow != -1);
+                    } else if (position == localPremiumRow) {
+                        cell.setTextAndValueAndCheck(getString(R.string.localPremium),
+                                getString(R.string.OELocalPremiumInfo), NekoConfig.localPremium.Bool(), true, true);
+                    } else if (position == sensitiveContentRow) {
+                        cell.setTextAndValueAndCheck(getString(R.string.SensitiveDisableFiltering),
+                                getString(R.string.SensitiveAbout), sensitiveEnabled, true, false);
+                        cell.setEnabled(sensitiveCanChange, null);
                     } else if (position == forwardProtectedRow) {
                         cell.setTextAndValueAndCheck(
                                 getString(R.string.ForwardProtectedAsCopy),

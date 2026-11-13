@@ -60,14 +60,12 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
 
         aboutRow = addRow("about");
 
-        privacyHeaderRow = addRow("privacyHeader");
-        ayuRow = addRow("ayu");
-        privacyDividerRow = addRow();
+        privacyHeaderRow = privacyDividerRow = heartgramRow = -1;
 
         categoriesHeaderRow = addRow("categoriesHeader");
+        ayuRow = addRow("ayu");
         generalRow = addRow("general");
         appearanceRow = addRow("appearance");
-        heartgramRow = addRow("heartgram");
         chatsRow = addRow("chats");
         pluginsRow = addRow("plugins");
         otherRow = addRow("other");
@@ -261,7 +259,8 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == pluginsRow) {
                         cell.setTextAndIcon(getString(R.string.OpenExteraPlugins), R.drawable.msg_plugins, true);
                     } else if (position == ayuRow) {
-                        cell.setTextAndIcon(app.heartgram.HeartGramLabels.ayu(), R.drawable.ayu_ghost, false);
+                        cell.setTextAndIcon("AyuMoments", R.drawable.ayu_ghost, true);
+                        cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                     } else if (position == otherRow) {
                         cell.setTextAndIcon(getString(R.string.OpenExteraOther), R.drawable.msg_fave, false);
                     } else if (position == heartgramRow) {

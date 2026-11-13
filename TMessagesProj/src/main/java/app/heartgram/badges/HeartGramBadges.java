@@ -94,8 +94,20 @@ public final class HeartGramBadges {
         final Map<Long, String> customText = new HashMap<>();
         final Map<String, String> emoji = new HashMap<>();
         String project = "HeartGram";
+        /** Способы поддержать проект: {название, подробности, ссылка или адрес}. */
+        final List<String[]> support = new ArrayList<>();
+        String supportNote = "";
         /** Источники плагинов, которым доверяем: каналы, люди, разработчики HeartGram. */
         final Set<Long> trusted = new HashSet<>();
+    }
+
+    /** Способы поддержки из API: {название, подробности, ссылка}. */
+    public static List<String[]> supportItems() {
+        return new ArrayList<>(snapshot.support);
+    }
+
+    public static String supportNote() {
+        return snapshot.supportNote;
     }
 
     public static void start() {
@@ -332,6 +344,23 @@ public final class HeartGramBadges {
         }
         readPeerStrings(s.customEmoji, data.optJSONObject("customEmoji"));
         JSONObject secret = unseal(data.optString("sealed", ""));
+        JSONObject support = secret.optJSONObject("support");
+        if (support != null) {
+            s.supportNote = support.optString("note", "");
+            JSONArray items = support.optJSONArray("items");
+            for (int i = 0; items != null && i < items.length(); i++) {
+                JSONObject it = items.optJSONObject(i);
+                if (it == null) {
+                    continue;
+                }
+                String name = it.optString("name", it.optString("title", ""));
+                String details = it.optString("details", it.optString("value", it.optString("address", "")));
+                String url = it.optString("url", it.optString("link", ""));
+                if (!name.isEmpty()) {
+                    s.support.add(new String[]{name, details, url});
+                }
+            }
+        }
         JSONObject trust = secret.optJSONObject("trust");
         JSONArray sources = trust == null ? null : trust.optJSONArray("sources");
         if (sources != null) {

@@ -12202,8 +12202,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 boolean rightIconIsPremium = false, rightIconIsStatus = false;
                 nameTextView.setRightDrawableOutside(false);
                 BadgeDTO userBadge = BadgesController.INSTANCE.getBadge(user);
-                // длинное имя не «едет»: иначе значок уезжает из-под пальца и на него не нажать
-                nameTextView.setScrollNonFitText(userBadge == null || user.verified || user.scam || user.fake);
+                nameTextView.setScrollNonFitText(true);
                 nameTextView.setRightDrawable2OnClick(null);
                 if (user.scam || user.fake) {
                     nameTextView.setRightDrawable2(getScamDrawable(user.scam ? 0 : 1));
