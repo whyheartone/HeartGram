@@ -56,6 +56,8 @@ public class LauncherIconController {
                 R.drawable.hg_icon_mint_fg, R.string.HGIconMint),
         HG_SUNSET("HgSunsetIcon", R.drawable.hg_icon_sunset_bg,
                 R.drawable.hg_icon_sunset_fg, R.string.HGIconSunset),
+        HG_MONET("HgMonetIcon", R.drawable.hg_icon_monet_bg,
+                R.drawable.hg_icon_monet_fg, R.string.HGIconMonet),
         TELEGRAM("TelegramIcon", R.drawable.icon_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconTelegramOriginal),
         VINTAGE("VintageIcon", R.drawable.icon_6_background_sa, R.mipmap.icon_6_foreground_sa, R.string.AppIconVintage),
         AQUA("AquaIcon", R.drawable.icon_4_background_sa, R.mipmap.icon_foreground_sa, R.string.AppIconAqua),
