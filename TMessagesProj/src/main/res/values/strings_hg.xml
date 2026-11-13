@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="HGBadgeNumber">Badge #%1$d</string>
+    <string name="HGBadgeCreator">Creator of %1$s</string>
+    <string name="HGBadgeDeveloper">Developer of %1$s</string>
+    <string name="HGBadgeOfficial">Official resource of %1$s</string>
+    <string name="HGBadgeSupporter">Supporter of %1$s</string>
+    <string name="HGBadgeClient">Uses %1$s</string>
+    <string name="HGBadgeChannel">%1$s channel</string>
+    <string name="HGBadgeOk">Got it</string>
+</resources>

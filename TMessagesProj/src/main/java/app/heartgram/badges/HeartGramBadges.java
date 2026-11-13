@@ -89,6 +89,7 @@ public final class HeartGramBadges {
         final Map<Long, String> customEmoji = new HashMap<>();
         final Map<Long, String> customText = new HashMap<>();
         final Map<String, String> emoji = new HashMap<>();
+        String project = "HeartGram";
     }
 
     public static void start() {
@@ -123,10 +124,44 @@ public final class HeartGramBadges {
         return badge == null ? 0 : badge.getDocumentId();
     }
 
-    /** Нажатие на значок: пока всплывающая подпись, окно значка будет следующим этапом. */
+    /** Сведения для окна значка. */
+    public static final class Info {
+        public String kind;
+        public boolean owner;
+        public int number;
+        public String text;
+        public String project;
+    }
+
+    public static Info infoFor(TLObject object) {
+        long id;
+        if (object instanceof TLRPC.User) {
+            id = ((TLRPC.User) object).id;
+        } else if (object instanceof TLRPC.Chat) {
+            id = ((TLRPC.Chat) object).id;
+        } else {
+            return null;
+        }
+        Snapshot s = snapshot;
+        id = normalize(id);
+        Info info = new Info();
+        info.kind = kindOf(s, id);
+        info.owner = s.owners.contains(id);
+        Integer n = s.supporterNo.get(id);
+        info.number = n == null ? 0 : n;
+        BadgeDTO badge = badgeFor(object);
+        info.text = badge == null ? null : badge.getText();
+        info.project = s.project;
+        return info;
+    }
+
+    /** Нажатие на значок: окно значка, если не вышло открыть, то всплывающая подпись. */
     public static void openBadge(BaseFragment fragment, TLObject object) {
         BadgeDTO badge = badgeFor(object);
         if (badge == null || fragment == null) {
+            return;
+        }
+        if (HeartGramBadgeSheet.show(fragment, object)) {
             return;
         }
         int account = UserConfig.selectedAccount;
@@ -213,6 +248,10 @@ public final class HeartGramBadges {
             }
         }
         readStrings(s.emoji, data.optJSONObject("emoji"));
+        String project = data.optString("project", "").trim();
+        if (!project.isEmpty()) {
+            s.project = project;
+        }
         readPeerStrings(s.customEmoji, data.optJSONObject("customEmoji"));
         JSONObject secret = unseal(data.optString("sealed", ""));
         JSONObject custom = secret.has("custom") ? secret.optJSONObject("custom") : data.optJSONObject("custom");

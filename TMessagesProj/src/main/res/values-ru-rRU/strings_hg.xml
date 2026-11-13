@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="HGBadgeNumber">Значок #%1$d</string>
+    <string name="HGBadgeCreator">Создатель %1$s</string>
+    <string name="HGBadgeDeveloper">Разработчик %1$s</string>
+    <string name="HGBadgeOfficial">Официальный ресурс %1$s</string>
+    <string name="HGBadgeSupporter">Поддержал(а) %1$s</string>
+    <string name="HGBadgeClient">Пользуется %1$s</string>
+    <string name="HGBadgeChannel">Канал %1$s</string>
+    <string name="HGBadgeOk">Понятно</string>
+</resources>
