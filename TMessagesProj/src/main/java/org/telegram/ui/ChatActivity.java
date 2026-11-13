@@ -614,6 +614,7 @@ public class ChatActivity extends BaseFragment implements
     private ActionBarMenuItem.Item toTheBeginning;
     private ActionBarMenuItem.Item toTheMessage;
     private ActionBarMenuItem.Item hideTitleItem;
+    private final java.util.ArrayList<app.heartgram.menu.HeartGramMenu.Entry> hgMenuEntries = new java.util.ArrayList<>();
     private ActionBarMenuItem.Item bookmarksItem;
     private ClippingImageView animatingImageView;
     private ThanosEffect chatListThanosEffect;
@@ -5082,15 +5083,18 @@ public class ChatActivity extends BaseFragment implements
                     LocaleController.getString(UserObject.isBotForum(currentUser) ? R.string.ClearAllHistory : R.string.ClearHistory));
             }
             boolean addedSettings = false;
-            if (NaConfig.INSTANCE.getChatMenuItemToBeginning().Bool()) headerItem.lazilyAddSubItem(to_the_beginning, R.drawable.ic_upward, getString(R.string.ToTheBeginning));
-            if (NaConfig.INSTANCE.getChatMenuItemGoToMessage().Bool()) headerItem.lazilyAddSubItem(to_the_message, R.drawable.msg_go_up, getString(R.string.ToTheMessage));
+            // HeartGram: пункты Ayu и NagramX собраны в подменю «HeartGram», чтобы меню не разрасталось
+            hgMenuEntries.clear();
+            if (NaConfig.INSTANCE.getChatMenuItemToBeginning().Bool()) hgMenuEntries.add(new app.heartgram.menu.HeartGramMenu.Entry(to_the_beginning, R.drawable.ic_upward, getString(R.string.ToTheBeginning)));
+            if (NaConfig.INSTANCE.getChatMenuItemGoToMessage().Bool()) hgMenuEntries.add(new app.heartgram.menu.HeartGramMenu.Entry(to_the_message, R.drawable.msg_go_up, getString(R.string.ToTheMessage)));
             if (NaConfig.INSTANCE.getShowAddToBookmark().Bool()) {
                 bookmarksItem = headerItem.lazilyAddSubItem(nkbtn_bookmarks_manager, R.drawable.msg_fave, getString(R.string.BookmarksManager));
                 headerItem.setSubItemShown(nkbtn_bookmarks_manager, BookmarksHelper.getBookmarkedMessageIds(currentAccount, dialog_id).length > 0);
             }
-            hideTitleItem = NaConfig.INSTANCE.getChatMenuItemHideTitle().Bool() ? headerItem.lazilyAddSubItem(nkheaderbtn_hide_title, R.drawable.hide_title, getString(R.string.HideTitle)) : null;
-            if (NaConfig.INSTANCE.getChatMenuItemViewDeleted().Bool() && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) headerItem.lazilyAddSubItem(nkbtn_viewDeleted, R.drawable.msg_view_file, getString(R.string.ViewDeleted));
-            if (NaConfig.INSTANCE.getChatMenuItemClearDeleted().Bool() && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) headerItem.lazilyAddSubItem(nkbtn_clearDeleted, R.drawable.msg_clear, getString(R.string.ClearDeleted));
+            hideTitleItem = null;
+            if (NaConfig.INSTANCE.getChatMenuItemHideTitle().Bool()) hgMenuEntries.add(new app.heartgram.menu.HeartGramMenu.Entry(nkheaderbtn_hide_title, R.drawable.hide_title, getString(R.string.HideTitle)));
+            if (NaConfig.INSTANCE.getChatMenuItemViewDeleted().Bool() && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) hgMenuEntries.add(new app.heartgram.menu.HeartGramMenu.Entry(nkbtn_viewDeleted, R.drawable.msg_view_file, getString(R.string.ViewDeleted)));
+            if (NaConfig.INSTANCE.getChatMenuItemClearDeleted().Bool() && NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool()) hgMenuEntries.add(new app.heartgram.menu.HeartGramMenu.Entry(nkbtn_clearDeleted, R.drawable.msg_clear, getString(R.string.ClearDeleted)));
             if (!isTopic) {
                 if (NaConfig.INSTANCE.getChatMenuItemDeleteOwnMessages().Bool() && (ChatObject.isMegagroup(currentChat) || currentChat != null && !ChatObject.isChannel(currentChat))) {
                     headerItem.lazilyAddSubItem(nkheaderbtn_zibi, R.drawable.msg_delete, LocaleController.getString(R.string.DeleteAllFromSelf));
@@ -5187,8 +5191,13 @@ public class ChatActivity extends BaseFragment implements
             }
         }
 
-        if (BuildConfig.DEBUG && headerItem != null) {
+        if (BuildConfig.DEBUG && headerItem != null && app.heartgram.HeartGramPrefs.prefs().getBoolean("debug_menu", false)) {
             headerItem.lazilyAddSubItem(888, R.drawable.menu_download_round, "Dump Canvas");
+        }
+
+        if (headerItem != null && !hgMenuEntries.isEmpty()) {
+            app.heartgram.menu.HeartGramMenu.attach(headerItem, actionBar, themeDelegate, new java.util.ArrayList<>(hgMenuEntries));
+            hgMenuEntries.clear();
         }
 
         // exteraless plugins: подменю CHAT_ACTION_MENU в конце меню «⋮».

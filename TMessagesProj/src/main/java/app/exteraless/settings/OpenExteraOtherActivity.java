@@ -286,7 +286,12 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             return;
         }
         String url = item[2];
-        if (url != null && !url.isEmpty()) {
+        if (url != null && url.startsWith("copy:")) {
+            // «copy:адрес» из API: копируем адрес кошелька
+            String value = url.substring(5);
+            org.telegram.messenger.AndroidUtilities.addToClipboard(value);
+            org.telegram.ui.Components.BulletinFactory.of(this).createCopyBulletin(value).show();
+        } else if (url != null && !url.isEmpty()) {
             org.telegram.messenger.browser.Browser.openUrl(getParentActivity(), url);
         } else if (item[1] != null && !item[1].isEmpty()) {
             org.telegram.messenger.AndroidUtilities.addToClipboard(item[1]);
