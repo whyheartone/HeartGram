@@ -1532,6 +1532,11 @@ public class FilterTabsView extends FrameLayout {
 
     @Override
     protected boolean drawChild(@NonNull Canvas canvas, View child, long drawingTime) {
+        if (child == listView && app.heartgram.HeartGramPrefs.folderStyle() == 2) {
+            hgUnderPass = true;
+            drawSelector(canvas);
+            hgUnderPass = false;
+        }
         boolean result = super.drawChild(canvas, child, drawingTime);
         if (child == listView) {
             drawSelector(canvas);
@@ -1589,7 +1594,56 @@ public class FilterTabsView extends FrameLayout {
         return result;
     }
 
+    private boolean hgUnderPass;
+    private final Paint hgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF hgRect = new RectF();
+
+    private int hgAccent() {
+        return Theme.getColor(tabLineColorKey, resourcesProvider);
+    }
+
+    /** HeartGram, вид «Кнопки»: каждая папка отдельной кнопкой, выбранная подкрашена акцентом. */
+    private void hgDrawButtons(Canvas canvas, int sl, int sr, int height) {
+        float h = dp(app.heartgram.HeartGramPrefs.folderPillHeight());
+        float top = height / 2f - h / 2f;
+        float gap = dp(3);
+        float rad = Math.min(h / 2f, dp(10));
+        int text = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
+        hgPaint.setStyle(Paint.Style.FILL);
+        hgPaint.setColor(ColorUtils.setAlphaComponent(text, 18));
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View c = listView.getChildAt(i);
+            float l = listView.getX() + c.getX();
+            hgRect.set(l + gap, top, l + c.getWidth() - gap, top + h);
+            if (hgRect.width() > rad) {
+                canvas.drawRoundRect(hgRect, rad, rad, hgPaint);
+            }
+        }
+        hgRect.set(sl + gap, top, sr - gap, top + h);
+        hgPaint.setColor(ColorUtils.setAlphaComponent(hgAccent(), 70));
+        canvas.drawRoundRect(hgRect, rad, rad, hgPaint);
+    }
+
+    /** HeartGram, вид «Вкладки»: линия под панелью и индикатор под выбранной папкой. */
+    private void hgDrawUnderline(Canvas canvas, float indicatorX, float indicatorWidth, int height) {
+        float w = Math.max(dp(24), indicatorWidth);
+        float cx = indicatorX + indicatorWidth / 2f;
+        hgPaint.setStyle(Paint.Style.FILL);
+        hgPaint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
+        canvas.drawRect(0, height - Math.max(1, dp(0.5f)), getMeasuredWidth(), height, hgPaint);
+        hgPaint.setColor(hgAccent());
+        hgRect.set(cx - w / 2f, height - dp(3), cx + w / 2f, height + dp(3));
+        canvas.save();
+        canvas.clipRect(0, 0, getMeasuredWidth(), height);
+        canvas.drawRoundRect(hgRect, dp(3), dp(3), hgPaint);
+        canvas.restore();
+    }
+
     private void drawSelector(Canvas canvas) {
+        final int hgStyle = app.heartgram.HeartGramPrefs.folderStyle();
+        if ((hgStyle == 2) != hgUnderPass) {
+            return;
+        }
         final int height = getMeasuredHeight();
         selectorDrawable.setAlpha((int) (255 * listView.getAlpha()));
         float indicatorX = 0;
@@ -1653,6 +1707,15 @@ public class FilterTabsView extends FrameLayout {
 
             final int y = height / 2 - dp(14);
             float internalPadding = FolderIconHelper.getTabInternalPadding();
+            if (hgStyle == 1) {
+                hgDrawUnderline(canvas, indicatorX, indicatorWidth, height);
+                canvas.restore();
+                return;
+            } else if (hgStyle == 2) {
+                hgDrawButtons(canvas, (int) (indicatorX - dp(internalPadding) - add), (int) (indicatorX + indicatorWidth + dp(internalPadding) + add), height);
+                canvas.restore();
+                return;
+            }
             float rad = AndroidUtilities.dpf2(com.exteragram.messenger.ExteraConfig.getPillRadius(14));
             selectorDrawable.setCornerRadius(rad);
             selectorDrawable.setBounds((int) (indicatorX - dp(internalPadding) - add), y, (int) (indicatorX + indicatorWidth + dp(internalPadding) + add), y + dp(28));
@@ -1674,6 +1737,10 @@ public class FilterTabsView extends FrameLayout {
 
     @Override
     protected void dispatchDraw(@NonNull Canvas canvas) {
+        if (app.heartgram.HeartGramPrefs.folderStyle() != 0) {
+            super.dispatchDraw(canvas);
+            return;
+        }
         canvas.save();
         canvas.clipPath(clipPath);
         super.dispatchDraw(canvas);

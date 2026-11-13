@@ -33,9 +33,9 @@
     <string name="SensitiveDisableFiltering">Показывать деликатный контент</string>
     <string name="SensitiveAbout">Отображать деликатный контент в публичных каналах на всех ваших устройствах.</string>
     <string name="StickerSize">Размер стикеров</string>
-    <string name="StickerSizeDialogMessageBigOne">Большой</string>
-    <string name="StickerSizeDialogMessageSmallOne">Маленький</string>
-    <string name="StickerSizeDialogMessageReplyTo">Мяу</string>
+    <string name="StickerSizeDialogMessageBigOne">милый :3</string>
+    <string name="StickerSizeDialogMessageSmallOne">милый :3</string>
+    <string name="StickerSizeDialogMessageReplyTo">котик</string>
     <string name="StickerSizeDialogName">Duang</string>
     <string name="Experimental">Экспериментальные</string>
     <string name="UnlimitedFavoredStickers">Неограниченные избранные стикеры</string>

@@ -79,6 +79,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private static final int TYPE_ROUND_CHECK = 105;
     /** Две карточки-превью формы плавающей кнопки. */
     private static final int TYPE_FAB_SHAPE = 106;
+    private static final int TYPE_FOLDER_STYLE = 107;
 
     // Appearance
     private int appearanceHeaderRow;
@@ -135,6 +136,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     // Folders
     private int foldersHeaderRow;
     private int foldersPreviewRow;
+    private int folderStyleRow;
     private int tabTitleStyleRow;
     private int startupFolderRow;
     private int tabCounterRow;
@@ -193,6 +195,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
         foldersHeaderRow = addRow("foldersHeader");
         foldersPreviewRow = addRow("foldersPreview");
+        folderStyleRow = addRow("folderStyle");
         tabTitleStyleRow = addRow("tabTitleStyle");
         startupFolderRow = getMessagesController().getDialogFilters().size() > 1 ? addRow("startupFolder") : -1;
         tabCounterRow = addRow("tabCounter");
@@ -909,6 +912,10 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     chatListPreviewCell = new ChatListPreviewCell(mContext);
                     view = chatListPreviewCell;
                     break;
+                case TYPE_FOLDER_STYLE:
+                    view = new app.heartgram.folders.FolderStyleView(mContext, () ->
+                            org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface));
+                    break;
                 case TYPE_FOLDERS:
                     foldersPreviewCell = new FoldersPreviewCell(mContext, resourcesProvider);
                     view = foldersPreviewCell;
@@ -1157,6 +1164,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                 return TYPE_CHAT_LIST;
             } else if (position == foldersPreviewRow) {
                 return TYPE_FOLDERS;
+            } else if (position == folderStyleRow) {
+                return TYPE_FOLDER_STYLE;
             } else if (position == sectionRadiusRow) {
                 return TYPE_SECTION_SLIDER;
             } else if (position == appearanceHeaderRow || position == sectionsHeaderRow

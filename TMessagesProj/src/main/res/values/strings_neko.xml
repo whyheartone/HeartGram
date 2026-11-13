@@ -33,9 +33,9 @@
     <string name="SensitiveDisableFiltering">Disable Sensitive Content Filtering</string>
     <string name="SensitiveAbout">Display sensitive media in public channels on all your devices.</string>
     <string name="StickerSize">Sticker size</string>
-    <string name="StickerSizeDialogMessageBigOne">A big one</string>
-    <string name="StickerSizeDialogMessageSmallOne">A small one</string>
-    <string name="StickerSizeDialogMessageReplyTo">Meow</string>
+    <string name="StickerSizeDialogMessageBigOne">cute :3</string>
+    <string name="StickerSizeDialogMessageSmallOne">cute :3</string>
+    <string name="StickerSizeDialogMessageReplyTo">kitty</string>
     <string name="StickerSizeDialogName">Duang</string>
     <string name="Experimental">Experimental</string>
     <string name="UnlimitedFavoredStickers">Unlimited Favored Stickers</string>

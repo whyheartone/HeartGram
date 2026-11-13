@@ -69,4 +69,23 @@ public final class HeartGramPrefs {
     public static void setGlowSize(int value) {
         prefs().edit().putInt("glow_size", value).apply();
     }
+
+    /** Вид папок: 0 как в Telegram, 1 вкладки с индикатором, 2 отдельные кнопки. */
+    public static int folderStyle() {
+        return Math.max(0, Math.min(2, prefs().getInt("folder_style", 0)));
+    }
+
+    public static void setFolderStyle(int value) {
+        prefs().edit().putInt("folder_style", value).apply();
+    }
+
+    /** Высота кнопки папки в виде «Кнопки», dp. */
+    public static int folderPillHeight() {
+        return prefs().getInt("folder_pill_h", 32);
+    }
+
+    /** В режиме «только иконки» показывать название папки в заголовке. */
+    public static boolean folderTitleInHeader() {
+        return prefs().getBoolean("folder_title_header", true);
+    }
 }

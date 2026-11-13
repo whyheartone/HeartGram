@@ -73,7 +73,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         message.media.document.access_hash = 0;
         message.media.document.date = date;
         TLRPC.TL_documentAttributeSticker attributeSticker = new TLRPC.TL_documentAttributeSticker();
-        attributeSticker.alt = "🐱";
+        attributeSticker.alt = "❤️";
         message.media.document.attributes.add(attributeSticker);
         TLRPC.TL_documentAttributeImageSize attributeImageSize = new TLRPC.TL_documentAttributeImageSize();
         attributeImageSize.h = 512;
@@ -96,7 +96,7 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
         message.out = false;
         message.peer_id = new TLRPC.TL_peerUser();
         message.peer_id.user_id = 1;
-        messageObjects[0].customReplyName = getString(R.string.StickerSizeDialogName);
+        messageObjects[0].customReplyName = hgPreviewName();
         messageObjects[0].replyMessageObject = new MessageObject(UserConfig.selectedAccount, message, true, false);
 
         message = new TLRPC.TL_message();
@@ -239,5 +239,15 @@ public class StickerSizePreviewMessagesCell extends LinearLayout {
     @Override
     protected void dispatchSetPressed(boolean pressed) {
 
+    }
+
+    /** HeartGram: ник текущего аккаунта в превью, длинный ник вылезает из пузыря. */
+    private static String hgPreviewName() {
+        TLRPC.User user = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
+        if (user != null && user.first_name != null && !user.first_name.trim().isEmpty()) {
+            String n = user.first_name.trim();
+            return n.length() > 6 ? n.substring(0, 6) + "…" : n;
+        }
+        return "HeartGram";
     }
 }
