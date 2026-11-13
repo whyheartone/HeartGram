@@ -39,6 +39,7 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
     private int pluginsRow;
     private int otherRow;
     private int heartgramRow;
+    private int wsProxyRow = -1;
     private int privacyHeaderRow;
     private int ayuRow;
     private int privacyDividerRow;
@@ -74,6 +75,7 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
         linksHeaderRow = addRow("linksHeader");
         channelRow = addRow("channel");
         sourceRow = addRow("source");
+        wsProxyRow = addRow("wsProxy");
         linksDividerRow = addRow();
 
         designHeaderRow = addRow("designHeader");
@@ -202,6 +204,8 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new OpenExteraAyuMomentsActivity());
         } else if (position == channelRow) {
             getMessagesController().openByUserName("heartgramclient", this, 1);
+        } else if (position == wsProxyRow) {
+            presentFragment(new app.heartgram.settings.HeartGramSettingsActivity());
         } else if (position == sourceRow) {
             org.telegram.messenger.browser.Browser.openUrl(getParentActivity(),
                     "https://github.com/whyheartone/HeartGram");
@@ -268,9 +272,12 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == channelRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.ProfileChannel),
                                 "@heartgramclient", R.drawable.msg_channel, true);
+                    } else if (position == wsProxyRow) {
+                        cell.setTextAndValueAndIcon(app.heartgram.HeartGramLabels.tr("Обход блокировок", "Bypass blocking"),
+                                "tg-ws-proxy", R.drawable.msg_language, false);
                     } else if (position == sourceRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.OpenExteraSource),
-                                "GitHub", R.drawable.msg_language, false);
+                                "GitHub", R.drawable.msg_language, true);
                     } else if (position == designerRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.OpenExteraDesigner),
                                 "GitHub", R.drawable.msg_language, true);
