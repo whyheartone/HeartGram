@@ -1595,6 +1595,42 @@ public class FilterTabsView extends FrameLayout {
     }
 
     private boolean hgUnderPass;
+
+    /** HeartGram: в видах «Вкладки» и «Кнопки» нет общей подложки и штатной прямоугольной подсветки нажатия. */
+    @Override
+    public void draw(@NonNull Canvas canvas) {
+        final int style = app.heartgram.HeartGramPrefs.folderStyle();
+        Drawable bg = getBackground();
+        if (bg != null) {
+            bg.setAlpha(style != 0 ? 0 : 255);
+        }
+        if (listView != null) {
+            if (style != 0 && listView.getSelectorDrawableColor() != 0) {
+                listView.setSelectorDrawableColor(0);
+            } else if (style == 0 && listView.getSelectorDrawableColor() == 0) {
+                listView.setSelectorDrawableColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
+            }
+        }
+        super.draw(canvas);
+    }
+
+    /** Нажатая вкладка подсвечивается той же формой, что и кнопка. */
+    private void hgDrawPressed(Canvas canvas, int height) {
+        float h = dp(app.heartgram.HeartGramPrefs.folderPillHeight());
+        float top = height / 2f - h / 2f;
+        float gap = dp(3);
+        float rad = Math.min(h / 2f, dp(10));
+        hgPaint.setStyle(Paint.Style.FILL);
+        hgPaint.setColor(Theme.getColor(Theme.key_listSelector, resourcesProvider));
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View c = listView.getChildAt(i);
+            if (c.isPressed()) {
+                float l = listView.getX() + c.getX();
+                hgRect.set(l + gap, top, l + c.getWidth() - gap, top + h);
+                canvas.drawRoundRect(hgRect, rad, rad, hgPaint);
+            }
+        }
+    }
     private final Paint hgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final RectF hgRect = new RectF();
 
@@ -1622,6 +1658,7 @@ public class FilterTabsView extends FrameLayout {
         hgRect.set(sl + gap, top, sr - gap, top + h);
         hgPaint.setColor(ColorUtils.setAlphaComponent(hgAccent(), 70));
         canvas.drawRoundRect(hgRect, rad, rad, hgPaint);
+        hgDrawPressed(canvas, height);
     }
 
     /** HeartGram, вид «Вкладки»: линия под панелью и индикатор под выбранной папкой. */
@@ -1631,6 +1668,8 @@ public class FilterTabsView extends FrameLayout {
         hgPaint.setStyle(Paint.Style.FILL);
         hgPaint.setColor(Theme.getColor(Theme.key_divider, resourcesProvider));
         canvas.drawRect(0, height - Math.max(1, dp(0.5f)), getMeasuredWidth(), height, hgPaint);
+        hgDrawPressed(canvas, height);
+        hgPaint.setStyle(Paint.Style.FILL);
         hgPaint.setColor(hgAccent());
         hgRect.set(cx - w / 2f, height - dp(3), cx + w / 2f, height + dp(3));
         canvas.save();

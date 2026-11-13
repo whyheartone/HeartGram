@@ -140,6 +140,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private int foldersHeaderRow;
     private int foldersPreviewRow;
     private int folderStyleRow;
+    private int folderTitleRow = -1;
     private int tabTitleStyleRow;
     private int startupFolderRow;
     private int tabCounterRow;
@@ -206,6 +207,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         foldersHeaderRow = addRow("foldersHeader");
         foldersPreviewRow = addRow("foldersPreview");
         folderStyleRow = addRow("folderStyle");
+        folderTitleRow = addRow("folderTitle");
         tabTitleStyleRow = addRow("tabTitleStyle");
         startupFolderRow = getMessagesController().getDialogFilters().size() > 1 ? addRow("startupFolder") : -1;
         tabCounterRow = addRow("tabCounter");
@@ -633,6 +635,15 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
+        if (position == folderTitleRow) {
+            boolean on = !app.heartgram.HeartGramPrefs.folderTitleInHeader();
+            app.heartgram.HeartGramPrefs.prefs().edit().putBoolean("folder_title_header", on).apply();
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(on);
+            }
+            org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface);
+            return;
+        }
         if (position == tilesRow) {
             boolean on = !app.heartgram.tiles.ChatTiles.enabled();
             app.heartgram.HeartGramPrefs.prefs().edit().putBoolean("tiles", on).apply();
@@ -1052,6 +1063,11 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndValueAndCheck(getString(R.string.OEAppearanceForceSnow), getString(R.string.OEAppearanceForceSnowInfo), NekoConfig.actionBarDecoration.Int() == 1, true, true);
                     } else if (position == senderMiniAvatarsRow) {
                         cell.setTextAndCheck(getString(R.string.OEAppearanceSenderMiniAvatars), AppearanceConfig.senderMiniAvatars.Bool(), true);
+                    } else if (position == folderTitleRow) {
+                        cell.setTextAndValueAndCheck(app.heartgram.HeartGramLabels.tr("Папка в заголовке", "Folder in the title"),
+                                app.heartgram.HeartGramLabels.tr("В режиме «Только иконки». Если выключено, в заголовке остаётся имя или название клиента.",
+                                        "In the icons-only mode. If off, the title keeps the username or the app name."),
+                                app.heartgram.HeartGramPrefs.folderTitleInHeader(), true, true);
                     } else if (position == tilesRow) {
                         cell.setTextAndValueAndCheck(app.heartgram.HeartGramLabels.tr("Чаты плитками", "Chats as tiles"),
                                 app.heartgram.HeartGramLabels.tr("Карточки с зазором вместо сплошного списка", "Cards with gaps instead of a flat list"),

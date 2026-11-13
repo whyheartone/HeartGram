@@ -10,6 +10,8 @@
     <string name="HGBadgeOk">Got it</string>
     <string name="HGPluginUnknownSource">Unknown source</string>
     <string name="HGPluginUnknownSourceInfo">This plugin did not come from a verified HeartGram source. Review the permissions below before installing.</string>
+    <string name="HGPluginVerifiedSource">Verified source</string>
+    <string name="HGPluginVerifiedSourceInfo">The file came from a source in the HeartGram trusted list. Permissions are still worth reviewing.</string>
     <string name="HGBadgeEdit">Edit badge</string>
     <string name="HGIconMidnight">Neon</string>
     <string name="HGIconSnow">Snow</string>

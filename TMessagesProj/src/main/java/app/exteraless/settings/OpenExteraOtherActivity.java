@@ -67,6 +67,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
     private static final int ETG_IMPORT_REQUEST_CODE = 22;
 
     private int wsProxyRow = -1;
+    private int wsProxyDividerRow = -1;
     private int supportHeaderRow = -1;
     private int supportStartRow = -1;
     private int supportDividerRow = -1;
@@ -140,7 +141,6 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         experimentalHeaderRow = localPremiumRow = experimentalDividerRow = -1;
         unlimitedPinnedDialogsRow = voiceEnhancementsRow = enhancedVideoBitrateRow = sensitiveContentRow = -1;
 
-        wsProxyRow = addRow("wsProxy");
         supportItems = app.heartgram.badges.HeartGramBadges.supportItems();
         supportHeaderRow = supportStartRow = supportDividerRow = -1;
         if (!supportItems.isEmpty()) {
@@ -151,6 +151,8 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             }
             supportDividerRow = addRow();
         }
+        wsProxyRow = addRow("wsProxy");
+        wsProxyDividerRow = addRow();
 
         backupHeaderRow = addRow("backupHeader");
         exportEtgRow = addRow("exportEtgSettings");
@@ -252,6 +254,30 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         } else if (position == deleteAccountRow) {
             showDeleteAccountDialog();
         }
+    }
+
+    /** Название способа поддержки с эмодзи из API: обычное, либо подпись (alt) кастомного эмодзи по его номеру. */
+    private CharSequence supportTitle(String[] item) {
+        String emoji = item.length > 3 ? item[3] : "";
+        if (!android.text.TextUtils.isEmpty(emoji) && emoji.matches("\\d{5,}")) {
+            try {
+                long id = Long.parseLong(emoji);
+                org.telegram.tgnet.TLRPC.Document doc = org.telegram.ui.Components.AnimatedEmojiDrawable.findDocument(org.telegram.messenger.UserConfig.selectedAccount, id);
+                if (doc == null) {
+                    org.telegram.ui.Components.AnimatedEmojiDrawable.make(org.telegram.messenger.UserConfig.selectedAccount,
+                            org.telegram.ui.Components.AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, id);
+                } else {
+                    String alt = org.telegram.messenger.MessageObject.findAnimatedEmojiEmoticon(doc, null);
+                    emoji = alt == null ? "" : alt;
+                }
+                if (doc == null) {
+                    emoji = "";
+                }
+            } catch (Throwable t) {
+                emoji = "";
+            }
+        }
+        return android.text.TextUtils.isEmpty(emoji) ? item[0] : emoji + " " + item[0];
     }
 
     private void openSupport(String[] item) {
@@ -590,7 +616,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                     } else if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
                         String[] it = supportItems.get(position - supportStartRow);
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        cell.setTextAndValueAndIcon(it[0], it[1] == null ? "" : it[1], R.drawable.msg_fave, position < supportStartRow + supportItems.size() - 1);
+                        cell.setTextAndValueAndIcon(supportTitle(it), it[1] == null ? "" : it[1], R.drawable.msg_fave, position < supportStartRow + supportItems.size() - 1);
                     } else if (position == ayuMomentsRow) {
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndIcon(getString(R.string.OEGeneralAyuMoments), R.drawable.ayu_ghost, false);
@@ -638,7 +664,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             if (position == supportHeaderRow) {
                 return TYPE_HEADER;
             }
-            if (position == supportDividerRow) {
+            if (position == supportDividerRow || position == wsProxyDividerRow) {
                 return TYPE_SHADOW;
             }
             if (position == nagramHeaderRow || position == googleHeaderRow

@@ -11940,7 +11940,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             }
         }
         badgeDrawable.set(badge.getDocumentId(), animated);
-        badgeDrawable.setParticles(false, animated);
+        badgeDrawable.setParticles(true, animated);
         updateEmojiStatusDrawableColor();
         return badgeDrawable;
     }

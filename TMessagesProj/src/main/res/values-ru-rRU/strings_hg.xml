@@ -10,6 +10,8 @@
     <string name="HGBadgeOk">Понятно</string>
     <string name="HGPluginUnknownSource">Неизвестный источник</string>
     <string name="HGPluginUnknownSourceInfo">Этот плагин пришёл не из проверенного источника HeartGram. Проверьте разрешения ниже, прежде чем ставить.</string>
+    <string name="HGPluginVerifiedSource">Проверенный источник</string>
+    <string name="HGPluginVerifiedSourceInfo">Файл пришёл из источника из списка доверенных HeartGram. Разрешения всё равно стоит проверить.</string>
     <string name="HGBadgeEdit">Изменить значок</string>
     <string name="HGIconMidnight">Неон</string>
     <string name="HGIconSnow">Снег</string>

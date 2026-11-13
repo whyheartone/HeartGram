@@ -56,8 +56,10 @@ public final class HeartGramBadgeSheet {
         root.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
 
         FrameLayout art = new FrameLayout(context);
-        art.addView(new StarsView(context), new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-        art.addView(new EmojiView(context, document), new FrameLayout.LayoutParams(dp(112), dp(112), Gravity.CENTER));
+        // два слоя: звёзды Telegram внизу (в цвет эмодзи), само эмодзи сверху
+        final StarsView stars = new StarsView(context);
+        art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+        art.addView(new EmojiView(context, document, stars::setColor), new FrameLayout.LayoutParams(dp(112), dp(112), Gravity.CENTER));
         root.addView(art, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(200)));
 
         if (info.number > 0) {
@@ -181,11 +183,49 @@ public final class HeartGramBadgeSheet {
     /** Эмодзи значка крупно, анимированное. */
     private static final class EmojiView extends View {
         private final AnimatedEmojiDrawable drawable;
-        private boolean attached;
+        private final java.util.function.IntConsumer onColor;
+        private boolean attached, tinted;
+        private int frames;
 
-        EmojiView(Context context, long documentId) {
+        EmojiView(Context context, long documentId, java.util.function.IntConsumer onColor) {
             super(context);
+            this.onColor = onColor;
             drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE_140, documentId);
+        }
+
+        /** Средний цвет непрозрачных пикселей эмодзи, чуть осветлённый; false, пока эмодзи не загрузилось. */
+        private boolean computeColor() {
+            try {
+                final int size = 40;
+                android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
+                android.graphics.Rect old = new android.graphics.Rect(drawable.getBounds());
+                drawable.setBounds(0, 0, size, size);
+                drawable.draw(new Canvas(bmp));
+                drawable.setBounds(old);
+                int[] px = new int[size * size];
+                bmp.getPixels(px, 0, size, 0, 0, size, size);
+                bmp.recycle();
+                long r = 0, g = 0, b = 0, weight = 0;
+                for (int p : px) {
+                    int a = p >>> 24;
+                    if (a < 100) {
+                        continue;
+                    }
+                    r += (long) android.graphics.Color.red(p) * a;
+                    g += (long) android.graphics.Color.green(p) * a;
+                    b += (long) android.graphics.Color.blue(p) * a;
+                    weight += a;
+                }
+                if (weight < 40L * 255) {
+                    return false;
+                }
+                int red = (int) (r / weight), green = (int) (g / weight), blue = (int) (b / weight);
+                onColor.accept(0xFF000000 | (Math.min(255, red + (255 - red) / 4) << 16)
+                        | (Math.min(255, green + (255 - green) / 4) << 8) | Math.min(255, blue + (255 - blue) / 4));
+                return true;
+            } catch (Throwable t) {
+                return true;
+            }
         }
 
         @Override
@@ -214,39 +254,32 @@ public final class HeartGramBadgeSheet {
             if (colorable) {
                 drawable.setColorFilter(null);
             }
+            if (!tinted && ++frames % 8 == 0) {
+                tinted = computeColor();
+            }
         }
     }
 
-    /** Мерцающие «плюсики» позади значка. */
-    private static final class StarsView extends View {
-        private final float[] x = new float[44], y = new float[44], size = new float[44], phase = new float[44], speed = new float[44];
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    /** Звёзды Telegram позади значка: летают, мерцают; цвет подстраивается под эмодзи. */
+    private static final class StarsView extends org.telegram.ui.Components.Premium.StarParticlesView {
+        private final Paint tint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         StarsView(Context context) {
-            super(context);
-            Random random = new Random(7);
-            for (int i = 0; i < x.length; i++) {
-                x[i] = random.nextFloat();
-                y[i] = random.nextFloat();
-                size[i] = 2f + random.nextFloat() * 5f;
-                phase[i] = random.nextFloat() * 6.28f;
-                speed[i] = 0.6f + random.nextFloat() * 1.4f;
-            }
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(0xFFFFFFFF);
+            super(context, 70);
+            tint.setColorFilter(new android.graphics.PorterDuffColorFilter(
+                    Theme.getColor(Theme.key_featuredStickers_addButton), android.graphics.PorterDuff.Mode.SRC_IN));
+            drawable.overridePaint = tint;
+            drawable.speedScale = 1.3f;
+        }
+
+        void setColor(int color) {
+            tint.setColorFilter(new android.graphics.PorterDuffColorFilter(color, android.graphics.PorterDuff.Mode.SRC_IN));
+            invalidate();
         }
 
         @Override
-        protected void onDraw(Canvas canvas) {
-            float t = (android.os.SystemClock.uptimeMillis() % 100000L) / 1000f;
-            int w = getWidth(), h = getHeight();
-            for (int i = 0; i < x.length; i++) {
-                float a = 0.15f + 0.65f * (0.5f + 0.5f * (float) Math.sin(phase[i] + t * speed[i]));
-                paint.setAlpha((int) (a * 255));
-                float cx = x[i] * w, cy = y[i] * h, r = dp(size[i]);
-                drawStar(canvas, cx, cy, r, paint);
-            }
-            postInvalidateOnAnimation();
+        protected int getStarsRectWidth() {
+            return dp(240);
         }
     }
 }

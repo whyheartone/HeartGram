@@ -408,8 +408,9 @@ public final class HeartGramBadges {
                 String name = it.optString("name", it.optString("title", ""));
                 String details = it.optString("details", it.optString("value", it.optString("address", "")));
                 String url = it.optString("url", it.optString("link", ""));
+                String emoji = it.optString("emoji", it.optString("emojiId", it.optString("icon", "")));
                 if (!name.isEmpty()) {
-                    s.support.add(new String[]{name, details, url});
+                    s.support.add(new String[]{name, details, url, emoji});
                 }
             }
         }

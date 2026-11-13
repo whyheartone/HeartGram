@@ -172,7 +172,13 @@ public class PluginInstallBottomSheet extends com.exteragram.messenger.plugins.u
         if (chips.getChildCount() > 0) {
             content.addView(chips, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36, 0, 16, 0, 0));
         }
-        if (params != null && !params.getTrusted()) {
+        // проверенным источник считается, только если у плагина есть id, а отправитель в списке доверенных
+        final boolean verified = params != null && params.getTrusted() && plugin != null && !TextUtils.isEmpty(plugin.id);
+        if (params != null && verified) {
+            content.addView(createVerifiedBox(context, getString(R.string.HGPluginVerifiedSource),
+                    getString(R.string.HGPluginVerifiedSourceInfo)),
+                    LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
+        } else if (params != null) {
             content.addView(createWarningBox(context, getString(R.string.HGPluginUnknownSource),
                     getString(R.string.HGPluginUnknownSourceInfo), null),
                     LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
@@ -412,17 +418,27 @@ public class PluginInstallBottomSheet extends com.exteragram.messenger.plugins.u
 
     public static android.view.View createWarningBox(Context context, CharSequence titleText,
                                                      CharSequence infoText, CharSequence footText) {
+        return createBox(context, titleText, infoText, footText, Theme.key_text_RedBold);
+    }
+
+    /** Зелёная плашка: источник плагина из списка проверенных. */
+    public static android.view.View createVerifiedBox(Context context, CharSequence titleText, CharSequence infoText) {
+        return createBox(context, titleText, infoText, null, Theme.key_windowBackgroundWhiteGreenText2);
+    }
+
+    private static android.view.View createBox(Context context, CharSequence titleText,
+                                               CharSequence infoText, CharSequence footText, int colorKey) {
         LinearLayout box = new LinearLayout(context);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10),
                 AndroidUtilities.dp(12), AndroidUtilities.dp(10));
         box.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10),
-                ColorUtils.setAlphaComponent(Theme.getColor(Theme.key_text_RedBold), 30)));
+                ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30)));
 
         TextView title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
         title.setTypeface(AndroidUtilities.bold());
-        title.setTextColor(Theme.getColor(Theme.key_text_RedBold));
+        title.setTextColor(Theme.getColor(colorKey));
         title.setText(titleText);
         box.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT,
                 LayoutHelper.WRAP_CONTENT));

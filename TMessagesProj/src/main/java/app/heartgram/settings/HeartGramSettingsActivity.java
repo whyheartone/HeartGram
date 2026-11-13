@@ -64,12 +64,10 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
             AndroidUtilities.runOnUIThread(this::rebuild, 300);
         }));
         rows.add(new Row(Kind.INFO, null, tr(
-                "Трафик Telegram идёт через встроенный локальный прокси и дальше по WebSocket на серверы Telegram. "
-                        + "Помогает, когда Telegram блокируют. Сообщения по-прежнему шифруются, прокси их не читает. "
-                        + "Основа: tg-ws-proxy (Flowseal, MIT).",
+                "Трафик Telegram идёт через встроенный локальный прокси и далее по WebSocket на серверы Telegram. "
+                        + "Сообщения по-прежнему шифруются, прокси их не читает. Основа: tg-ws-proxy (Flowseal).",
                 "Telegram traffic goes through a built-in local proxy and then over WebSocket to Telegram servers. "
-                        + "Helps when Telegram is blocked. Messages stay encrypted, the proxy cannot read them. "
-                        + "Based on tg-ws-proxy (Flowseal, MIT)."), false, null));
+                        + "Messages stay encrypted, the proxy cannot read them. Based on tg-ws-proxy (Flowseal)."), false, null));
         rows.add(new Row(Kind.TOGGLE, "wsproxy_fronting", tr("Маскировка соединения", "Connection masking"), true, null));
         rows.add(new Row(Kind.TOGGLE, "wsproxy_tcp", tr("Запасной прямой путь (TCP)", "Direct fallback (TCP)"), true, null));
         rows.add(new Row(Kind.INFO, null, status(), false, null));

@@ -502,6 +502,7 @@ public class DrawerAccountPickerView extends FrameLayout {
         private final BackupImageView avatarView;
         private final SimpleTextView nameView;
         private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable premiumStatusDrawable;
+        private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable hgBadgeDrawable;
         private final DrawerAccountUnreadBadge unreadBadge;
         private final Paint checkPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         private final RectF avatarRect = new RectF();
@@ -532,6 +533,7 @@ public class DrawerAccountPickerView extends FrameLayout {
                     Gravity.LEFT, 54.0f, 0.0f, 12.0f, 0.0f));
 
             premiumStatusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(nameView, AndroidUtilities.dp(18.0f));
+            hgBadgeDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(nameView, AndroidUtilities.dp(18.0f));
             unreadBadge = new DrawerAccountUnreadBadge();
 
             checkPaint.setStyle(Paint.Style.STROKE);
@@ -557,12 +559,9 @@ public class DrawerAccountPickerView extends FrameLayout {
             final long emojiStatusId = DialogObject.getEmojiStatusDocumentId(user.emoji_status);
             final boolean premium = MessagesController.getInstance(account).isPremiumUser(user);
             Drawable rightDrawable = null;
-            final long hgDocument = emojiStatusId == 0 ? app.heartgram.badges.HeartGramBadges.documentFor(user) : 0;
+            final long hgDocument = app.heartgram.badges.HeartGramBadges.documentFor(user);
             if (emojiStatusId != 0) {
                 premiumStatusDrawable.set(emojiStatusId, false);
-                rightDrawable = premiumStatusDrawable;
-            } else if (hgDocument != 0) {
-                premiumStatusDrawable.set(hgDocument, false);
                 rightDrawable = premiumStatusDrawable;
             } else if (premium) {
                 premiumStatusDrawable.set(PremiumGradient.getInstance().premiumStarDrawableMini, false);
@@ -571,8 +570,17 @@ public class DrawerAccountPickerView extends FrameLayout {
                 premiumStatusDrawable.set((Drawable) null, false);
             }
             premiumStatusDrawable.setColor(statusColor);
-            premiumStatusDrawable.setParticles(DialogObject.isEmojiStatusCollectible(user.emoji_status) || hgDocument != 0, false);
+            premiumStatusDrawable.setParticles(emojiStatusId != 0, false);
             nameView.setRightDrawable(rightDrawable);
+            if (hgDocument != 0) {
+                hgBadgeDrawable.setCurrentAccount(account);
+                hgBadgeDrawable.set(hgDocument, false);
+                hgBadgeDrawable.setParticles(true, false);
+                hgBadgeDrawable.setColor(statusColor);
+                nameView.setRightDrawable2(hgBadgeDrawable);
+            } else {
+                nameView.setRightDrawable2(null);
+            }
 
             unreadBadge.bind(account, nameView);
             checkPaint.setColor(Theme.getColor(COLOR_KEY_ACCENT));

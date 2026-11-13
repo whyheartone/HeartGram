@@ -536,7 +536,9 @@ object AppearanceConfig {
     }
 
     @JvmStatic
-    fun folderNameAsTitle(): Boolean = NekoConfig.tabsTitleType.Int() == NekoXConfig.TITLE_TYPE_ICON
+    fun folderNameAsTitle(): Boolean =
+        NekoConfig.tabsTitleType.Int() == NekoXConfig.TITLE_TYPE_ICON &&
+            app.heartgram.HeartGramPrefs.folderTitleInHeader()
 
     /** Прятать ли эмодзи-статус в шапке списка чатов. */
     @JvmStatic
@@ -781,7 +783,8 @@ object AppearanceConfig {
     private const val LEGACY_DEFAULT_TITLE = "Nagram X"
 
     private fun migrateLegacyTitleName() {
-        if (NaConfig.customTitle.String() != LEGACY_DEFAULT_TITLE) return
+        val stored = NaConfig.customTitle.String()
+        if (stored != LEGACY_DEFAULT_TITLE && stored != "exteraless") return
         NaConfig.customTitle.setConfigString(NaConfig.customTitle.defaultValue as String)
         if (titleText.Int() == TITLE_TEXT_CUSTOM) {
             titleText.setConfigInt(0)

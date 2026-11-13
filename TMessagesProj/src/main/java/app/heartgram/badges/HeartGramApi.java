@@ -207,15 +207,27 @@ final class HeartGramApi {
             if (resolved.users == null || resolved.users.isEmpty()) {
                 return null;
             }
-            TLRPC.TL_messages_requestSimpleWebView web = new TLRPC.TL_messages_requestSimpleWebView();
-            web.bot = MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(resolved.users.get(0));
-            web.url = url;
-            web.platform = "android";
-            web.flags |= 8;
-            TLObject res = ask(web);
+            TLRPC.InputUser botUser = MessagesController.getInstance(UserConfig.selectedAccount).getInputUser(resolved.users.get(0));
+            // 1) главное мини-приложение бота (BotFather: Configure Mini App): адрес задаётся у бота
+            TLRPC.TL_messages_requestMainWebView main = new TLRPC.TL_messages_requestMainWebView();
+            main.peer = MessagesController.getInstance(UserConfig.selectedAccount).getInputPeer(resolved.users.get(0).id);
+            main.bot = botUser;
+            main.platform = "android";
+            TLObject res = ask(main);
+            String mainError = lastTlError;
             if (!(res instanceof TLRPC.TL_webViewResultUrl) && !(res instanceof TLRPC.TL_simpleWebViewResultUrl)) {
-                initError = "мини-приложение не открылось: " + lastTlError;
-                return null;
+                // 2) кнопка меню бота с тем же адресом
+                TLRPC.TL_messages_requestSimpleWebView web = new TLRPC.TL_messages_requestSimpleWebView();
+                web.bot = botUser;
+                web.url = url;
+                web.platform = "android";
+                web.flags |= 8;
+                res = ask(web);
+                if (!(res instanceof TLRPC.TL_webViewResultUrl) && !(res instanceof TLRPC.TL_simpleWebViewResultUrl)) {
+                    initError = "мини-приложение не открылось: " + mainError + " / " + lastTlError;
+                    Log.w(TAG, "initData: main=" + mainError + " simple=" + lastTlError);
+                    return null;
+                }
             }
             String link = res instanceof TLRPC.TL_simpleWebViewResultUrl
                     ? ((TLRPC.TL_simpleWebViewResultUrl) res).url : ((TLRPC.TL_webViewResultUrl) res).url;
