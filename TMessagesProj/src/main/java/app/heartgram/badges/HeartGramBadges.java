@@ -404,8 +404,8 @@ public final class HeartGramBadges {
         JSONArray buttons = extras == null ? null : extras.optJSONArray("buttons");
         for (int i = 0; buttons != null && i < buttons.length(); i++) {
             JSONObject b = buttons.optJSONObject(i);
-            if (b == null) {
-                continue;
+            if (b == null || !b.optBoolean("show", true)) {
+                continue; // кнопку можно скрыть в кабинете флагом show:false
             }
             String text = b.optString("text", b.optString("title", b.optString("name", "")));
             String url = b.optString("url", b.optString("link", ""));
