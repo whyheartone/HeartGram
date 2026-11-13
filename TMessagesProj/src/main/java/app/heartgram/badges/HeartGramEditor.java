@@ -334,11 +334,7 @@ public final class HeartGramEditor {
         bl.topMargin = dp(14);
         root.addView(buttons, bl);
 
-        TextView phone = label(activity, tr("Код для нового телефона", "Code for a new phone"), 14);
-        phone.setTextColor(Theme.getColor(Theme.key_featuredStickers_addButton));
-        phone.setPadding(0, dp(12), 0, 0);
-        phone.setOnClickListener(v -> issueCode(activity, token));
-        root.addView(phone, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        // кнопка «Код для нового телефона» убрана из окна; привязка телефона запрашивается только при входе
 
         preview.setOnClickListener(v -> pickEmoji(fragment, preview, selected[0], doc -> {
             selected[0] = doc == 0 ? defaultDocument : doc;

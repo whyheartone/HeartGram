@@ -245,6 +245,16 @@ public final class HeartGramBadgeSheet {
         @Override
         protected void onDraw(Canvas canvas) {
             drawable.setBounds(0, 0, getWidth(), getHeight());
+            // силуэт цвета фона под эмодзи: звёзды уходят за значок и не просвечивают сквозь прозрачные места
+            int bg = Theme.getColor(Theme.key_dialogBackground);
+            float[] m = {
+                    0, 0, 0, 0, android.graphics.Color.red(bg),
+                    0, 0, 0, 0, android.graphics.Color.green(bg),
+                    0, 0, 0, 0, android.graphics.Color.blue(bg),
+                    0, 0, 0, 12, 0};
+            drawable.setColorFilter(new android.graphics.ColorMatrixColorFilter(m));
+            drawable.draw(canvas);
+            drawable.setColorFilter(null);
             boolean colorable = drawable.canOverrideColor();
             if (colorable) {
                 drawable.setColorFilter(new android.graphics.PorterDuffColorFilter(
@@ -265,7 +275,7 @@ public final class HeartGramBadgeSheet {
         private final Paint tint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
         StarsView(Context context) {
-            super(context, 70);
+            super(context, 50);
             tint.setColorFilter(new android.graphics.PorterDuffColorFilter(
                     Theme.getColor(Theme.key_featuredStickers_addButton), android.graphics.PorterDuff.Mode.SRC_IN));
             drawable.overridePaint = tint;
@@ -279,7 +289,7 @@ public final class HeartGramBadgeSheet {
 
         @Override
         protected int getStarsRectWidth() {
-            return dp(240);
+            return dp(150);
         }
     }
 }
