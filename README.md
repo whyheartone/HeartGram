@@ -1,7 +1,6 @@
 # HeartGram для Android
 
-Неофициальный клиент Telegram для Android. Основа — [exteraless](https://github.com/exteraless/exteraless)
-(открытая реализация возможностей exteraGram на базе NagramX и Telegram for Android 13.2.1).
+Неофициальный клиент Telegram для Android на основе [exteraless](https://github.com/exteraless/exteraless).
 Сверху добавляем свои функции и то, что хорошо работает в AyuGram и DiveGram.
 
 Подробнее о том, чему мы обязаны, — в разделе [Благодарности](#благодарности).
@@ -42,10 +41,10 @@ Python 3.11 (для Chaquopy), `nasm`. Подмодули: `git clone --recurse-
 
 ## Благодарности
 
-HeartGram стоит на открытом коде этих проектов, без него его бы не было. Спасибо авторам:
+HeartGram стоит на открытом коде этих проектов. Спасибо авторам:
 
-- [exteraless](https://github.com/exteraless/exteraless) — основа клиента (открытая реализация возможностей exteraGram на Telegram 13.2.1);
-- [NagramX](https://github.com/risin42/NagramX), на которой построен exteraless;
+- [exteraless](https://github.com/exteraless/exteraless) — основа клиента;
+- [NagramX](https://github.com/risin42/NagramX);
 - [exteraGram](https://github.com/exteraSquad/exteraGram);
 - [AyuGram](https://github.com/AyuGram/AyuGram4A);
 - [Cherrygram](https://github.com/arsLan4k1390/Cherrygram);
@@ -54,9 +53,8 @@ HeartGram стоит на открытом коде этих проектов, �
 - [Nagram](https://github.com/NextAlone/Nagram);
 - [Nekogram](https://github.com/Nekogram/Nekogram);
 - [OctoGram](https://github.com/OctoGramApp/OctoGram);
-- [tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy) (Flowseal, MIT) — схема встроенного обхода блокировок: локальный прокси, который переносит трафик Telegram в WebSocket. Текст лицензии: [docs/licenses/tg-ws-proxy-LICENSE.txt](docs/licenses/tg-ws-proxy-LICENSE.txt);
-- DiveGram — за идеи и наработки;
-- [Telegram для Android](https://github.com/DrKLO/Telegram) — исходная основа всех форков.
+- [DiveGram](https://github.com/Snegovikio/DiveGram-Android);
+- [tg-ws-proxy](https://github.com/Flowseal/tg-ws-proxy) (Flowseal, MIT) — схема встроенного обхода блокировок. Текст лицензии: [docs/licenses/tg-ws-proxy-LICENSE.txt](docs/licenses/tg-ws-proxy-LICENSE.txt).
 
 **Дизайн.** Иконки и оформление, унаследованные от exteraGram, созданы его дизайнером
 [@the8055u](https://t.me/the8055u) и студией [@BlueprintDsgn](https://t.me/BlueprintDsgn).
