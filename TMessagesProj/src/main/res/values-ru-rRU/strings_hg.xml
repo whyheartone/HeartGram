@@ -8,4 +8,7 @@
     <string name="HGBadgeClient">Пользуется %1$s</string>
     <string name="HGBadgeChannel">Канал %1$s</string>
     <string name="HGBadgeOk">Понятно</string>
+    <string name="HGPluginUnknownSource">Неизвестный источник</string>
+    <string name="HGPluginUnknownSourceInfo">Этот плагин пришёл не из проверенного источника HeartGram. Проверьте разрешения ниже, прежде чем ставить.</string>
+    <string name="HGBadgeEdit">Изменить значок</string>
 </resources>

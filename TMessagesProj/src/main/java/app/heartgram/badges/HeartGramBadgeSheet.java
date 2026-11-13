@@ -103,6 +103,19 @@ public final class HeartGramBadgeSheet {
         ll.topMargin = dp(20);
         root.addView(button, ll);
 
+        // свой значок можно изменить: владелец, разработчики и те, кому это разрешил кабинет
+        if (peer instanceof TLRPC.User && ((TLRPC.User) peer).id == UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId()
+                && !"client".equals(info.kind)) {
+            TextView edit = text(context, LocaleController.getString(R.string.HGBadgeEdit), 15, true,
+                    Theme.getColor(Theme.key_featuredStickers_addButton));
+            edit.setPadding(dp(12), dp(12), dp(12), dp(4));
+            edit.setOnClickListener(v -> {
+                sheet.dismiss();
+                HeartGramEditor.open(fragment);
+            });
+            root.addView(edit, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+        }
+
         sheet.setCustomView(root);
         fragment.showDialog(sheet);
         return true;

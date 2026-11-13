@@ -8,4 +8,7 @@
     <string name="HGBadgeClient">Uses %1$s</string>
     <string name="HGBadgeChannel">%1$s channel</string>
     <string name="HGBadgeOk">Got it</string>
+    <string name="HGPluginUnknownSource">Unknown source</string>
+    <string name="HGPluginUnknownSourceInfo">This plugin did not come from a verified HeartGram source. Review the permissions below before installing.</string>
+    <string name="HGBadgeEdit">Edit badge</string>
 </resources>

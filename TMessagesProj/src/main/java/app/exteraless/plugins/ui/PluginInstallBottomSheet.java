@@ -172,6 +172,11 @@ public class PluginInstallBottomSheet extends com.exteragram.messenger.plugins.u
         if (chips.getChildCount() > 0) {
             content.addView(chips, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 36, 0, 16, 0, 0));
         }
+        if (params != null && !params.getTrusted()) {
+            content.addView(createWarningBox(context, getString(R.string.HGPluginUnknownSource),
+                    getString(R.string.HGPluginUnknownSourceInfo), null),
+                    LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 16, 0, 0));
+        }
 
         TextView section = new TextView(context);
         section.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

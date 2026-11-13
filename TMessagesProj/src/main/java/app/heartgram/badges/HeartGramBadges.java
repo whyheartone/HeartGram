@@ -14,6 +14,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildConfig;
+import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
@@ -90,6 +91,8 @@ public final class HeartGramBadges {
         final Map<Long, String> customText = new HashMap<>();
         final Map<String, String> emoji = new HashMap<>();
         String project = "HeartGram";
+        /** Источники плагинов, которым доверяем: каналы, люди, разработчики HeartGram. */
+        final Set<Long> trusted = new HashSet<>();
     }
 
     public static void start() {
@@ -122,6 +125,53 @@ public final class HeartGramBadges {
     public static long documentFor(TLObject object) {
         BadgeDTO badge = badgeFor(object);
         return badge == null ? 0 : badge.getDocumentId();
+    }
+
+    /** Эмодзи значка по умолчанию для человека (без его личного выбора). */
+    public static long defaultDocument(long id) {
+        Snapshot s = snapshot;
+        long nid = normalize(id);
+        String kind = kindOf(s, nid);
+        String ref = s.emoji.get(kind);
+        if (ref == null && "developer".equals(kind)) {
+            ref = DEV_EMOJI_ID;
+        }
+        return ref == null || ref.isEmpty() ? 0 : documentId(ref);
+    }
+
+    /** Перечитать список сразу (после правки своего значка). */
+    public static void refreshNow() {
+        executor.execute(() -> {
+            etag = "";
+            refreshSafely();
+        });
+    }
+
+    /** Источник плагина проверен: канал, человек или разработчик из списка. */
+    public static boolean isTrustedSource(long id) {
+        return id != 0 && snapshot.trusted.contains(normalize(id));
+    }
+
+    /**
+     * Сообщение с плагином пришло из проверенного источника: пересланное (автор пересылки), пост канала
+     * или личное и групповое сообщение от проверенного человека. Скрытый автор пересылки не доверяется.
+     */
+    public static boolean isTrustedMessage(MessageObject message) {
+        if (message == null) {
+            return false;
+        }
+        try {
+            if (message.isForwarded()) {
+                Long from = message.getForwardedFromId();
+                return from != null && isTrustedSource(from);
+            }
+            if (message.isFromChannel() && !message.isFromChat()) {
+                return isTrustedSource(message.getDialogId());
+            }
+            return isTrustedSource(message.getFromChatId());
+        } catch (Throwable t) {
+            return false;
+        }
     }
 
     /** Сведения для окна значка. */
@@ -254,6 +304,20 @@ public final class HeartGramBadges {
         }
         readPeerStrings(s.customEmoji, data.optJSONObject("customEmoji"));
         JSONObject secret = unseal(data.optString("sealed", ""));
+        JSONObject trust = secret.optJSONObject("trust");
+        JSONArray sources = trust == null ? null : trust.optJSONArray("sources");
+        if (sources != null) {
+            for (int i = 0; i < sources.length(); i++) {
+                Object o = sources.opt(i);
+                Long id = idOf(o instanceof JSONObject ? ((JSONObject) o).opt("id") : o);
+                if (id != null) {
+                    s.trusted.add(id);
+                }
+            }
+        }
+        s.trusted.addAll(s.official);
+        s.trusted.addAll(s.developers);
+        s.trusted.addAll(s.owners);
         JSONObject custom = secret.has("custom") ? secret.optJSONObject("custom") : data.optJSONObject("custom");
         readPeerStrings(s.customText, custom);
         return s;

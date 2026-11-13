@@ -97,6 +97,9 @@ public final class PluginInstallHelper {
      *
      * @return true, если сообщение содержит плагин и показан диалог установки.
      */
+    /** Источник последнего открытого файла проверен; сбрасывается при показе листа установки. */
+    private static volatile boolean sourceTrusted;
+
     public static boolean handleMessageTap(Activity activity, MessageObject message) {
         if (activity == null || message == null) {
             return false;
@@ -122,6 +125,8 @@ public final class PluginInstallHelper {
             // Ещё не скачан — пусть отработает штатная загрузка.
             return false;
         }
+        // кто прислал файл: от этого зависит предупреждение «неизвестный источник» в листе установки
+        sourceTrusted = app.heartgram.badges.HeartGramBadges.isTrustedMessage(message);
         AndroidUtilities.runOnUIThread(() -> PluginsController.getInstance()
                 .showInstallDialog(null, file.getAbsolutePath(), false));
         return true;
@@ -218,6 +223,8 @@ public final class PluginInstallHelper {
         if (file == null) {
             return;
         }
+        params.setTrusted(sourceTrusted);
+        sourceTrusted = false;
         PluginsController controller = PluginsController.getInstance();
         if (!controller.isEngineEnabled()) {
             // Не отказываем молча: движок выключен по умолчанию, и пользователю
