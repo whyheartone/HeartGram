@@ -1652,7 +1652,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             }
                         }
                         // значок HeartGram в слоте статуса, если у человека нет премиум-статуса и галочки
-                        if (!drawPremium && !drawVerified && drawScam == 0 && !UserObject.isUserSelf(user)) {
+                        if ((!drawPremium || UserObject.getEmojiStatusDocumentId(user) == null) && !drawVerified && drawScam == 0 && !UserObject.isUserSelf(user)) {
                             com.exteragram.messenger.api.dto.BadgeDTO hgBadge = com.exteragram.messenger.badges.BadgesController.INSTANCE.getBadge(user);
                             if (hgBadge != null) {
                                 drawPremium = true;

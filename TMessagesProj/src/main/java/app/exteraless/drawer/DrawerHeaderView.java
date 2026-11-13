@@ -307,13 +307,13 @@ public class DrawerHeaderView extends FrameLayout {
         final long emojiStatusId = DialogObject.getEmojiStatusDocumentId(user.emoji_status);
         final boolean premium = MessagesController.getInstance(account).isPremiumUser(user);
         final int statusColor = Theme.getColor(COLOR_KEY_STATUS);
-        final long hgDocument = emojiStatusId == 0 && !premium ? app.heartgram.badges.HeartGramBadges.documentFor(user) : 0;
+        final long hgDocument = emojiStatusId == 0 ? app.heartgram.badges.HeartGramBadges.documentFor(user) : 0;
         if (emojiStatusId != 0) {
             premiumStatusDrawable.set(emojiStatusId, true);
-        } else if (premium) {
-            premiumStatusDrawable.set(PremiumGradient.getInstance().premiumStarDrawableMini, true);
         } else if (hgDocument != 0) {
             premiumStatusDrawable.set(hgDocument, true);
+        } else if (premium) {
+            premiumStatusDrawable.set(PremiumGradient.getInstance().premiumStarDrawableMini, true);
         } else {
             premiumStatusDrawable.set((Drawable) null, true);
         }

@@ -1213,7 +1213,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         final org.telegram.tgnet.TLObject hgPeer = parentFragment == null ? null : parentFragment.getCurrentUser() != null
                 ? parentFragment.getCurrentUser() : parentFragment.getCurrentChat();
         final boolean hgSelf = hgPeer instanceof TLRPC.User && UserObject.isUserSelf((TLRPC.User) hgPeer);
-        final long hgDocument = !hgSelf && !scam && !fake && !verified && !premium && DialogObject.getEmojiStatusDocumentId(emojiStatus) == 0
+        final long hgDocument = !hgSelf && !scam && !fake && !verified && DialogObject.getEmojiStatusDocumentId(emojiStatus) == 0
                 ? app.heartgram.badges.HeartGramBadges.documentFor(hgPeer) : 0;
         if (hgDocument != 0) {
             // значок HeartGram там, где был бы эмодзи-статус
