@@ -35,11 +35,11 @@ public final class MediaGlow {
     public static final String[] SIZES = {"Маленький", "Средний", "Большой", "Огромный"};
     /** Поля размытой копии в px копии: чем больше, тем дальше ореол выходит за картинку. */
     private static final int[] PADS = {12, 22, 36, 56};
-    private static final int CORE = 48;
+    private static final int CORE = 64;
     /** Как часто брать кадр видео; за сколько ореол «дотекает» до нового кадра; как часто перерисовывать, мс. */
     private static final long SAMPLE_MS = 160, IDLE_MS = 500, FLOW_MS = 260, FRAME_MS = 33;
 
-    private static final Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
+    private static final Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG | Paint.DITHER_FLAG);
     private static final RectF rect = new RectF();
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static ExecutorService worker;
@@ -107,7 +107,20 @@ public final class MediaGlow {
             float a = self.getAlpha();
             Bitmap b = still(self);
             if (b != null) {
-                drawStill(canvas, b, reg, a);
+                // соседняя картинка при листании не должна заходить ореолом на центральную
+                boolean clipped = false;
+                if (self != c && c != null && android.os.Build.VERSION.SDK_INT >= 26) {
+                    RectF cr = c.getDrawRegion();
+                    if (cr != null && cr.width() > 0) {
+                        canvas.save();
+                        canvas.clipOutRect(cr);
+                        clipped = true;
+                    }
+                }
+                drawStill(canvas, b, reg, a, self);
+                if (clipped) {
+                    canvas.restore();
+                }
             } else {
                 android.graphics.drawable.Drawable d = self.getDrawable(); // GIF, превью видео и т.п.
                 if (d != null && self == c) {
@@ -133,7 +146,7 @@ public final class MediaGlow {
             if (v == null || !v.hgIsAnimatingView(view) || b == null || b.isRecycled() || r == null) {
                 return;
             }
-            drawStill(canvas, b, r, 1f);
+            drawStill(canvas, b, r, 1f, null);
         } catch (Throwable t) {
             android.util.Log.w("HeartGramGlow", "свечение при открытии: " + t);
         }
@@ -155,34 +168,77 @@ public final class MediaGlow {
         try {
             Bitmap b = still(receiver);
             if (b != null) {
-                glowFor(b, PADS[size()]);
+                cachedGlow(b, PADS[size()], receiver);
             }
         } catch (Throwable ignored) {
         }
     }
 
+    private static final java.util.Set<Bitmap> pending = java.util.Collections.newSetFromMap(new java.util.IdentityHashMap<>());
+    private static final Object[] cacheRecv = new Object[CACHE]; // WeakReference<ImageReceiver>
+
+    /**
+     * Готовый ореол для картинки. Если его ещё нет, размытие считается в фоне, а пока рисуется прежний ореол
+     * этого же приёмника (миниатюра -> полное фото), чтобы не мигало и не тормозило отрисовку.
+     */
     @SuppressWarnings("unchecked")
-    private static Bitmap glowFor(Bitmap b, int pad) {
+    private static Bitmap cachedGlow(final Bitmap b, final int pad, final ImageReceiver receiver) {
+        Bitmap fallback = null;
         for (int i = 0; i < CACHE; i++) {
             WeakReference<Object> k = (WeakReference<Object>) cacheKey[i];
-            if (k != null && k.get() == b && cachePad[i] == pad && cacheGlow[i] != null) {
+            if (cacheGlow[i] == null) {
+                continue;
+            }
+            if (k != null && k.get() == b && cachePad[i] == pad) {
                 return cacheGlow[i];
             }
+            WeakReference<Object> rr = (WeakReference<Object>) cacheRecv[i];
+            if (receiver != null && rr != null && rr.get() == receiver && cachePad[i] == pad) {
+                fallback = cacheGlow[i];
+            }
         }
-        Bitmap g = blurred(b, pad);
-        if (g != null) {
-            int i = cacheNext;
-            cacheNext = (cacheNext + 1) % CACHE;
-            cacheKey[i] = new WeakReference<Object>(b);
-            cacheGlow[i] = g;
-            cachePad[i] = pad;
+        synchronized (pending) {
+            if (!pending.add(b)) {
+                return fallback;
+            }
         }
-        return g;
+        final Bitmap small = shrink(b);
+        if (small == null) {
+            synchronized (pending) {
+                pending.remove(b);
+            }
+            return fallback;
+        }
+        ensureWorker();
+        worker.execute(() -> {
+            final int[] dims = new int[2];
+            final int[] px = blurSmall(small, pad, dims);
+            main.post(() -> {
+                synchronized (pending) {
+                    pending.remove(b);
+                }
+                if (px == null) {
+                    return;
+                }
+                Bitmap g = Bitmap.createBitmap(px, dims[0], dims[1], Bitmap.Config.ARGB_8888);
+                int i = cacheNext;
+                cacheNext = (cacheNext + 1) % CACHE;
+                cacheKey[i] = new WeakReference<Object>(b);
+                cacheRecv[i] = new WeakReference<Object>(receiver);
+                cacheGlow[i] = g;
+                cachePad[i] = pad;
+                PhotoViewer v = viewer();
+                if (v != null) {
+                    v.hgInvalidate();
+                }
+            });
+        });
+        return fallback;
     }
 
-    private static void drawStill(Canvas canvas, Bitmap b, RectF r, float alpha) {
+    private static void drawStill(Canvas canvas, Bitmap b, RectF r, float alpha, ImageReceiver receiver) {
         int pad = PADS[size()];
-        blit(canvas, glowFor(b, pad), pad, r, alpha);
+        blit(canvas, cachedGlow(b, pad, receiver), pad, r, alpha);
     }
 
     private static android.graphics.ColorMatrixColorFilter boostFilter;
@@ -193,7 +249,7 @@ public final class MediaGlow {
             android.graphics.ColorMatrix m = new android.graphics.ColorMatrix();
             m.setSaturation(1.5f);
             android.graphics.ColorMatrix b = new android.graphics.ColorMatrix(new float[]{
-                    1.8f, 0, 0, 0, 24, 0, 1.8f, 0, 0, 24, 0, 0, 1.8f, 0, 24, 0, 0, 0, 1, 0});
+                    1.45f, 0, 0, 0, 16, 0, 1.45f, 0, 0, 16, 0, 0, 1.45f, 0, 16, 0, 0, 0, 1, 0});
             m.postConcat(b);
             boostFilter = new android.graphics.ColorMatrixColorFilter(m);
         }
@@ -466,12 +522,8 @@ public final class MediaGlow {
         return px == null ? null : Bitmap.createBitmap(px, dims[0], dims[1], Bitmap.Config.ARGB_8888);
     }
 
-    /**
-     * Пиксели размытой копии; dims получает {ширина, высота}. Три прохода box blur радиусом pad/3 дают
-     * мягкий (почти гауссов) спад, который доходит ровно до края копии: у границы ореол уже прозрачный,
-     * без обрезанной кромки. Дополнительно прозрачность сглаживается, чтобы хвост гас плавнее.
-     */
-    private static int[] blurredPixels(Bitmap src, int pad, int[] dims) {
+    /** Уменьшенная копия исходной картинки (быстро, на главном потоке): дальше размытие считается в фоне. */
+    private static Bitmap shrink(Bitmap src) {
         try {
             int w = CORE, h = Math.max(8, Math.round((float) CORE * src.getHeight() / Math.max(1, src.getWidth())));
             if (h > CORE * 2) {
@@ -479,7 +531,29 @@ public final class MediaGlow {
                 w = Math.max(8, Math.round(CORE * 2f * src.getWidth() / Math.max(1, src.getHeight())));
             }
             Bitmap s = src.getConfig() == Bitmap.Config.HARDWARE ? src.copy(Bitmap.Config.ARGB_8888, false) : src;
-            Bitmap small = Bitmap.createScaledBitmap(s, w, h, true);
+            if (s == null || s.isRecycled()) {
+                return null;
+            }
+            return Bitmap.createScaledBitmap(s, w, h, true);
+        } catch (Throwable t) {
+            android.util.Log.w("HeartGramGlow", "уменьшение для свечения: " + t);
+            return null;
+        }
+    }
+
+    private static int[] blurredPixels(Bitmap src, int pad, int[] dims) {
+        Bitmap small = shrink(src);
+        return small == null ? null : blurSmall(small, pad, dims);
+    }
+
+    /**
+     * Пиксели размытой копии; dims получает {ширина, высота}. Три прохода box blur радиусом pad/3 дают
+     * мягкий (почти гауссов) спад, который доходит ровно до края копии. Прозрачность сглаживается, а к цвету
+     * добавляется лёгкий шум (дизеринг): без него плавные градиенты в 8 битах давали заметные полосы.
+     */
+    private static int[] blurSmall(Bitmap small, int pad, int[] dims) {
+        try {
+            int w = small.getWidth(), h = small.getHeight();
             int W = w + pad * 2, H = h + pad * 2;
             int[] px = new int[W * H];
             int[] in = new int[w * h];
@@ -493,13 +567,22 @@ public final class MediaGlow {
             for (int pass = 0; pass < 3; pass++) {
                 px = boxBlur(px, W, H, radius);
             }
-            for (int i = 0; i < px.length; i++) { // smoothstep по прозрачности: мягче у самого края
+            int seed = 0x2545F491;
+            for (int i = 0; i < px.length; i++) {
                 int c = px[i], a = c >>> 24;
-                if (a != 0 && a != 255) {
-                    float t = a / 255f;
-                    int na = Math.round(255f * t * t * (3f - 2f * t));
-                    px[i] = (na << 24) | (c & 0x00FFFFFF);
+                if (a == 0) {
+                    continue;
                 }
+                if (a != 255) { // smoothstep по прозрачности: мягче у самого края
+                    float t = a / 255f;
+                    a = Math.round(255f * t * t * (3f - 2f * t));
+                }
+                seed = seed * 1664525 + 1013904223;
+                int n = ((seed >>> 24) % 5) - 2; // шум -2..2
+                int rr = Math.max(0, Math.min(255, ((c >> 16) & 255) + n));
+                int gg = Math.max(0, Math.min(255, ((c >> 8) & 255) + n));
+                int bb = Math.max(0, Math.min(255, (c & 255) + n));
+                px[i] = (a << 24) | (rr << 16) | (gg << 8) | bb;
             }
             dims[0] = W;
             dims[1] = H;
@@ -518,27 +601,40 @@ public final class MediaGlow {
         return dst;
     }
 
+    /** Размытие скользящим окном: время не зависит от радиуса. За краем картинки прозрачно. */
     private static void blurLine(int[] in, int[] out, int w, int h, int r, boolean horizontal) {
-        int lines = horizontal ? h : w, len = horizontal ? w : h;
+        final int lines = horizontal ? h : w, len = horizontal ? w : h, n = 2 * r + 1;
         for (int l = 0; l < lines; l++) {
+            long a = 0, rr = 0, g = 0, b = 0;
+            for (int j = 0; j <= Math.min(r, len - 1); j++) {
+                int c = horizontal ? in[l * w + j] : in[j * w + l];
+                int ca = c >>> 24;
+                a += ca;
+                rr += ((c >> 16) & 255) * ca;
+                g += ((c >> 8) & 255) * ca;
+                b += (c & 255) * ca;
+            }
             for (int i = 0; i < len; i++) {
-                long a = 0, rr = 0, g = 0, b = 0;
-                int n = 0;
-                for (int k = -r; k <= r; k++) {
-                    int j = i + k;
-                    n++;
-                    if (j < 0 || j >= len) {
-                        continue; // за краем прозрачно
-                    }
-                    int c = horizontal ? in[l * w + j] : in[j * w + l];
+                int idx = horizontal ? l * w + i : i * w + l;
+                out[idx] = a == 0 ? 0 : ((int) (a / n) << 24) | ((int) (rr / a) << 16) | ((int) (g / a) << 8) | (int) (b / a);
+                int add = i + 1 + r;
+                if (add < len) {
+                    int c = horizontal ? in[l * w + add] : in[add * w + l];
                     int ca = c >>> 24;
                     a += ca;
                     rr += ((c >> 16) & 255) * ca;
                     g += ((c >> 8) & 255) * ca;
                     b += (c & 255) * ca;
                 }
-                int idx = horizontal ? l * w + i : i * w + l;
-                out[idx] = a == 0 ? 0 : ((int) (a / n) << 24) | ((int) (rr / a) << 16) | ((int) (g / a) << 8) | (int) (b / a);
+                int rem = i - r;
+                if (rem >= 0) {
+                    int c = horizontal ? in[l * w + rem] : in[rem * w + l];
+                    int ca = c >>> 24;
+                    a -= ca;
+                    rr -= ((c >> 16) & 255) * ca;
+                    g -= ((c >> 8) & 255) * ca;
+                    b -= (c & 255) * ca;
+                }
             }
         }
     }

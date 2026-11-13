@@ -4237,6 +4237,12 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         app.heartgram.animations.MediaGlow.beforeImageDraw(canvas, receiver, centerImage, leftImage, rightImage);
     }
 
+    public void hgInvalidate() {
+        if (containerView != null) {
+            containerView.invalidate();
+        }
+    }
+
     public boolean hgIsPlaying() {
         return isPlaying;
     }
