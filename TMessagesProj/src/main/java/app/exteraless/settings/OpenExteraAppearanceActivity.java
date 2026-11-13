@@ -130,6 +130,9 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private int iosChatHeaderRow;
     private boolean iosExpanded;
     private int senderMiniAvatarsRow;
+    private int tilesRow = -1;
+    private int tilesRadiusRow = -1;
+    private int tilesGapRow = -1;
     private int titleTextRow;
     private int chatListDividerRow;
 
@@ -190,6 +193,13 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         forceSnowRow = addRow("forceSnow");
         centerTitleRow = addRow("centerTitle");
         senderMiniAvatarsRow = addRow("senderMiniAvatars");
+        tilesRow = addRow("hgTiles");
+        if (app.heartgram.tiles.ChatTiles.enabled()) {
+            tilesRadiusRow = addRow("hgTilesRadius");
+            tilesGapRow = addRow("hgTilesGap");
+        } else {
+            tilesRadiusRow = tilesGapRow = -1;
+        }
         titleTextRow = addRow("titleText");
         chatListDividerRow = addRow();
 
@@ -385,6 +395,17 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         });
         builder.setNegativeButton(getString(R.string.Cancel), null);
         showDialog(builder.create());
+    }
+
+    /** Плитки изменились: список чатов пересчитывает отступы, при включении/выключении пересобираем строки. */
+    private void hgRefreshTiles(boolean rebuildRows) {
+        org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface);
+        if (rebuildRows) {
+            updateRows();
+        }
+        if (listAdapter != null) {
+            listAdapter.notifyDataSetChanged();
+        }
     }
 
     private CharSequence[] titleTextOptions() {
@@ -612,6 +633,33 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
+        if (position == tilesRow) {
+            boolean on = !app.heartgram.tiles.ChatTiles.enabled();
+            app.heartgram.HeartGramPrefs.prefs().edit().putBoolean("tiles", on).apply();
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(on);
+            }
+            hgRefreshTiles(true);
+            return;
+        } else if (position == tilesRadiusRow || position == tilesGapRow) {
+            final boolean radius = position == tilesRadiusRow;
+            final int[] values = radius ? app.heartgram.tiles.ChatTiles.RADII : app.heartgram.tiles.ChatTiles.GAPS;
+            CharSequence[] names = new CharSequence[values.length];
+            for (int i = 0; i < values.length; i++) {
+                names[i] = values[i] + " dp";
+            }
+            if (getParentActivity() != null) {
+                AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
+                b.setTitle(app.heartgram.HeartGramLabels.tr(radius ? "Скругление плиток" : "Зазор между плитками", radius ? "Tile corner radius" : "Gap between tiles"));
+                b.setItems(names, (d, which) -> {
+                    app.heartgram.HeartGramPrefs.prefs().edit().putInt(radius ? "tiles_radius" : "tiles_gap2", values[which]).apply();
+                    hgRefreshTiles(false);
+                });
+                b.setNegativeButton(getString(R.string.Cancel), null);
+                showDialog(b.create());
+            }
+            return;
+        }
         if (position == iconPacksRow) {
             presentFragment(new IconPacksActivity());
             return;
@@ -1003,7 +1051,11 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     } else if (position == forceSnowRow) {
                         cell.setTextAndValueAndCheck(getString(R.string.OEAppearanceForceSnow), getString(R.string.OEAppearanceForceSnowInfo), NekoConfig.actionBarDecoration.Int() == 1, true, true);
                     } else if (position == senderMiniAvatarsRow) {
-                        cell.setTextAndCheck(getString(R.string.OEAppearanceSenderMiniAvatars), AppearanceConfig.senderMiniAvatars.Bool(), false);
+                        cell.setTextAndCheck(getString(R.string.OEAppearanceSenderMiniAvatars), AppearanceConfig.senderMiniAvatars.Bool(), true);
+                    } else if (position == tilesRow) {
+                        cell.setTextAndValueAndCheck(app.heartgram.HeartGramLabels.tr("Чаты плитками", "Chats as tiles"),
+                                app.heartgram.HeartGramLabels.tr("Карточки с зазором вместо сплошного списка", "Cards with gaps instead of a flat list"),
+                                app.heartgram.tiles.ChatTiles.enabled(), true, true);
                     }
                     break;
                 }
@@ -1070,7 +1122,13 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_SETTINGS: {
                     TextSettingsCell cell = (TextSettingsCell) holder.itemView;
-                    if (position == dividerStyleRow) {
+                    if (position == tilesRadiusRow) {
+                        cell.setTextAndValue(app.heartgram.HeartGramLabels.tr("Скругление плиток", "Tile corner radius"),
+                                app.heartgram.tiles.ChatTiles.radius() + " dp", true);
+                    } else if (position == tilesGapRow) {
+                        cell.setTextAndValue(app.heartgram.HeartGramLabels.tr("Зазор между плитками", "Gap between tiles"),
+                                app.heartgram.tiles.ChatTiles.gap() + " dp", true);
+                    } else if (position == dividerStyleRow) {
                         String[] v = {getString(R.string.OEAppearanceDividerHidden), getString(R.string.OEAppearanceDividerLine), getString(R.string.OEAppearanceDividerSegments)};
                         cell.setTextAndValue(getString(R.string.OEAppearanceDividerStyle), v[clamp(AppearanceConfig.dividerStyle.Int(), v.length)], false);
                     } else if (position == glassOutlineRow) {
@@ -1190,7 +1248,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     || position == md3PlayerRow || position == md3MiniPlayerRow
                     || position == iosNavBarRow || position == iosChatHeaderRow) {
                 return TYPE_ROUND_CHECK;
-            } else if (position == dividerStyleRow || position == glassOutlineRow
+            } else if (position == tilesRadiusRow || position == tilesGapRow || position == dividerStyleRow || position == glassOutlineRow
                     || position == tabTitleStyleRow
                     || position == startupFolderRow
                     || position == tabCounterRow || position == titleTextRow) {
