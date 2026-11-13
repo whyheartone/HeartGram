@@ -95,6 +95,8 @@ jobs:
   apk:
     name: APK (${{ github.event.inputs.native_target || 'arm64-v8a' }})
     needs: [static, workflows]
+    # на каждый пуш APK не собираем (это самая долгая часть): ручной запуск или [apk] в сообщении коммита
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[apk]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
