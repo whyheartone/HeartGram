@@ -97,7 +97,12 @@ public final class HeartGramBadges {
         /** Способы поддержать проект: {название, подробности, ссылка или адрес}. */
         final List<String[]> support = new ArrayList<>();
         String supportNote = "";
-        final List<String[]> extraButtons = new ArrayList<>();
+        /** Кнопки конкретного человека или канала: {текст, ссылка}. */
+        final Map<Long, List<String[]>> personButtons = new HashMap<>();
+        /** Своё название проекта у человека (extras[id].project). */
+        final Map<Long, String> personProject = new HashMap<>();
+        /** Общая кнопка уровня (owner, developer, official, supporter, client): {текст, ссылка}. */
+        final Map<String, String[]> levelButtons = new HashMap<>();
         /** Источники плагинов, которым доверяем: каналы, люди, разработчики HeartGram. */
         final Set<Long> trusted = new HashSet<>();
     }
@@ -226,9 +231,43 @@ public final class HeartGramBadges {
                 .replace("{no}", info.number > 0 ? String.valueOf(info.number) : "");
     }
 
-    /** Кнопки под значком из API (extras.buttons): {текст, ссылка}. */
-    public static List<String[]> extraButtons() {
-        return new ArrayList<>(snapshot.extraButtons);
+    /**
+     * Кнопки окна значка из API: кнопки самого человека (extras[id].buttons или старые buttonText/buttonUrl),
+     * затем общая кнопка его уровня (buttons[уровень]). Скрытые флагом show:false и без ссылки не берутся.
+     */
+    public static List<String[]> buttonsFor(TLObject object, Info info) {
+        List<String[]> out = new ArrayList<>();
+        Snapshot s = snapshot;
+        long id = 0;
+        if (object instanceof TLRPC.User) {
+            id = ((TLRPC.User) object).id;
+        } else if (object instanceof TLRPC.Chat) {
+            id = ((TLRPC.Chat) object).id;
+        }
+        List<String[]> own = id == 0 ? null : s.personButtons.get(normalize(id));
+        if (own != null) {
+            out.addAll(own);
+        }
+        if (info != null) {
+            String level = info.owner ? "owner" : info.kind;
+            String[] b = level == null ? null : s.levelButtons.get(level);
+            if (b != null && !b[0].isEmpty() && !b[1].isEmpty()) {
+                out.add(b);
+            }
+        }
+        return out;
+    }
+
+    private static String[] readButton(JSONObject b, String defaultText) {
+        if (b == null || !b.optBoolean("show", true)) {
+            return null; // кнопку можно скрыть в кабинете флагом show:false
+        }
+        String text = b.optString("text", b.optString("title", b.optString("name", ""))).trim();
+        String url = b.optString("url", b.optString("link", "")).trim();
+        if (text.isEmpty()) {
+            text = defaultText;
+        }
+        return url.isEmpty() || text.isEmpty() ? new String[]{text, ""} : new String[]{text, url};
     }
 
     public static Info infoFor(TLObject object) {
@@ -248,7 +287,9 @@ public final class HeartGramBadges {
         Integer n = s.supporterNo.get(id);
         info.number = n == null ? 0 : n;
         BadgeDTO badge = badgeFor(object);
-        info.project = s.project;
+        Long selfId = object instanceof TLRPC.User ? (Long) ((TLRPC.User) object).id : object instanceof TLRPC.Chat ? (Long) ((TLRPC.Chat) object).id : null;
+        String own = selfId == null ? null : s.personProject.get(normalize(selfId));
+        info.project = own != null ? own : s.project;
         info.text = badge == null ? null : substitute(badge.getText(), object, info);
         return info;
     }
@@ -400,17 +441,49 @@ public final class HeartGramBadges {
         }
         readPeerStrings(s.customEmoji, data.optJSONObject("customEmoji"));
         JSONObject secret = unseal(data.optString("sealed", ""));
-        JSONObject extras = secret.optJSONObject("extras");
-        JSONArray buttons = extras == null ? null : extras.optJSONArray("buttons");
-        for (int i = 0; buttons != null && i < buttons.length(); i++) {
-            JSONObject b = buttons.optJSONObject(i);
-            if (b == null || !b.optBoolean("show", true)) {
-                continue; // кнопку можно скрыть в кабинете флагом show:false
+        // кнопки уровня: buttons[уровень] = {text, url, show?}
+        JSONObject levels = secret.optJSONObject("buttons");
+        if (levels != null) {
+            for (Iterator<String> it = levels.keys(); it.hasNext(); ) {
+                String level = it.next();
+                String[] b = readButton(levels.optJSONObject(level), "");
+                if (b != null && !b[1].isEmpty()) {
+                    s.levelButtons.put(level, b);
+                }
             }
-            String text = b.optString("text", b.optString("title", b.optString("name", "")));
-            String url = b.optString("url", b.optString("link", ""));
-            if (!text.isEmpty() && !url.isEmpty()) {
-                s.extraButtons.add(new String[]{text, url});
+        }
+        // свои данные человека: extras[id] = {project?, buttons?: [{text,url,show?}], buttonText?, buttonUrl?}
+        JSONObject extras = secret.optJSONObject("extras");
+        if (extras != null) {
+            for (Iterator<String> it = extras.keys(); it.hasNext(); ) {
+                String k = it.next();
+                Long id = idOf(k);
+                JSONObject e = extras.optJSONObject(k);
+                if (id == null || e == null) {
+                    continue;
+                }
+                String project = e.optString("project", "").trim();
+                if (!project.isEmpty()) {
+                    s.personProject.put(id, project);
+                }
+                List<String[]> list = new ArrayList<>();
+                JSONArray arr = e.optJSONArray("buttons");
+                for (int i = 0; arr != null && i < arr.length(); i++) {
+                    String[] b = readButton(arr.optJSONObject(i), "");
+                    if (b != null && !b[1].isEmpty()) {
+                        list.add(b);
+                    }
+                }
+                if (list.isEmpty() && arr == null) { // старый формат: одна кнопка
+                    String url = e.optString("buttonUrl", "").trim();
+                    if (!url.isEmpty()) {
+                        String text = e.optString("buttonText", "").trim();
+                        list.add(new String[]{text.isEmpty() ? (project.isEmpty() ? "Открыть" : project) : text, url});
+                    }
+                }
+                if (!list.isEmpty()) {
+                    s.personButtons.put(id, list);
+                }
             }
         }
         JSONObject support = secret.optJSONObject("support");

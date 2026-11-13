@@ -90,7 +90,7 @@ public final class HeartGramBadgeSheet {
             root.addView(bubble, bl);
         }
 
-        for (final String[] extra : HeartGramBadges.extraButtons()) {
+        for (final String[] extra : HeartGramBadges.buttonsFor(peer, info)) {
             TextView eb = text(context, extra[0], 16, true, Theme.getColor(Theme.key_featuredStickers_buttonText));
             eb.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton),
                     Theme.blendOver(Theme.getColor(Theme.key_featuredStickers_addButton), 0x33FFFFFF)));
