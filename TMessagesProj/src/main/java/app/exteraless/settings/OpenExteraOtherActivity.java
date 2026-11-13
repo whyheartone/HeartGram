@@ -66,6 +66,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
 
     private static final int ETG_IMPORT_REQUEST_CODE = 22;
 
+    private int wsProxyRow = -1;
     private int supportHeaderRow = -1;
     private int supportStartRow = -1;
     private int supportDividerRow = -1;
@@ -139,6 +140,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         experimentalHeaderRow = localPremiumRow = experimentalDividerRow = -1;
         unlimitedPinnedDialogsRow = voiceEnhancementsRow = enhancedVideoBitrateRow = sensitiveContentRow = -1;
 
+        wsProxyRow = addRow("wsProxy");
         supportItems = app.heartgram.badges.HeartGramBadges.supportItems();
         supportHeaderRow = supportStartRow = supportDividerRow = -1;
         if (!supportItems.isEmpty()) {
@@ -195,6 +197,10 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected void onItemClick(View view, int position, float x, float y) {
+        if (position == wsProxyRow) {
+            presentFragment(new app.heartgram.settings.HeartGramSettingsActivity());
+            return;
+        }
         if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
             openSupport(supportItems.get(position - supportStartRow));
             return;
@@ -576,7 +582,12 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                 }
                 case TYPE_TEXT: {
                     TextCell cell = (TextCell) holder.itemView;
-                    if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
+                    if (position == wsProxyRow) {
+                        cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
+                        cell.setTextAndValueAndIcon(app.heartgram.HeartGramLabels.tr("Обход блокировок", "Bypass blocking"),
+                                app.heartgram.wsproxy.WsProxyManager.enabled() ? app.heartgram.HeartGramLabels.tr("Включён", "On") : app.heartgram.HeartGramLabels.tr("Выключен", "Off"),
+                                R.drawable.msg_language, true);
+                    } else if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
                         String[] it = supportItems.get(position - supportStartRow);
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndValueAndIcon(it[0], it[1] == null ? "" : it[1], R.drawable.msg_fave, position < supportStartRow + supportItems.size() - 1);
@@ -621,7 +632,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
 
         @Override
         public int getItemViewType(int position) {
-            if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
+            if (position == wsProxyRow || supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
                 return TYPE_TEXT;
             }
             if (position == supportHeaderRow) {

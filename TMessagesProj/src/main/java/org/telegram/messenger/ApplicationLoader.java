@@ -286,6 +286,7 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
         }
 
         SharedConfig.loadConfig();
+        app.heartgram.wsproxy.WsProxyManager.onAppStart();
         NekoConfig.init();
         NaConfig.init();
         OpenExteraConfig.init();

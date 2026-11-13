@@ -420,6 +420,19 @@ public class IntroActivity extends BaseFragment implements NotificationCenter.No
             }
         });
 
+        // HeartGram: обход блокировок можно включить ещё до входа
+        final TextView hgBypass = new TextView(context);
+        hgBypass.setGravity(Gravity.CENTER);
+        hgBypass.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);
+        hgBypass.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueText4));
+        final Runnable hgBypassUpdate = () -> hgBypass.setText(app.heartgram.HeartGramLabels.tr("Обход блокировок: ", "Bypass blocking: ")
+                + (app.heartgram.wsproxy.WsProxyManager.enabled() ? app.heartgram.HeartGramLabels.tr("включён", "on") : app.heartgram.HeartGramLabels.tr("выключен", "off")));
+        hgBypassUpdate.run();
+        hgBypass.setOnClickListener(v -> {
+            app.heartgram.wsproxy.WsProxyManager.setEnabled(!app.heartgram.wsproxy.WsProxyManager.enabled());
+            hgBypassUpdate.run();
+        });
+        frameContainerView.addView(hgBypass, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 30, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 24));
         frameContainerView.addView(themeFrameLayout, LayoutHelper.createFrame(64, 64, Gravity.TOP | Gravity.RIGHT, 0, themeMargin, themeMargin, 0));
 
         fragmentView = scrollView;

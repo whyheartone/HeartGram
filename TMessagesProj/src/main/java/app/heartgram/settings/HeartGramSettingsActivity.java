@@ -6,51 +6,42 @@ import android.view.View;
 
 import androidx.recyclerview.widget.RecyclerView;
 
+import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.R;
-import org.telegram.ui.ActionBar.AlertDialog;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Cells.TextInfoPrivacyCell;
-import org.telegram.ui.Cells.TextSettingsCell;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.IntConsumer;
 
 import app.heartgram.HeartGramLabels;
 import app.heartgram.HeartGramPrefs;
-import app.heartgram.animations.MediaGlow;
-import app.heartgram.animations.MessageAnimations;
-import app.heartgram.animations.TextAnimation;
+import app.heartgram.wsproxy.WsProxy;
+import app.heartgram.wsproxy.WsProxyManager;
 import tw.nekomimi.nekogram.settings.BaseNekoSettingsActivity;
 import tw.nekomimi.nekogram.ui.cells.HeaderCell;
 
 /**
- * Раздел HeartGram: анимация сообщений, анимация набора текста, свечение медиа.
- * Все настройки лежат в SharedPreferences HeartGram, список строк собирается заново при каждом изменении.
+ * Обход блокировок: локальный WebSocket-прокси (tg-ws-proxy, Flowseal, MIT).
+ * Трафик клиента идёт через 127.0.0.1 к шлюзам kws*.web.telegram.org.
  */
 public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
 
-    private enum Kind {HEADER, TOGGLE, CHOICE, INFO}
+    private enum Kind {HEADER, TOGGLE, INFO}
 
     private static final class Row {
         final Kind kind;
         final String key;
         final String title;
-        final String[] options;
-        final int def;
-        final boolean defBool;
-        final IntConsumer onPick;
+        final boolean def;
         final Runnable onToggle;
 
-        Row(Kind kind, String key, String title, String[] options, int def, boolean defBool, IntConsumer onPick, Runnable onToggle) {
+        Row(Kind kind, String key, String title, boolean def, Runnable onToggle) {
             this.kind = kind;
             this.key = key;
             this.title = title;
-            this.options = options;
             this.def = def;
-            this.defBool = defBool;
-            this.onPick = onPick;
             this.onToggle = onToggle;
         }
     }
@@ -65,86 +56,36 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
         return HeartGramLabels.tr(ru, en);
     }
 
-    private static Row header(String title) {
-        return new Row(Kind.HEADER, null, title, null, 0, false, null, null);
-    }
-
-    private static Row info(String text) {
-        return new Row(Kind.INFO, null, text, null, 0, false, null, null);
-    }
-
-    private static Row toggle(String key, String title, boolean def) {
-        return new Row(Kind.TOGGLE, key, title, null, 0, def, null, null);
-    }
-
-    private static Row toggle(String key, String title, boolean def, Runnable onToggle) {
-        return new Row(Kind.TOGGLE, key, title, null, 0, def, null, onToggle);
-    }
-
-    private static Row choice(String key, String title, String[] options, int def) {
-        return new Row(Kind.CHOICE, key, title, options, def, false, null, null);
-    }
-
-    private static Row choice(String key, String title, String[] options, int def, IntConsumer onPick) {
-        return new Row(Kind.CHOICE, key, title, options, def, false, onPick, null);
-    }
-
     private void build() {
         rows.clear();
-        // ── анимация сообщений ──
-        rows.add(header(tr("Анимация сообщений", "Message animation")));
-        rows.add(toggle("am_enabled", tr("Анимация сообщений", "Message animation"), false));
-        if (p().getBoolean("am_enabled", false)) {
-            boolean follow = p().getBoolean("am_follow", true);
-            rows.add(choice("am_preset", tr("Пресет", "Preset"), MessageAnimations.PRESETS, 1));
-            rows.add(choice("am_intensity", tr("Интенсивность", "Intensity"), MessageAnimations.INTENSITIES, 1));
-            rows.add(toggle("am_follow", tr("Пресет задаёт стиль", "Preset sets the style"), true));
-            if (!follow) {
-                rows.add(choice("am_style", tr("Стиль входящих", "Incoming style"), MessageAnimations.STYLES, 4));
-                rows.add(choice("am_speed", tr("Скорость входящих", "Incoming speed"), MessageAnimations.SPEEDS, 1));
-            }
-            rows.add(toggle("am_out_separate", tr("Исходящие отдельно", "Outgoing separately"), true));
-            if (p().getBoolean("am_out_separate", true)) {
-                rows.add(choice("am_out_style", tr("Стиль исходящих", "Outgoing style"), MessageAnimations.STYLES, 1));
-                rows.add(choice("am_out_speed", tr("Скорость исходящих", "Outgoing speed"), MessageAnimations.SPEEDS, 1));
-                rows.add(toggle("am_out_mirror", tr("Исходящие зеркально", "Mirror outgoing"), true));
-            }
-            rows.add(toggle("am_dates", tr("Анимировать даты", "Animate dates"), true));
-            if (p().getBoolean("am_dates", true) && !follow) {
-                rows.add(choice("am_date_style", tr("Стиль дат", "Date style"), MessageAnimations.DATE_STYLES, 0));
-                rows.add(choice("am_date_size", tr("Размер отскока", "Bounce size"), MessageAnimations.DATE_SIZES, 1));
-                rows.add(choice("am_date_speed", tr("Скорость дат", "Date speed"), MessageAnimations.DATE_SPEEDS, 1));
-            }
-            rows.add(toggle("am_replay", tr("Повторять при прокрутке назад", "Replay when scrolling back"), false));
-            rows.add(toggle("am_comfort", tr("Меньше движения", "Reduce motion"), false));
-            rows.add(toggle("am_random", tr("Свой стиль в каждом чате", "A different style in each chat"), false));
-            if (p().getBoolean("am_random", false)) {
-                rows.add(choice("am_random_mode", tr("Что выбирать случайно", "What to randomize"), MessageAnimations.RANDOM_MODES, 1));
-            }
-        }
-        rows.add(info(tr("Сообщения появляются выбранным стилем, когда попадают на экран. Без «Повторять при прокрутке назад» уже показанные сообщения второй раз не анимируются.",
-                "Messages appear with the chosen style when they come into view. Without “Replay when scrolling back”, messages that were already shown are not animated again.")));
+        rows.add(new Row(Kind.HEADER, null, tr("Обход блокировок", "Bypass blocking"), false, null));
+        rows.add(new Row(Kind.TOGGLE, "wsproxy_enabled", tr("Обход блокировок (WS-прокси)", "Bypass blocking (WS proxy)"), false, () -> {
+            WsProxyManager.setEnabled(p().getBoolean("wsproxy_enabled", false));
+            AndroidUtilities.runOnUIThread(this::rebuild, 300);
+        }));
+        rows.add(new Row(Kind.INFO, null, tr(
+                "Трафик Telegram идёт через встроенный локальный прокси и дальше по WebSocket на серверы Telegram. "
+                        + "Помогает, когда Telegram блокируют. Сообщения по-прежнему шифруются, прокси их не читает. "
+                        + "Основа: tg-ws-proxy (Flowseal, MIT).",
+                "Telegram traffic goes through a built-in local proxy and then over WebSocket to Telegram servers. "
+                        + "Helps when Telegram is blocked. Messages stay encrypted, the proxy cannot read them. "
+                        + "Based on tg-ws-proxy (Flowseal, MIT)."), false, null));
+        rows.add(new Row(Kind.TOGGLE, "wsproxy_fronting", tr("Маскировка соединения", "Connection masking"), true, null));
+        rows.add(new Row(Kind.TOGGLE, "wsproxy_tcp", tr("Запасной прямой путь (TCP)", "Direct fallback (TCP)"), true, null));
+        rows.add(new Row(Kind.INFO, null, status(), false, null));
+    }
 
-        // ── анимация текста ──
-        rows.add(header(tr("Анимация текста", "Typing animation")));
-        rows.add(toggle("ta_enabled", tr("Анимация набора текста", "Typing animation"), false));
-        if (p().getBoolean("ta_enabled", false)) {
-            rows.add(choice("ta_preset", tr("Пресет", "Preset"), TextAnimation.PRESETS, 1, TextAnimation::applyPreset));
-            rows.add(choice("ta_character", tr("Характер появления", "Appearance"), TextAnimation.CHARACTERS, 3));
-            rows.add(choice("ta_duration", tr("Длительность", "Duration"), TextAnimation.DURATIONS, 1));
-            rows.add(toggle("ta_blur", tr("Из размытия", "From blur"), true));
-            rows.add(toggle("ta_delete", tr("Анимация стирания", "Deletion animation"), true));
+    private static String status() {
+        if (!WsProxyManager.enabled()) {
+            return tr("Выключено.", "Off.");
         }
-        rows.add(info(tr("Каждая новая буква в поле ввода появляется плавно.", "Each new letter in the input field appears smoothly.")));
-
-        // ── свечение медиа ──
-        rows.add(header(tr("Свечение медиа", "Media glow")));
-        rows.add(toggle("media_glow", tr("Свечение медиа", "Media glow"), false, MediaGlow::refreshEnabled));
-        if (p().getBoolean("media_glow", false)) {
-            rows.add(choice("media_glow_size", tr("Размер свечения", "Glow size"), MediaGlow.SIZES, 2));
-            rows.add(toggle("media_glow_video", tr("Свечение под видео и GIF", "Glow under video and GIF"), true));
-        }
-        rows.add(info(tr("За фото в просмотре появляется мягкий ореол его цветов.", "A soft halo of the photo's colors appears behind it in the viewer.")));
+        return tr("Работает на 127.0.0.1:", "Running on 127.0.0.1:") + WsProxyManager.port()
+                + (WsProxy.isRunning() ? "" : tr(" (остановлен)", " (stopped)"))
+                + "\n" + tr("Подключений: ", "Connections: ") + WsProxy.connectionsTotal.get()
+                + " (WS " + WsProxy.connectionsWs.get() + ", TCP " + WsProxy.connectionsTcp.get()
+                + tr(", ошибок ", ", failed ") + WsProxy.connectionsFailed.get() + ")"
+                + "\n↑ " + AndroidUtilities.formatFileSize(WsProxy.bytesUp.get())
+                + "  ↓ " + AndroidUtilities.formatFileSize(WsProxy.bytesDown.get());
     }
 
     @Override
@@ -162,12 +103,12 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
 
     @Override
     protected String getActionBarTitle() {
-        return "HeartGram";
+        return tr("Обход блокировок", "Bypass blocking");
     }
 
     @Override
     protected String getKey() {
-        return "heartgram_settings";
+        return "heartgram_wsproxy";
     }
 
     @Override
@@ -189,7 +130,7 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
         }
         final Row row = rows.get(position);
         if (row.kind == Kind.TOGGLE) {
-            boolean value = !p().getBoolean(row.key, row.defBool);
+            boolean value = !p().getBoolean(row.key, row.def);
             p().edit().putBoolean(row.key, value).apply();
             if (view instanceof TextCheckCell) {
                 ((TextCheckCell) view).setChecked(value);
@@ -197,25 +138,11 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
             if (row.onToggle != null) {
                 row.onToggle.run();
             }
-            rebuild();
-        } else if (row.kind == Kind.CHOICE && getParentActivity() != null) {
-            new AlertDialog.Builder(getParentActivity())
-                    .setTitle(row.title)
-                    .setItems(row.options, (d, which) -> {
-                        p().edit().putInt(row.key, which).apply();
-                        if (row.onPick != null) {
-                            row.onPick.accept(which);
-                        }
-                        rebuild();
-                    })
-                    .setNegativeButton(tr("Отмена", "Cancel"), null)
-                    .show();
         }
     }
 
     private boolean isLast(int position) {
-        // разделитель под строкой нужен, если следом идёт ещё строка того же блока
-        return position + 1 >= rows.size() || rows.get(position + 1).kind == Kind.HEADER || rows.get(position + 1).kind == Kind.INFO;
+        return position + 1 >= rows.size() || rows.get(position + 1).kind != Kind.TOGGLE;
     }
 
     private class ListAdapter extends BaseListAdapter {
@@ -235,13 +162,8 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
                     ((HeaderCell) holder.itemView).setText(row.title);
                     break;
                 case TYPE_CHECK:
-                    ((TextCheckCell) holder.itemView).setTextAndCheck(row.title, p().getBoolean(row.key, row.defBool), !isLast(position));
+                    ((TextCheckCell) holder.itemView).setTextAndCheck(row.title, p().getBoolean(row.key, row.def), !isLast(position));
                     break;
-                case TYPE_SETTINGS: {
-                    int value = Math.max(0, Math.min(p().getInt(row.key, row.def), row.options.length - 1));
-                    ((TextSettingsCell) holder.itemView).setTextAndValue(row.title, row.options[value], !isLast(position));
-                    break;
-                }
                 case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     cell.setText(row.title);
@@ -261,8 +183,6 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
             switch (rows.get(position).kind) {
                 case HEADER:
                     return TYPE_HEADER;
-                case CHOICE:
-                    return TYPE_SETTINGS;
                 case INFO:
                     return TYPE_INFO_PRIVACY;
                 default:
