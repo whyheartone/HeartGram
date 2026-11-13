@@ -1210,7 +1210,23 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             rightDrawableIsScamOrVerified = false;
             rightDrawable2ContentDescription = null;
         }
-        if (premium || DialogObject.getEmojiStatusDocumentId(emojiStatus) != 0) {
+        final org.telegram.tgnet.TLObject hgPeer = parentFragment == null ? null : parentFragment.getCurrentUser() != null
+                ? parentFragment.getCurrentUser() : parentFragment.getCurrentChat();
+        final long hgDocument = !scam && !fake && !verified && !premium && DialogObject.getEmojiStatusDocumentId(emojiStatus) == 0
+                ? app.heartgram.badges.HeartGramBadges.documentFor(hgPeer) : 0;
+        if (hgDocument != 0) {
+            // значок HeartGram там, где был бы эмодзи-статус
+            emojiStatusDrawable.set(hgDocument, animated);
+            emojiStatusDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
+            titleTextView.setRightDrawable(emojiStatusDrawable);
+            titleTextView.setRightDrawableOnClick(v -> app.heartgram.badges.HeartGramBadges.openBadge(parentFragment, hgPeer));
+            rightDrawableIsScamOrVerified = false;
+            rightDrawableContentDescription = "HeartGram";
+            if (isCentered()) {
+                titleTextView.setRightDrawable2(null);
+            }
+        } else if (premium || DialogObject.getEmojiStatusDocumentId(emojiStatus) != 0) {
+            titleTextView.setRightDrawableOnClick(null);
             if (titleTextView.getRightDrawable() instanceof AnimatedEmojiDrawable.WrapSizeDrawable &&
                 ((AnimatedEmojiDrawable.WrapSizeDrawable) titleTextView.getRightDrawable()).getDrawable() instanceof AnimatedEmojiDrawable) {
                 ((AnimatedEmojiDrawable) ((AnimatedEmojiDrawable.WrapSizeDrawable) titleTextView.getRightDrawable()).getDrawable()).removeView(titleTextView);
@@ -1233,6 +1249,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             }
         } else {
             titleTextView.setRightDrawable(null);
+            titleTextView.setRightDrawableOnClick(null);
             rightDrawableContentDescription = null;
         }
         checkActionBar(animated);

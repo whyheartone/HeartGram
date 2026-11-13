@@ -2294,7 +2294,10 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         } else if (event.getAction() == MotionEvent.ACTION_UP || event.getAction() == MotionEvent.ACTION_CANCEL) {
             if (event.getAction() == MotionEvent.ACTION_UP && nameStatusPressed) {
                 if (delegate != null) {
-                    if (currentUser != null) {
+                    if (currentUser != null && hgBadgeStatus) {
+                        app.heartgram.badges.HeartGramBadges.openBadge(org.telegram.ui.LaunchActivity.getSafeLastFragment(), currentUser);
+                        invalidateOutbounds();
+                    } else if (currentUser != null) {
                         TLRPC.Document document = null;
                         if (currentNameStatusDrawable.getDrawable() instanceof AnimatedEmojiDrawable) {
                             document = ((AnimatedEmojiDrawable) currentNameStatusDrawable.getDrawable()).getDocument();
@@ -17505,7 +17508,23 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return "DELETED";
     }
 
+    /** Значок HeartGram вместо звёздочки премиума, если у человека нет эмодзи-статуса. */
     private Object getAuthorStatus() {
+        hgBadgeStatus = false;
+        Object status = getAuthorStatusBase();
+        if ((status == null || status instanceof Drawable) && currentUser != null) {
+            long document = app.heartgram.badges.HeartGramBadges.documentFor(currentUser);
+            if (document != 0) {
+                hgBadgeStatus = true;
+                return document;
+            }
+        }
+        return status;
+    }
+
+    private boolean hgBadgeStatus;
+
+    private Object getAuthorStatusBase() {
         if (!NaConfig.INSTANCE.getPremiumItemEmojiStatus().Bool()) {
             return null;
         }

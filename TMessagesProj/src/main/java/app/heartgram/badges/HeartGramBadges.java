@@ -18,7 +18,9 @@ import org.telegram.messenger.MessagesController;
 import org.telegram.messenger.NotificationCenter;
 import org.telegram.messenger.UserConfig;
 import org.telegram.tgnet.ConnectionsManager;
+import org.telegram.tgnet.TLObject;
 import org.telegram.tgnet.TLRPC;
+import org.telegram.ui.ActionBar.BaseFragment;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -95,6 +97,44 @@ public final class HeartGramBadges {
         }
         started = true;
         executor.scheduleWithFixedDelay(HeartGramBadges::refreshSafely, 3, REFRESH_MINUTES * 60, TimeUnit.SECONDS);
+    }
+
+    /** Значок для человека или канала; проверенным (галочка), мошенникам и поддельным второй значок не рисуем. */
+    public static BadgeDTO badgeFor(TLObject object) {
+        if (object instanceof TLRPC.User) {
+            TLRPC.User user = (TLRPC.User) object;
+            if (user.verified || user.scam || user.fake) {
+                return null;
+            }
+        } else if (object instanceof TLRPC.Chat) {
+            TLRPC.Chat chat = (TLRPC.Chat) object;
+            if (chat.verified || chat.scam || chat.fake) {
+                return null;
+            }
+        } else {
+            return null;
+        }
+        return BadgesController.INSTANCE.getBadge(object);
+    }
+
+    /** Id документа эмодзи значка или 0. */
+    public static long documentFor(TLObject object) {
+        BadgeDTO badge = badgeFor(object);
+        return badge == null ? 0 : badge.getDocumentId();
+    }
+
+    /** Нажатие на значок: пока всплывающая подпись, окно значка будет следующим этапом. */
+    public static void openBadge(BaseFragment fragment, TLObject object) {
+        BadgeDTO badge = badgeFor(object);
+        if (badge == null || fragment == null) {
+            return;
+        }
+        int account = UserConfig.selectedAccount;
+        if (object instanceof TLRPC.User) {
+            BadgesController.INSTANCE.showBadgeBulletin(fragment, badge, (TLRPC.User) object, fragment.getResourceProvider(), account);
+        } else if (object instanceof TLRPC.Chat) {
+            BadgesController.INSTANCE.showBadgeBulletin(fragment, badge, (TLRPC.Chat) object, fragment.getResourceProvider(), account);
+        }
     }
 
     /** Номер значка поддержавшего (1, 2, …) или 0, если номера нет. */
