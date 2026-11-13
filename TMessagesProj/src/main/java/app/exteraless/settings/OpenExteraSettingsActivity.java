@@ -38,6 +38,7 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
     private int chatsRow;
     private int pluginsRow;
     private int otherRow;
+    private int heartgramRow;
     private int categoriesDividerRow;
 
     private int linksHeaderRow;
@@ -62,6 +63,7 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
         chatsRow = addRow("chats");
         pluginsRow = addRow("plugins");
         otherRow = addRow("other");
+        heartgramRow = addRow("heartgram");
         categoriesDividerRow = addRow();
 
         linksHeaderRow = addRow("linksHeader");
@@ -190,6 +192,8 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
             presentFragment(new app.exteraless.plugins.ui.PluginsActivity());
         } else if (position == otherRow) {
             presentFragment(new OpenExteraOtherActivity());
+        } else if (position == heartgramRow) {
+            presentFragment(new app.heartgram.settings.HeartGramSettingsActivity());
         } else if (position == channelRow) {
             getMessagesController().openByUserName("heartgramclient", this, 1);
         } else if (position == sourceRow) {
@@ -247,7 +251,9 @@ public class OpenExteraSettingsActivity extends BaseNekoSettingsActivity {
                     } else if (position == pluginsRow) {
                         cell.setTextAndIcon(getString(R.string.OpenExteraPlugins), R.drawable.msg_plugins, true);
                     } else if (position == otherRow) {
-                        cell.setTextAndIcon(getString(R.string.OpenExteraOther), R.drawable.msg_fave, false);
+                        cell.setTextAndIcon(getString(R.string.OpenExteraOther), R.drawable.msg_fave, true);
+                    } else if (position == heartgramRow) {
+                        cell.setTextAndIcon("HeartGram", R.drawable.msg_fave, false);
                     } else if (position == channelRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.ProfileChannel),
                                 "@heartgramclient", R.drawable.msg_channel, true);

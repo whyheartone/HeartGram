@@ -6690,6 +6690,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         };
+        app.heartgram.animations.TypingAnimation.attach(messageEditText);
         // Вместо голого InputConnectionCompat поле получает
         // полноценный приёмник контента: клавиатура, «Вставить» и drag&drop идут одной дорогой
         if (parentFragment != null && !isEditingBusinessLink() && !isLiveComment) {

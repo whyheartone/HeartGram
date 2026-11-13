@@ -21383,6 +21383,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (photoViewerWebView == null || !photoViewerWebView.isLoaded()) {
             if (!centerImageTransformLocked) centerImageTransform.preTranslate(centerImage.getImageX(), centerImage.getImageY());
             stickerMakerView.drawOutline(canvas, false, containerView, switchingToMode != -1);
+            app.heartgram.animations.MediaGlow.draw(canvas, centerImage, alpha);
             centerImage.setAlpha(alpha);
             centerImage.draw(canvas);
             stickerMakerView.drawOutline(canvas, true, containerView, switchingToMode != -1);
