@@ -131,7 +131,33 @@ public final class HeartGramBadges {
             return;
         }
         started = true;
+        executor.execute(HeartGramBadges::loadCache); // значки видны сразу, ещё до первой загрузки и без сети
         executor.scheduleWithFixedDelay(HeartGramBadges::refreshSafely, 3, REFRESH_MINUTES * 60, TimeUnit.SECONDS);
+    }
+
+    private static final String CACHE_KEY = "badge_list_cache", CACHE_ETAG = "badge_list_etag";
+
+    private static void saveCache(String body, String tag) {
+        try {
+            app.heartgram.HeartGramPrefs.prefs().edit().putString(CACHE_KEY, body).putString(CACHE_ETAG, tag == null ? "" : tag).apply();
+        } catch (Throwable t) {
+            Log.w(TAG, "кеш списка: " + t);
+        }
+    }
+
+    private static void loadCache() {
+        try {
+            String body = app.heartgram.HeartGramPrefs.prefs().getString(CACHE_KEY, null);
+            if (TextUtils.isEmpty(body) || snapshot != Snapshot.EMPTY) {
+                return;
+            }
+            snapshot = parse(new JSONObject(body));
+            etag = app.heartgram.HeartGramPrefs.prefs().getString(CACHE_ETAG, "");
+            rebuild();
+            Log.d(TAG, "список значков из кеша");
+        } catch (Throwable t) {
+            Log.w(TAG, "кеш списка не прочитан: " + t);
+        }
     }
 
     /** Значок для человека или канала; проверенным (галочка), мошенникам и поддельным второй значок не рисуем. */
@@ -399,8 +425,10 @@ public final class HeartGramBadges {
                 }
             }
             String tag = c.getHeaderField("ETag");
-            snapshot = parse(new JSONObject(buf.toString("UTF-8")));
+            String body = buf.toString("UTF-8");
+            snapshot = parse(new JSONObject(body));
             etag = tag == null ? "" : tag;
+            saveCache(body, etag);
         } finally {
             c.disconnect();
         }
@@ -462,9 +490,9 @@ public final class HeartGramBadges {
                 if (id == null || e == null) {
                     continue;
                 }
-                String project = e.optString("project", "").trim();
-                if (!project.isEmpty()) {
-                    s.personProject.put(id, project);
+                String personName = e.optString("project", "").trim();
+                if (!personName.isEmpty()) {
+                    s.personProject.put(id, personName);
                 }
                 List<String[]> list = new ArrayList<>();
                 JSONArray arr = e.optJSONArray("buttons");
@@ -478,7 +506,7 @@ public final class HeartGramBadges {
                     String url = e.optString("buttonUrl", "").trim();
                     if (!url.isEmpty()) {
                         String text = e.optString("buttonText", "").trim();
-                        list.add(new String[]{text.isEmpty() ? (project.isEmpty() ? "Открыть" : project) : text, url});
+                        list.add(new String[]{text.isEmpty() ? (personName.isEmpty() ? "Открыть" : personName) : text, url});
                     }
                 }
                 if (!list.isEmpty()) {
