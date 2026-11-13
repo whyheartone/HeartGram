@@ -15,7 +15,7 @@ public final class HeartGramPrefs {
     private HeartGramPrefs() {
     }
 
-    private static SharedPreferences prefs() {
+    public static SharedPreferences prefs() {
         return ApplicationLoader.applicationContext.getSharedPreferences(FILE, Context.MODE_PRIVATE);
     }
 

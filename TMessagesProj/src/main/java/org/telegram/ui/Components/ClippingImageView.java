@@ -162,6 +162,7 @@ public class ClippingImageView extends View {
     }
 
     public void onDraw(Canvas canvas) {
+        app.heartgram.animations.MediaGlow.beforeClippingDraw(canvas, this, getBitmap(), drawRect);
         if (getVisibility() != VISIBLE) {
             return;
         }

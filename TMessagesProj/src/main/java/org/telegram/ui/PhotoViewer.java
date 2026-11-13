@@ -4232,6 +4232,19 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         return Instance != null;
     }
 
+    // HeartGram: свечение медиа
+    private void hgGlow(Canvas canvas, ImageReceiver receiver) {
+        app.heartgram.animations.MediaGlow.beforeImageDraw(canvas, receiver, centerImage, leftImage, rightImage);
+    }
+
+    public boolean hgIsPlaying() {
+        return isPlaying;
+    }
+
+    public boolean hgIsAnimatingView(View view) {
+        return view == animatingImageView;
+    }
+
     public PhotoViewer() {
         blackPaint.setColor(0xff000000);
         videoFrameBitmapPaint.setColor(0xffffffff);
@@ -20780,6 +20793,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                 sideImage.setAlpha(alpha);
                 sideImage.setImageCoords(-width / 2, -height / 2, width, height);
+                hgGlow(canvas, sideImage);
                 sideImage.draw(canvas);
 
                 if (rightPaintingOverlay != null && rightPaintingOverlay.getVisibility() == View.VISIBLE) {
@@ -20919,6 +20933,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     height *= scale;
                     centerImage.setImageCoords(-width / 2, -height / 2, width, height);
                     if (isCurrentVideo && (!centerImageIsLivePhoto || isUnalivePhoto() && sendPhotoType == SELECT_TYPE_AVATAR)) {
+                        hgGlow(canvas, centerImage);
                         centerImage.draw(canvas);
                         centerImageTransformLocked = true;
                     } else {
@@ -21109,6 +21124,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                 }
                 updatePipVideoRect(containerWidth / 2f + getAdditionX(currentEditMode) + translateX, containerHeight / 2f + getAdditionY(currentEditMode) + currentTranslationY + (currentEditMode != EDIT_MODE_PAINT ? currentPanTranslationY : 0), width * (currentScale - scaleDiff), height * (currentScale - scaleDiff));
                 if (!usedSurfaceView || firstFrameRendered) {
+                    app.heartgram.animations.MediaGlow.video(aspectRatioFrameLayout, canvas);
                     aspectRatioFrameLayout.draw(canvas);
                     if (framesRewinder != null) {
                         framesRewinder.draw(canvas, aspectRatioFrameLayout.getWidth(), aspectRatioFrameLayout.getHeight());
@@ -21212,6 +21228,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
 
                 sideImage.setAlpha(1.0f);
                 sideImage.setImageCoords(-width / 2, -height / 2, width, height);
+                hgGlow(canvas, sideImage);
                 sideImage.draw(canvas);
 
                 if (leftPaintingOverlay != null && leftPaintingOverlay.getVisibility() == View.VISIBLE) {
@@ -21383,7 +21400,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
         if (photoViewerWebView == null || !photoViewerWebView.isLoaded()) {
             if (!centerImageTransformLocked) centerImageTransform.preTranslate(centerImage.getImageX(), centerImage.getImageY());
             stickerMakerView.drawOutline(canvas, false, containerView, switchingToMode != -1);
-            app.heartgram.animations.MediaGlow.draw(canvas, centerImage, alpha);
+            hgGlow(canvas, centerImage);
             centerImage.setAlpha(alpha);
             centerImage.draw(canvas);
             stickerMakerView.drawOutline(canvas, true, containerView, switchingToMode != -1);

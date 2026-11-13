@@ -1264,6 +1264,7 @@ public class ChatActionCell extends BaseCell implements DownloadController.FileD
     @Override
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
+        app.heartgram.animations.MessageAnimations.onAttachDate(this);
         attachedToWindow = true;
         imageReceiver.onAttachedToWindow();
         setStarsPaused(false);

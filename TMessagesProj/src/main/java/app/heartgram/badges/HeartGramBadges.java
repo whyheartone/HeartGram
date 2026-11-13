@@ -555,7 +555,7 @@ public final class HeartGramBadges {
         AndroidUtilities.runOnUIThread(() -> {
             try {
                 NotificationCenter.getInstance(UserConfig.selectedAccount)
-                        .postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_NAME);
+                        .postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
             } catch (Throwable t) {
                 Log.w(TAG, "перерисовка: " + t.getClass().getSimpleName());
             }
