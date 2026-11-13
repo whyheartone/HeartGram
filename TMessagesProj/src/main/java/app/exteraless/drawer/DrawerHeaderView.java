@@ -384,6 +384,7 @@ public class DrawerHeaderView extends FrameLayout {
     protected void onAttachedToWindow() {
         super.onAttachedToWindow();
         premiumStatusDrawable.attach();
+        hgBadgeDrawable.attach();
         if (themeToggleView.isPlaying() || DialogsActivity.switchingTheme) {
             return;
         }
@@ -394,6 +395,7 @@ public class DrawerHeaderView extends FrameLayout {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         premiumStatusDrawable.detach();
+        hgBadgeDrawable.detach();
     }
 
     // ---- переключатель темы ----

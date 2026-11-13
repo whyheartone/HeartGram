@@ -1655,7 +1655,20 @@ public class FilterTabsView extends FrameLayout {
                 canvas.drawRoundRect(hgRect, rad, rad, hgPaint);
             }
         }
-        hgRect.set(sl + gap, top, sr - gap, top + h);
+        // выбранная кнопка: ширина вкладки под ней, позиция следует анимации селектора.
+        // Так заливка точно ложится на серую кнопку и из-под неё ничего не торчит.
+        final float cx = (sl + sr) / 2f;
+        float width = sr - sl;
+        for (int i = 0; i < listView.getChildCount(); i++) {
+            View c = listView.getChildAt(i);
+            float l = listView.getX() + c.getX();
+            if (cx >= l && cx <= l + c.getWidth()) {
+                width = c.getWidth();
+            }
+        }
+        hgRect.set(cx - width / 2f + gap, top, cx + width / 2f - gap, top + h);
+        hgPaint.setColor(ColorUtils.setAlphaComponent(text, 18));
+        canvas.drawRoundRect(hgRect, rad, rad, hgPaint);
         hgPaint.setColor(ColorUtils.setAlphaComponent(hgAccent(), 70));
         canvas.drawRoundRect(hgRect, rad, rad, hgPaint);
         hgDrawPressed(canvas, height);

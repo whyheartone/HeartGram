@@ -622,12 +622,14 @@ public class DrawerAccountPickerView extends FrameLayout {
         protected void onAttachedToWindow() {
             super.onAttachedToWindow();
             premiumStatusDrawable.attach();
+            hgBadgeDrawable.attach();
         }
 
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
             premiumStatusDrawable.detach();
+            hgBadgeDrawable.detach();
         }
     }
 
