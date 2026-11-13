@@ -88,7 +88,7 @@ def main_icon():
         save(logo, "exteraless_icon.png", f"drawable-{dens}")
     heart_vector("exteraless_icon_monochrome")
     # плитка пункта настроек и меню: белое сердце нужного размера
-    heart_vector("exteraless_icon_tile", size_dp=72, scale=1.5)
+    heart_vector("exteraless_icon_tile", size_dp=72, scale=1.0)
     adaptive("ic_launcher_exteraless", "exteraless_icon_art", "exteraless_icon_foreground", "exteraless_icon_monochrome")
     write(os.path.join(RES, "drawable", "exteraless_icon_blank.xml"), f"""<?xml version="1.0" encoding="utf-8"?>
 <vector {NS} android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
