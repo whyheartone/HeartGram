@@ -114,8 +114,11 @@ final class HeartGramApi {
                     }
                 }
             }
+            android.util.Log.d("HeartGramApi", method + " " + path + " -> " + code + " (" + buf.size() + " байт)"
+                    + (code >= 400 ? ": " + buf.toString("UTF-8") : ""));
             return new Response(code, buf.toString("UTF-8"));
         } catch (Throwable t) {
+            android.util.Log.w("HeartGramApi", method + " " + path + " не удалось: " + t);
             return new Response(0, t.getClass().getSimpleName());
         } finally {
             if (c != null) {

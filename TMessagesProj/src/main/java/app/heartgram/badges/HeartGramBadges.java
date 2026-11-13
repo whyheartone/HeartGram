@@ -97,6 +97,7 @@ public final class HeartGramBadges {
         /** Способы поддержать проект: {название, подробности, ссылка или адрес}. */
         final List<String[]> support = new ArrayList<>();
         String supportNote = "";
+        final List<String[]> extraButtons = new ArrayList<>();
         /** Источники плагинов, которым доверяем: каналы, люди, разработчики HeartGram. */
         final Set<Long> trusted = new HashSet<>();
     }
@@ -198,6 +199,28 @@ public final class HeartGramBadges {
         public String project;
     }
 
+    /** {name}, {project} и {number} в тексте из API заменяются на имя владельца значка, проект и номер. */
+    private static String substitute(String text, TLObject object, Info info) {
+        if (text == null) {
+            return null;
+        }
+        String name = "";
+        if (object instanceof TLRPC.User) {
+            name = org.telegram.messenger.UserObject.getUserName((TLRPC.User) object);
+        } else if (object instanceof TLRPC.Chat) {
+            name = ((TLRPC.Chat) object).title;
+        }
+        return text.replace("{name}", name == null ? "" : name)
+                .replace("{project}", info.project == null ? "" : info.project)
+                .replace("{number}", info.number > 0 ? String.valueOf(info.number) : "")
+                .replace("{no}", info.number > 0 ? String.valueOf(info.number) : "");
+    }
+
+    /** Кнопки под значком из API (extras.buttons): {текст, ссылка}. */
+    public static List<String[]> extraButtons() {
+        return new ArrayList<>(snapshot.extraButtons);
+    }
+
     public static Info infoFor(TLObject object) {
         long id;
         if (object instanceof TLRPC.User) {
@@ -215,8 +238,8 @@ public final class HeartGramBadges {
         Integer n = s.supporterNo.get(id);
         info.number = n == null ? 0 : n;
         BadgeDTO badge = badgeFor(object);
-        info.text = badge == null ? null : badge.getText();
         info.project = s.project;
+        info.text = badge == null ? null : substitute(badge.getText(), object, info);
         return info;
     }
 
@@ -227,6 +250,7 @@ public final class HeartGramBadges {
     public static boolean openBadge(final BaseFragment fragment, final TLObject object) {
         BadgeDTO badge = badgeFor(object);
         Info info = infoFor(object);
+        Log.d(TAG, "нажатие на значок: badge=" + (badge != null) + " kind=" + (info == null ? "-" : info.kind));
         if (badge == null || info == null || fragment == null || fragment.getParentActivity() == null) {
             return false;
         }
@@ -238,6 +262,11 @@ public final class HeartGramBadges {
         CharSequence text = TextUtils.isEmpty(info.text)
                 ? HeartGramBadgeSheet.title(info)
                 : HeartGramMarkup.render(fragment.getParentActivity(), info.text);
+        if ("official".equals(info.kind)) {
+            // официальный ресурс: только подпись, без «Подробнее»
+            BulletinFactory.of(fragment).createEmojiBulletin(document, text).show();
+            return true;
+        }
         BulletinFactory.of(fragment)
                 .createEmojiBulletin(document, text,
                         HeartGramLabels.tr("Подробнее", "Details"), () -> HeartGramBadgeSheet.show(fragment, object))
@@ -344,6 +373,19 @@ public final class HeartGramBadges {
         }
         readPeerStrings(s.customEmoji, data.optJSONObject("customEmoji"));
         JSONObject secret = unseal(data.optString("sealed", ""));
+        JSONObject extras = secret.optJSONObject("extras");
+        JSONArray buttons = extras == null ? null : extras.optJSONArray("buttons");
+        for (int i = 0; buttons != null && i < buttons.length(); i++) {
+            JSONObject b = buttons.optJSONObject(i);
+            if (b == null) {
+                continue;
+            }
+            String text = b.optString("text", b.optString("title", b.optString("name", "")));
+            String url = b.optString("url", b.optString("link", ""));
+            if (!text.isEmpty() && !url.isEmpty()) {
+                s.extraButtons.add(new String[]{text, url});
+            }
+        }
         JSONObject support = secret.optJSONObject("support");
         if (support != null) {
             s.supportNote = support.optString("note", "");
@@ -585,6 +627,10 @@ public final class HeartGramBadges {
             try {
                 NotificationCenter.getInstance(UserConfig.selectedAccount)
                         .postNotificationName(NotificationCenter.updateInterfaces, MessagesController.UPDATE_MASK_ALL);
+                // список чатов пересобирает ячейки только по этому событию: без него значок появлялся после входа в чат
+                NotificationCenter.getInstance(UserConfig.selectedAccount).postNotificationName(NotificationCenter.dialogsNeedReload, true);
+                Log.d(TAG, "перерисовка: clients=" + snapshot.clients.size() + " dev=" + snapshot.developers.size()
+                        + " official=" + snapshot.official.size() + " supporters=" + snapshot.supporters.size());
             } catch (Throwable t) {
                 Log.w(TAG, "перерисовка: " + t.getClass().getSimpleName());
             }

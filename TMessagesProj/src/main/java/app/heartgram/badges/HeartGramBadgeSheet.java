@@ -40,6 +40,7 @@ public final class HeartGramBadgeSheet {
     }
 
     public static boolean show(final BaseFragment fragment, TLObject peer) {
+        android.util.Log.d("HeartGramSheet", "show " + (peer == null ? "null" : peer.getClass().getSimpleName()));
         Activity activity = fragment == null ? null : fragment.getParentActivity();
         HeartGramBadges.Info info = HeartGramBadges.infoFor(peer);
         long document = HeartGramBadges.documentFor(peer);
@@ -87,10 +88,20 @@ public final class HeartGramBadgeSheet {
             root.addView(bubble, bl);
         }
 
-        final boolean channelButton = !"client".equals(info.kind);
-        TextView button = text(context, channelButton
-                ? LocaleController.formatString(R.string.HGBadgeChannel, info.project)
-                : LocaleController.getString(R.string.HGBadgeOk), 16, true, Theme.getColor(Theme.key_featuredStickers_buttonText));
+        for (final String[] extra : HeartGramBadges.extraButtons()) {
+            TextView eb = text(context, extra[0], 16, true, Theme.getColor(Theme.key_featuredStickers_buttonText));
+            eb.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton),
+                    Theme.blendOver(Theme.getColor(Theme.key_featuredStickers_addButton), 0x33FFFFFF)));
+            eb.setOnClickListener(v -> {
+                sheet.dismiss();
+                org.telegram.messenger.browser.Browser.openUrl(context, extra[1]);
+            });
+            LinearLayout.LayoutParams el = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(48));
+            el.topMargin = dp(12);
+            root.addView(eb, el);
+        }
+        final boolean channelButton = false;
+        TextView button = text(context, LocaleController.getString(R.string.HGBadgeOk), 16, true, Theme.getColor(Theme.key_featuredStickers_buttonText));
         button.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton),
                 Theme.blendOver(Theme.getColor(Theme.key_featuredStickers_addButton), 0x33FFFFFF)));
         button.setOnClickListener(v -> {

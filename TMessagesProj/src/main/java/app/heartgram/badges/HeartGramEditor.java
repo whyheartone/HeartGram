@@ -61,6 +61,7 @@ public final class HeartGramEditor {
     // ── вход ────────────────────────────────────────────────────────────────────
 
     public static void open(final BaseFragment fragment) {
+        android.util.Log.d("HeartGramEditor", "open, configured=" + HeartGramApi.configured());
         final Activity activity = fragment == null ? null : fragment.getParentActivity();
         if (activity == null) {
             return;
