@@ -377,9 +377,19 @@ public class AndroidUtil {
         return false;
     }
 
+    /** true, когда в сборке свой проект Firebase (а не чужой exteraless из репозитория). */
+    public static boolean hasOwnFirebase() {
+        try {
+            String project = com.google.firebase.FirebaseApp.getInstance().getOptions().getProjectId();
+            return project != null && !project.isEmpty() && !"exteraless".equals(project);
+        } catch (Throwable t) {
+            return false;
+        }
+    }
+
     public static boolean shouldEnableCrashlytics() {
-        // Отчёты о падениях не отправляются: проект Firebase в репозитории чужой (exteraless),
-        // собственный подключим позже. Журнал падений остаётся локальным (CrashLog).
-        return false;
+        // Отчёты о падениях уходят только в наш Firebase и только если человек сам включил их в «Прочее».
+        // Журнал падений на устройстве (CrashLog) остаётся в любом случае.
+        return hasOwnFirebase() && app.exteraless.general.GeneralConfig.crashReports();
     }
 }

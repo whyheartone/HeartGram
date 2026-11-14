@@ -93,7 +93,9 @@ jobs:
         run: |
           if [ -n "$GOOGLE_SERVICES_JSON" ]; then
             echo "$GOOGLE_SERVICES_JSON" > TMessagesProj/google-services.json
-            echo "own google-services.json written"
+            PKG=$(python3 -c "import json;print(json.load(open('TMessagesProj/google-services.json'))['client'][0]['client_info']['android_client_info']['package_name'])")
+            echo "own google-services.json written, package: $PKG"
+            echo "GRADLE_EXTRA=-PAPP_PACKAGE=${PKG}" >> "$GITHUB_ENV"
           fi
       - name: Restore signing key
         env:
@@ -112,7 +114,7 @@ jobs:
           export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
           BUILD_TIMESTAMP=$(date +%s)
           export BUILD_TIMESTAMP
-          ./gradlew --stacktrace TMessagesProj:assembleRelease
+          ./gradlew --stacktrace ${GRADLE_EXTRA:-} TMessagesProj:assembleRelease
       - name: Name the APK by ABI
         run: |
           mkdir -p out

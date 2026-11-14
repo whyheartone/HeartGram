@@ -142,6 +142,13 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         experimentalHeaderRow = localPremiumRow = experimentalDividerRow = -1;
         unlimitedPinnedDialogsRow = voiceEnhancementsRow = enhancedVideoBitrateRow = sensitiveContentRow = -1;
 
+        if (tw.nekomimi.nekogram.utils.AndroidUtil.hasOwnFirebase()) {
+            // свои отчёты о падениях (наш Firebase, включаются вручную)
+            googleHeaderRow = addRow("googleHeader");
+            crashReportsRow = addRow("crashReports");
+            googleDividerRow = addRow();
+        }
+
         supportItems = app.heartgram.badges.HeartGramBadges.supportItems();
         supportHeaderRow = supportStartRow = supportDividerRow = -1;
         if (!supportItems.isEmpty()) {

@@ -28,42 +28,15 @@ NS = 'xmlns:android="http://schemas.android.com/apk/res/android"'
 
 
 
-def curve_points(cx, cy, width, n=1800, smooth=90, rounding=0.045):
-    """Сердце по кривой Nothing: скользящее среднее убирает резкие углы, затем «открытие» с радиусом
-    rounding*width слегка закругляет выпуклые углы (низ и верх лепестков), форма остаётся той же."""
-    from shapely.geometry import Polygon
-    raw = []
+def _heart_path(cx=54.0, cy=56.0, width=41.8, n=96):
+    """Контур сердца по той же кривой, что у матрицы Nothing (viewport 108)."""
+    pts = []
     for i in range(n):
         t = 2 * math.pi * i / n
         x = 16 * math.sin(t) ** 3
         y = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
-        raw.append((x, y))
-    half = smooth // 2
-    pts = []
-    for i in range(n):
-        sx = sum(raw[(i + k) % n][0] for k in range(-half, half + 1)) / (smooth + 1)
-        sy = sum(raw[(i + k) % n][1] for k in range(-half, half + 1)) / (smooth + 1)
-        pts.append((cx + sx * width / 32.0, cy - sy * width / 32.0 - width * 0.03))
-    if rounding:
-        r = rounding * width
-        poly = Polygon(pts).buffer(-r, 32).buffer(r, 32)
-        pts = list(poly.exterior.coords)[:-1]
-    return pts
-
-
-def _heart_path(cx=54.0, cy=54.0, width=41.8, n=96):
-    """Контур сердца для вектора (viewport 108)."""
-    pts = curve_points(cx, cy, width)
-    pts = pts[::max(1, len(pts) // n)]
+        pts.append((cx + x * width / 32.0, cy - y * width / 32.0 - width * 0.03))
     return "M" + " L".join("%.2f,%.2f" % p for p in pts) + " Z"
-
-
-def heart_mask(size):
-    """Маска сердца для растровых иконок: центр холста, ширина как у основной иконки."""
-    k = 4
-    big = Image.new("L", (size * k, size * k), 0)
-    ImageDraw.Draw(big).polygon(curve_points(size * k / 2, size * k / 2, size * k * 72 / 108 * 0.58), fill=255)
-    return big.resize((size, size), Image.LANCZOS)
 
 
 # сердце одной формы везде (viewport 108)
@@ -89,7 +62,7 @@ def heart_vector(name, color="#FFFFFFFF", size_dp=108, scale=None):
     """Вектор сердца. scale растягивает сердце вокруг центра (для плиток и значков меню)."""
     group_open = group_close = ""
     if scale:
-        group_open = f'    <group android:pivotX="54" android:pivotY="54" android:scaleX="{scale}" android:scaleY="{scale}">\n'
+        group_open = f'    <group android:pivotX="54" android:pivotY="56" android:scaleX="{scale}" android:scaleY="{scale}">\n'
         group_close = "    </group>\n"
     write(os.path.join(RES, "drawable", name + ".xml"), f"""<?xml version="1.0" encoding="utf-8"?>
 <vector {NS}
@@ -116,50 +89,12 @@ def adaptive(name, background, foreground, monochrome):
     write(os.path.join(RES, "mipmap-anydpi-v26", name + "_round.xml"), body)
 
 
-def unified_heart(old_fg, size):
-    """Сердце главной иконки по общей кривой; цвет берётся из прежнего слоя (верх и низ), плюс мягкая тень."""
-    from PIL import ImageFilter
-    px = old_fg.convert("RGBA")
-    w, h = px.size
-    data = px.load()
-    ys = [y for y in range(h) for x in range(0, w, 4) if data[x, y][3] > 200]
-    y0, y1 = min(ys), max(ys)
-    def mean(rows):
-        acc = [0, 0, 0]; cnt = 0
-        for y in rows:
-            for x in range(0, w, 3):
-                r, g, b, a = data[x, y]
-                if a > 200:
-                    acc[0] += r; acc[1] += g; acc[2] += b; cnt += 1
-        return tuple(c / max(cnt, 1) for c in acc)
-    top = mean(range(y0, y0 + max(2, (y1 - y0) // 4)))
-    bot = mean(range(y1 - max(2, (y1 - y0) // 4), y1))
-    mask = heart_mask(size)
-    out = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    shadow = Image.new("RGBA", (size, size), (20, 0, 20, 0))
-    shadow.putalpha(mask.filter(ImageFilter.GaussianBlur(size / 60)).point(lambda v: int(v * 0.35)))
-    out.alpha_composite(shadow.transform(shadow.size, Image.AFFINE, (1, 0, 0, 0, 1, -size * 0.012)))
-    grad = Image.new("RGB", (size, size))
-    gp = grad.load()
-    cy0 = size / 2 - size * 72 / 108 * 0.58 * 0.5
-    cy1 = size / 2 + size * 72 / 108 * 0.58 * 0.5
-    for y in range(size):
-        t = min(1, max(0, (y - cy0) / (cy1 - cy0)))
-        col = tuple(int(top[i] * (1 - t) + bot[i] * t) for i in range(3))
-        for x in range(size):
-            gp[x, y] = col
-    heart = grad.convert("RGBA")
-    heart.putalpha(mask)
-    out.alpha_composite(heart)
-    return out
-
-
 # ── основная иконка ───────────────────────────────────────────────────────────
 def main_icon():
     for dens, size in DENSITIES.items():
         bg, fg = icon_layers.layers(SOURCE, size)
         save(bg.convert("RGB"), "exteraless_icon_art.png", f"drawable-{dens}")
-        save(unified_heart(fg, size), "exteraless_icon_foreground.png", f"drawable-{dens}")
+        save(fg, "exteraless_icon_foreground.png", f"drawable-{dens}")
         # логотип в настройках и в QR: готовая иконка без обрезки по маске
         logo = icon_layers.composite(SOURCE, size, "square").convert("RGB")
         save(logo, "exteraless_icon.png", f"drawable-{dens}")
@@ -177,7 +112,13 @@ def main_icon():
 
 # ── Mono и Nothing: сердце того же размера, что у основной иконки ────────────
 def heart_points(cx, cy, width, n=1800):
-    return curve_points(cx, cy, width, n)
+    pts = []
+    for i in range(n):
+        t = 2 * math.pi * i / n
+        x = 16 * math.sin(t) ** 3
+        y = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
+        pts.append((cx + x * width / 32.0, cy - y * width / 32.0 - width * 0.03))
+    return pts
 
 
 def mono_nothing():
@@ -223,11 +164,11 @@ def mono_nothing():
 
 # ── варианты hg_art ───────────────────────────────────────────────────────────
 def variants():
-    mask432 = heart_mask(432)
+    heart_mask = icon_layers.layers(SOURCE, 432)[1].getchannel("A")
     for vid, _title in VARIANTS:
         name = f"hg_icon_{vid}"
         hg_art.make(vid, 432).convert("RGB").save(os.path.join(RES, "drawable-xxxhdpi", name + "_img.png"))
-        hg_art.make_heart(vid, mask432).save(os.path.join(RES, "drawable-xxxhdpi", name + "_heart.png"))
+        hg_art.make_heart(vid, heart_mask).save(os.path.join(RES, "drawable-xxxhdpi", name + "_heart.png"))
         write(os.path.join(RES, "drawable", name + "_bg.xml"),
               f'<?xml version="1.0" encoding="utf-8"?>\n<bitmap {NS} android:src="@drawable/{name}_img" android:gravity="fill"/>\n')
         write(os.path.join(RES, "drawable", name + "_fg.xml"),

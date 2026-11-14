@@ -366,6 +366,10 @@ public class SessionCell extends FrameLayout {
             iconId = R.drawable.device_desktop_osx;
             colorKey = Theme.key_avatar_backgroundCyan;
             colorKey2 = Theme.key_avatar_background2Cyan;
+        } else if (session.app_name.contains("HeartGram")) {
+            iconId = R.drawable.exteraless_icon_menu;
+            colorKey = Theme.key_avatar_backgroundPink;
+            colorKey2 = Theme.key_avatar_background2Pink;
         } else if (session.app_name.contains("Nagram X") || session.app_name.contains("NagramX")
                 || session.app_name.contains("exteraless")) {
             iconId = R.drawable.exteraless_notification;
