@@ -9574,7 +9574,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             boolean captionNearAttach = isCaptionNearAttach();
             // a recording (paused too) has its own panel in the input: the attach button is neither in it nor over it
             final boolean recordShown = recordInterfaceState != 0 || audioToSend != null || videoToSendMessageObject != null;
-            final boolean attachInInput = !captionNearAttach && !recordShown;
+            final boolean attachInInput = (!captionNearAttach || !app.heartgram.HeartGramPrefs.sideAttach()) && !recordShown;
 
             if (color != sendButtonBackgroundColor) {
                 sendButtonBackgroundColor = color;
@@ -9607,7 +9607,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                                 attachButtonAnimator = null;
                             }
                             if (sideButtons != null && (!NekoConfig.useChatAttachMediaMenu.Bool() || isStories)) {
-                                sideButtons.showButton(ChatActivitySideControlsButtonsLayout.BUTTON_ATTACH, captionNearAttach && !recordShown, true);
+                                sideButtons.showButton(ChatActivitySideControlsButtonsLayout.BUTTON_ATTACH, app.heartgram.HeartGramPrefs.sideAttach() && captionNearAttach && !recordShown && app.heartgram.HeartGramPrefs.sideAttach(), true);
                                 if (attachButton != null) {
                                     animators.add(ObjectAnimator.ofFloat(attachButton, View.ALPHA, attachButtonAlpha = attachInInput ? 1.0f : 0.0f));
                                     animators.add(ObjectAnimator.ofFloat(attachButton, View.SCALE_X, attachInInput ? 1.0f : 0.5f));
@@ -9787,7 +9787,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                             updateFieldRight(0);
 
                             if (sideButtons != null) {
-                                sideButtons.showButton(ChatActivitySideControlsButtonsLayout.BUTTON_ATTACH, captionNearAttach && !recordShown, true);
+                                sideButtons.showButton(ChatActivitySideControlsButtonsLayout.BUTTON_ATTACH, app.heartgram.HeartGramPrefs.sideAttach() && captionNearAttach && !recordShown, true);
                                 if (attachButton != null) {
                                     attachButton.setAlpha(attachButtonAlpha = attachInInput ? 1.0f : 0.0f);
                                     attachButton.setScaleX(attachInInput ? 1.0f : 0.5f);
@@ -9817,7 +9817,7 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             } else {
                 if (sideButtons != null && (!NekoConfig.useChatAttachMediaMenu.Bool() || isStories)) {
-                    sideButtons.showButton(ChatActivitySideControlsButtonsLayout.BUTTON_ATTACH, captionNearAttach && !recordShown, true);
+                    sideButtons.showButton(ChatActivitySideControlsButtonsLayout.BUTTON_ATTACH, app.heartgram.HeartGramPrefs.sideAttach() && captionNearAttach && !recordShown, true);
                     if (attachButton != null) {
                         if (attachButtonAnimator != null) {
                             attachButtonAnimator.cancel();
@@ -17582,7 +17582,7 @@ public class ChatActivityEnterView extends FrameLayout implements
         final boolean captionNearAttach = sideButtons != null && isCaptionNearAttach();
         final boolean inInput = sideButtons != null && !captionNearAttach;
         if (sideButtons != null) {
-            sideButtons.showButton(ChatActivitySideControlsButtonsLayout.BUTTON_ATTACH, captionNearAttach, true);
+            sideButtons.showButton(ChatActivitySideControlsButtonsLayout.BUTTON_ATTACH, app.heartgram.HeartGramPrefs.sideAttach() && captionNearAttach, true);
         }
         if (attachButtonAnimator != null) {
             attachButtonAnimator.cancel();

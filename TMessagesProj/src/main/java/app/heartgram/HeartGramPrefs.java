@@ -70,6 +70,11 @@ public final class HeartGramPrefs {
         prefs().edit().putInt("glow_size", value).apply();
     }
 
+    /** Скрепка отдельной кнопкой над чатом при наборе текста (как в Telegram 13). По умолчанию выключена: скрепка остаётся в поле ввода. */
+    public static boolean sideAttach() {
+        return prefs().getBoolean("side_attach", false);
+    }
+
     /** Вид папок: 0 как в Telegram, 1 вкладки с индикатором, 2 отдельные кнопки. */
     public static int folderStyle() {
         return Math.max(0, Math.min(2, prefs().getInt("folder_style", 0)));
