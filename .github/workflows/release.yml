@@ -38,7 +38,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        target: [arm64-v8a, universal]
+        target: [universal]
     env:
       NATIVE_TARGET: ${{ matrix.target }}
       HG_LIST_URL: ${{ secrets.HG_LIST_URL }}
@@ -106,7 +106,7 @@ jobs:
         run: |
           mkdir -p out
           SRC=$(find TMessagesProj/build/outputs/apk/release -name '*.apk' | head -1)
-          cp "$SRC" "out/HeartGram-${{ matrix.target }}.apk"
+          cp "$SRC" "out/HeartGram.apk"
           ls -la out
       - name: Upload APK
         uses: actions/upload-artifact@v7
@@ -144,9 +144,9 @@ jobs:
           NOTES="${NOTES_INPUT:-HeartGram ${TAG}}"
           FLAGS=""
           if [ "${PRERELEASE}" = "true" ]; then FLAGS="--prerelease"; fi
+          # один APK без пометки ABI: HeartGram-<тег>.apk
           for f in apks/*.apk; do
-            base=$(basename "$f" .apk)
-            mv "$f" "apks/${base/HeartGram-/HeartGram-${TAG}-}.apk"
+            mv "$f" "apks/HeartGram-${TAG}.apk"
           done
           ls -la apks
           gh release create "$TAG" apks/*.apk --target "$GITHUB_SHA" --title "HeartGram ${TAG}" --notes "$NOTES" $FLAGS
