@@ -49,7 +49,7 @@ public final class HeartGramMenu {
             return;
         }
         final List<Entry> entries = new ArrayList<>(source);
-        ActionBarMenuItem.Item item = headerItem.lazilyAddSwipeBackItem(R.drawable.msg_customize, null, "HeartGram",
+        ActionBarMenuItem.Item item = headerItem.lazilyAddSwipeBackItem(R.drawable.msg_fave, null, "HeartGram",
                 () -> build(headerItem, actionBar, resourcesProvider, swipeBackLayout, entries));
         item.setOnClickListener(v -> item.openSwipeBack());
     }

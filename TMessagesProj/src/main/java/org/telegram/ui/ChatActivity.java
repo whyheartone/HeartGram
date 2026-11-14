@@ -21014,7 +21014,7 @@ public class ChatActivity extends BaseFragment implements
         if (currentEncryptedChat == null) {
             if (messageObject.isEditing()) {
                 return MESSAGE_TYPE_INVALID;
-            } else if (messageObject.getId() <= 0 && messageObject.isOut()) {
+            } else if (messageObject.getId() <= 0 && messageObject.isOut() && !messageObject.isAyuDeleted()) {
                 if (messageObject.isSendError()) {
                     if (!messageObject.isMediaEmpty()) {
                         return MESSAGE_TYPE_SEND_ERROR_MEDIA;
