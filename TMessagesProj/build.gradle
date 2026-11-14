@@ -26,7 +26,8 @@ def buildTimestamp = System.getenv('BUILD_TIMESTAMP') ?: '0'
 def commitId = System.getenv('COMMIT_ID')
 def shortCommit = commitId?.take(7) ?: ''
 def verName = "${APP_VERSION_NAME}${shortCommit ? "-${shortCommit}" : ''}"
-def verCode = 1261
+// номер сборки в скобках растёт сам: минуты с 1 января 2026 (каждая новая сборка выше предыдущей, установка поверх работает)
+def verCode = 1261 + (int) ((System.currentTimeMillis() / 60000L) - 29453760L)
 
 def officialVer = APP_VERSION_NAME
 def officialCode = APP_VERSION_CODE
