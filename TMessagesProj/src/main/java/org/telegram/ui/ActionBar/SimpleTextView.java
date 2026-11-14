@@ -1244,7 +1244,19 @@ public class SimpleTextView extends View implements Drawable.Callback {
             eff.draw(canvas);
     }
 
+    private long hgLastScrollFrame;
+
     private void updateScrollAnimation() {
+        // вью не рисовалось (например, шапка чата под экраном профиля): бегущая строка продолжила бы с середины круга
+        // и при возврате имя «липнет» к аватарке и отъезжает. После паузы начинаем с начала и с обычной задержкой.
+        final long hgNow = SystemClock.elapsedRealtime();
+        final boolean hgGap = hgLastScrollFrame != 0 && hgNow - hgLastScrollFrame > 250;
+        hgLastScrollFrame = hgNow;
+        if (hgGap && scrollingOffset != 0) {
+            scrollingOffset = 0;
+            currentScrollDelay = SCROLL_DELAY_MS;
+            lastUpdateTime = hgNow;
+        }
         if (!scrollNonFitText || !textDoesNotFit && scrollingOffset == 0) {
             return;
         }
