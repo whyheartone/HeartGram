@@ -258,36 +258,23 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         }
     }
 
-    /** Название способа поддержки с эмодзи из API: обычное, либо подпись (alt) кастомного эмодзи по его номеру. */
-    private CharSequence supportTitle(String[] item) {
+    /** Название способа поддержки: премиум-эмодзи из API (по номеру документа) идёт настоящим эмодзи, обычное — символом. */
+    private CharSequence supportTitle(String[] item, org.telegram.ui.Cells.TextCell cell) {
         String emoji = item.length > 3 ? item[3] : "";
-        if (!android.text.TextUtils.isEmpty(emoji) && emoji.matches("\\d{5,}")) {
+        if (android.text.TextUtils.isEmpty(emoji)) {
+            return item[0];
+        }
+        if (emoji.matches("\\d{5,}")) {
             try {
-                long id = Long.parseLong(emoji);
-                org.telegram.tgnet.TLRPC.Document doc = org.telegram.ui.Components.AnimatedEmojiDrawable.findDocument(org.telegram.messenger.UserConfig.selectedAccount, id);
-                if (doc == null) {
-                    org.telegram.ui.Components.AnimatedEmojiDrawable.make(org.telegram.messenger.UserConfig.selectedAccount,
-                            org.telegram.ui.Components.AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, id);
-                    // эмодзи ещё грузится: перерисовываем список позже, пока документ не появится (до 5 раз)
-                    if (supportRefreshes++ < 5) {
-                        org.telegram.messenger.AndroidUtilities.runOnUIThread(() -> {
-                            if (listAdapter != null) {
-                                listAdapter.notifyDataSetChanged();
-                            }
-                        }, 700);
-                    }
-                } else {
-                    String alt = org.telegram.messenger.MessageObject.findAnimatedEmojiEmoticon(doc, null);
-                    emoji = alt == null ? "" : alt;
-                }
-                if (doc == null) {
-                    emoji = "";
-                }
+                android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder("⭐  " + item[0]);
+                sb.setSpan(new org.telegram.ui.Components.AnimatedEmojiSpan(Long.parseLong(emoji), cell.textView.getPaint().getFontMetricsInt()),
+                        0, 1, android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                return sb;
             } catch (Throwable t) {
-                emoji = "";
+                return item[0];
             }
         }
-        return android.text.TextUtils.isEmpty(emoji) ? item[0] : emoji + " " + item[0];
+        return emoji + " " + item[0];
     }
 
     private void openSupport(String[] item) {
@@ -631,7 +618,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                     } else if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
                         String[] it = supportItems.get(position - supportStartRow);
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
-                        cell.setTextAndValue(supportTitle(it), it[1] == null ? "" : it[1], position < supportStartRow + supportItems.size() - 1);
+                        cell.setTextAndValue(supportTitle(it, cell), it[1] == null ? "" : it[1], position < supportStartRow + supportItems.size() - 1);
                     } else if (position == ayuMomentsRow) {
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndIcon(getString(R.string.OEGeneralAyuMoments), R.drawable.ayu_ghost, false);
