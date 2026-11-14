@@ -78,8 +78,8 @@
     <string name="OEGeneralAyuMoments">AyuMoments</string>
     <string name="OEGeneralAyuMomentsInfo">Сохранение удалённых и изменённых сообщений, режим призрака и regex-фильтры. Функции работают, пока включены, — даже если не открывать этот экран.</string>
     <string name="OEGeneralAyuMomentsDisableAll">Отключить все функции AyuMoments</string>
-    <string name="OELastActivityFormatted">последняя активность %1$s</string>
-    <string name="OELastActivityDateFormatted">последняя активность %1$s</string>
+    <string name="OELastActivityFormatted">был(а) %1$s</string>
+    <string name="OELastActivityDateFormatted">был(а) %1$s</string>
     <string name="OEBottomNavigationModeFloating">Плавающая</string>
     <string name="OEGeneralNotificationsHeader">Уведомления</string>
     <string name="OEGeneralPushStatus">Состояние пушей</string>
