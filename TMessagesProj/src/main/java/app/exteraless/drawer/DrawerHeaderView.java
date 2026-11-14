@@ -181,6 +181,7 @@ public class DrawerHeaderView extends FrameLayout {
         nameView.setCanHideRightDrawable(false);
         nameView.setRightDrawableOutside(true);
         nameView.setClickable(false);
+        nameView.setDrawablePadding(AndroidUtilities.dp(2.0f));
         nameBlock.addView(nameView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 24.0f,
                 Gravity.LEFT | Gravity.TOP, 16.0f, 0.0f, 64.0f, 0.0f));
 
@@ -332,7 +333,8 @@ public class DrawerHeaderView extends FrameLayout {
                 // значок в боковом меню: подпись выезжает снизу на текущем экране, как в профиле
                 org.telegram.ui.ActionBar.BaseFragment fragment = org.telegram.ui.LaunchActivity.getSafeLastFragment();
                 if (fragment != null) {
-                    app.heartgram.badges.HeartGramBadges.openBadge(fragment, badgeUser);
+                    // подпись-пилюля внизу пряталась бы под боковым меню: открываем окно значка сразу, оно поверх меню
+                    app.heartgram.badges.HeartGramBadges.openSheet(fragment, badgeUser);
                 }
             });
         } else {

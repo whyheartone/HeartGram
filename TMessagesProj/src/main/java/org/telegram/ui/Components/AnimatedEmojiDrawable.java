@@ -1251,7 +1251,9 @@ public class AnimatedEmojiDrawable extends Drawable {
             if (particlesAlpha > 0) {
                 particles.setBounds(bounds);
                 particles.process();
-                particles.draw(canvas, Theme.multAlpha(lastColor == null ? 0xFFFFFFFF : lastColor, particlesAlpha));
+                // звёздочки в цвет самого эмодзи, а не цвет темы
+                Integer hgEmojiColor = app.heartgram.badges.EmojiColor.of(this);
+                particles.draw(canvas, Theme.multAlpha(hgEmojiColor != null ? hgEmojiColor : (lastColor == null ? 0xFFFFFFFF : lastColor), particlesAlpha));
                 Choreographer60FpsContent.getInstance().addFrameCallback(invalidateRunnable, 15);
             } else {
                 Choreographer60FpsContent.getInstance().removeFrameCallback(invalidateRunnable);

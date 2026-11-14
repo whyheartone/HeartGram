@@ -60,7 +60,13 @@ public final class HeartGramBadgeSheet {
         final StarsView stars = new StarsView(context);
         // звёзды появляются, когда цвет эмодзи уже известен (иначе они сначала в цвете темы, потом перекрашиваются)
         stars.setAlpha(0f);
-        stars.postDelayed(stars::showNow, 1500);
+        final Integer knownColor = EmojiColor.cachedFor(document);
+        if (knownColor != null) {
+            // цвет этого эмодзи уже считали (в списке чатов, профиле): звёзды сразу нужного цвета и без задержки
+            stars.setColor(knownColor);
+        } else {
+            stars.postDelayed(stars::showNow, 900);
+        }
         art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         art.addView(new EmojiView(context, document, stars::setColor), new FrameLayout.LayoutParams(dp(112), dp(112), Gravity.CENTER));
         root.addView(art, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(200)));
@@ -199,61 +205,14 @@ public final class HeartGramBadgeSheet {
             drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE_140, documentId);
         }
 
-        /**
-         * Цвет звёзд по эмодзи: берём текущий кадр из ImageReceiver (программная отрисовка вьюшки ломается на
-         * аппаратных битмапах) и считаем «яркий» цвет: насыщенные пиксели весят больше серых и тёмных контуров.
-         * false, пока кадр не готов.
-         */
+        /** Цвет звёзд по эмодзи (общий расчёт с кешем); false, пока кадр не загрузился. */
         private boolean computeColor() {
-            try {
-                org.telegram.messenger.ImageReceiver receiver = drawable.getImageReceiver();
-                android.graphics.Bitmap src = receiver != null ? receiver.getBitmap() : null;
-                if (src == null || src.isRecycled()) {
-                    return false;
-                }
-                if (android.os.Build.VERSION.SDK_INT >= 26 && src.getConfig() == android.graphics.Bitmap.Config.HARDWARE) {
-                    src = src.copy(android.graphics.Bitmap.Config.ARGB_8888, false);
-                    if (src == null) {
-                        return false;
-                    }
-                }
-                final int size = 48;
-                android.graphics.Bitmap bmp = android.graphics.Bitmap.createScaledBitmap(src, size, size, true);
-                int[] px = new int[size * size];
-                bmp.getPixels(px, 0, size, 0, 0, size, size);
-                if (bmp != src) {
-                    bmp.recycle();
-                }
-                double r = 0, g = 0, b = 0, weight = 0;
-                int opaque = 0;
-                float[] hsv = new float[3];
-                for (int p : px) {
-                    int a = p >>> 24;
-                    if (a < 120) {
-                        continue;
-                    }
-                    opaque++;
-                    android.graphics.Color.colorToHSV(p, hsv);
-                    // насыщенные и светлые пиксели определяют «цвет» эмодзи, контуры и тени почти не влияют
-                    double w = (0.08 + hsv[1] * hsv[1]) * (0.2 + hsv[2]) * (a / 255.0);
-                    r += android.graphics.Color.red(p) * w;
-                    g += android.graphics.Color.green(p) * w;
-                    b += android.graphics.Color.blue(p) * w;
-                    weight += w;
-                }
-                if (opaque < 40 || weight <= 0) {
-                    return false;
-                }
-                int color = android.graphics.Color.rgb((int) (r / weight), (int) (g / weight), (int) (b / weight));
-                // чуть ярче и насыщеннее, чтобы звёзды читались на фоне
-                android.graphics.Color.colorToHSV(color, hsv);
-                hsv[1] = Math.min(1f, hsv[1] * 1.15f);
-                hsv[2] = Math.max(0.75f, Math.min(1f, hsv[2] * 1.15f));
-                onColor.accept(android.graphics.Color.HSVToColor(hsv));
-                return true;
-            } catch (Throwable t) {
+            Integer color = EmojiColor.of(drawable);
+            if (color == null) {
                 return false;
             }
+            onColor.accept(color);
+            return true;
         }
 
         @Override
@@ -301,7 +260,7 @@ public final class HeartGramBadgeSheet {
             if (colorable) {
                 drawable.setColorFilter(null);
             }
-            if (!tinted && ++frames % 8 == 0 && frames < 8 * 60) {
+            if (!tinted && ++frames % 2 == 0 && frames < 2 * 400) {
                 tinted = computeColor();
             }
         }

@@ -15,8 +15,14 @@ import org.telegram.ui.Components.AnimatedEmojiDrawable;
 public final class EmojiColor {
 
     private static final LongSparseArray<Integer> CACHE = new LongSparseArray<>();
+    private static final LongSparseArray<Long> LAST_TRY = new LongSparseArray<>();
 
     private EmojiColor() {
+    }
+
+    /** Цвет, уже посчитанный для эмодзи (в списке чатов, шапке и т.д.), или null. */
+    public static Integer cachedFor(long documentId) {
+        return CACHE.get(documentId);
     }
 
     /** Цвет эмодзи из drawable (в том числе обёртки SwapAnimatedEmojiDrawable) или null, если кадра ещё нет. */
@@ -37,6 +43,12 @@ public final class EmojiColor {
             if (cached != null) {
                 return cached;
             }
+            // пока кадра нет, не пересчитываем чаще, чем раз в 250 мс (вызывается из отрисовки)
+            final long now = android.os.SystemClock.elapsedRealtime();
+            if (now - LAST_TRY.get(id, 0L) < 250) {
+                return null;
+            }
+            LAST_TRY.put(id, now);
             ImageReceiver receiver = emoji.getImageReceiver();
             Bitmap bitmap = receiver == null ? null : receiver.getBitmap();
             Integer color = of(bitmap);
