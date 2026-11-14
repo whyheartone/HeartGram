@@ -8848,6 +8848,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         backwardInitialValues[13] = onlineTextView.getTranslationX();
     }
 
+    /** Размер аватарки в шапке чата: 42dp, в стиле MD3 46dp. С ним сходится анимация открытия и закрытия профиля. */
+    private static float hgHeaderAvatarDp() {
+        return app.exteraless.appearance.ChatHeaderUiHelper.getChatAvatarSizeDp();
+    }
+
     private void backwardAnimationLayout() {
         if (backwardInitialValues == null) return;
 
@@ -8864,10 +8869,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         float startAvatarY =
             (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
                 + ActionBar.getCurrentActionBarHeight() / 2f
-                - dp(21)
+                - dp(hgHeaderAvatarDp() / 2f)
                 + actionBar.getTranslationY();
 
-        avatarScale = lerp(42f / 100f, backwardInitialValues[0], backwardDiff);
+        avatarScale = lerp(hgHeaderAvatarDp() / 100f, backwardInitialValues[0], backwardDiff);
         avatarX = lerp(prevAvatarTranslation, backwardInitialValues[1], backwardDiff);
         avatarY = lerp(startAvatarY, backwardInitialValues[2], backwardDiff);
         pullUpProgress = lerp(backwardInitialValues[11], 0f, backwardDiff);
@@ -9074,7 +9079,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                         + actionBar.getTranslationY();
                 avatarY = lerp(endY, startY, diff);
             } else {
-                avatarY = endNameY;
+                // аватарка в шапке чата может быть 46dp (MD3), а не 42: стартуем ровно с её размера и центра
+                avatarY = endNameY - dp(hgHeaderAvatarDp() / 2f - 21) * (1f - diff);
             }
 
             float h = openAnimationInProgress ? initialAnimationExtraHeight : extraHeight;
@@ -9333,7 +9339,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 updateCollectibleHint();
             } else if (h <= headerExtraHeight) {
                 if (openAnimationInProgress) {
-                    avatarScale = lerp(42, 96, diff) / 100f;
+                    avatarScale = lerp(hgHeaderAvatarDp(), 96, diff) / 100f;
                     pullUpProgress = 0.0f;
                 } else {
                     final float intoSize = avatarGooey != null ? avatarGooey.getHiddenAvatarSizeDp() : 24f;
