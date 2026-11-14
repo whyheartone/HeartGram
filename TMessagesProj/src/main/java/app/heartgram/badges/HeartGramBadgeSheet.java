@@ -193,46 +193,60 @@ public final class HeartGramBadgeSheet {
             drawable = AnimatedEmojiDrawable.make(UserConfig.selectedAccount, AnimatedEmojiDrawable.CACHE_TYPE_ALERT_PREVIEW_LARGE_140, documentId);
         }
 
-        /** Средний цвет непрозрачных пикселей эмодзи, чуть осветлённый; false, пока эмодзи не загрузилось. */
+        /**
+         * Цвет звёзд по эмодзи: берём текущий кадр из ImageReceiver (программная отрисовка вьюшки ломается на
+         * аппаратных битмапах) и считаем «яркий» цвет: насыщенные пиксели весят больше серых и тёмных контуров.
+         * false, пока кадр не готов.
+         */
         private boolean computeColor() {
             try {
-                if (getWidth() <= 0 || getHeight() <= 0) {
+                org.telegram.messenger.ImageReceiver receiver = drawable.getImageReceiver();
+                android.graphics.Bitmap src = receiver != null ? receiver.getBitmap() : null;
+                if (src == null || src.isRecycled()) {
                     return false;
                 }
-                final int size = 40;
-                android.graphics.Bitmap bmp = android.graphics.Bitmap.createBitmap(size, size, android.graphics.Bitmap.Config.ARGB_8888);
-                // рисуем саму вьюшку (без подложки) в маленький битмап: берём ровно то, что видно на экране
-                Canvas c = new Canvas(bmp);
-                c.scale(size / (float) getWidth(), size / (float) getHeight());
-                sampling = true;
-                try {
-                    draw(c);
-                } finally {
-                    sampling = false;
+                if (android.os.Build.VERSION.SDK_INT >= 26 && src.getConfig() == android.graphics.Bitmap.Config.HARDWARE) {
+                    src = src.copy(android.graphics.Bitmap.Config.ARGB_8888, false);
+                    if (src == null) {
+                        return false;
+                    }
                 }
+                final int size = 48;
+                android.graphics.Bitmap bmp = android.graphics.Bitmap.createScaledBitmap(src, size, size, true);
                 int[] px = new int[size * size];
                 bmp.getPixels(px, 0, size, 0, 0, size, size);
-                bmp.recycle();
-                long r = 0, g = 0, b = 0, weight = 0;
+                if (bmp != src) {
+                    bmp.recycle();
+                }
+                double r = 0, g = 0, b = 0, weight = 0;
+                int opaque = 0;
+                float[] hsv = new float[3];
                 for (int p : px) {
                     int a = p >>> 24;
-                    if (a < 100) {
+                    if (a < 120) {
                         continue;
                     }
-                    r += (long) android.graphics.Color.red(p) * a;
-                    g += (long) android.graphics.Color.green(p) * a;
-                    b += (long) android.graphics.Color.blue(p) * a;
-                    weight += a;
+                    opaque++;
+                    android.graphics.Color.colorToHSV(p, hsv);
+                    // насыщенные и светлые пиксели определяют «цвет» эмодзи, контуры и тени почти не влияют
+                    double w = (0.08 + hsv[1] * hsv[1]) * (0.2 + hsv[2]) * (a / 255.0);
+                    r += android.graphics.Color.red(p) * w;
+                    g += android.graphics.Color.green(p) * w;
+                    b += android.graphics.Color.blue(p) * w;
+                    weight += w;
                 }
-                if (weight < 40L * 255) {
+                if (opaque < 40 || weight <= 0) {
                     return false;
                 }
-                int red = (int) (r / weight), green = (int) (g / weight), blue = (int) (b / weight);
-                onColor.accept(0xFF000000 | (Math.min(255, red + (255 - red) / 4) << 16)
-                        | (Math.min(255, green + (255 - green) / 4) << 8) | Math.min(255, blue + (255 - blue) / 4));
+                int color = android.graphics.Color.rgb((int) (r / weight), (int) (g / weight), (int) (b / weight));
+                // чуть ярче и насыщеннее, чтобы звёзды читались на фоне
+                android.graphics.Color.colorToHSV(color, hsv);
+                hsv[1] = Math.min(1f, hsv[1] * 1.15f);
+                hsv[2] = Math.max(0.75f, Math.min(1f, hsv[2] * 1.15f));
+                onColor.accept(android.graphics.Color.HSVToColor(hsv));
                 return true;
             } catch (Throwable t) {
-                return true;
+                return false;
             }
         }
 
@@ -281,7 +295,7 @@ public final class HeartGramBadgeSheet {
             if (colorable) {
                 drawable.setColorFilter(null);
             }
-            if (!tinted && ++frames % 8 == 0) {
+            if (!tinted && ++frames % 8 == 0 && frames < 8 * 60) {
                 tinted = computeColor();
             }
         }
