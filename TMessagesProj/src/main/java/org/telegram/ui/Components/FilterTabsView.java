@@ -1599,6 +1599,24 @@ public class FilterTabsView extends FrameLayout {
     /** HeartGram: вызывается при каждой отрисовке панели (DialogsActivity обрезает под ней списки чатов). */
     public Runnable hgOnDraw;
 
+    // Панель двигают и прячут (поиск, прокрутка) без перерисовки: обрезка списков под ней должна обновляться и тогда,
+    // иначе после выхода из поиска верх списка остаётся закрыт устаревшей обрезкой.
+    @Override
+    public void setTranslationY(float translationY) {
+        super.setTranslationY(translationY);
+        if (hgOnDraw != null) {
+            hgOnDraw.run();
+        }
+    }
+
+    @Override
+    public void setVisibility(int visibility) {
+        super.setVisibility(visibility);
+        if (hgOnDraw != null) {
+            hgOnDraw.run();
+        }
+    }
+
     /** HeartGram: в видах «Вкладки» и «Кнопки» нет общей подложки и штатной прямоугольной подсветки нажатия. */
     @Override
     public void draw(@NonNull Canvas canvas) {
@@ -1871,6 +1889,9 @@ public class FilterTabsView extends FrameLayout {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         super.onLayout(changed, l, t, r, b);
+        if (hgOnDraw != null) {
+            post(hgOnDraw);
+        }
 
         if (prevLayoutWidth != r - l) {
             prevLayoutWidth = r - l;

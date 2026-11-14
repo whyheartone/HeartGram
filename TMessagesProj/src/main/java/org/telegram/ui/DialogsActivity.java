@@ -3008,7 +3008,17 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
      * HeartGram: в видах «Вкладки» и «Кнопки» у панели папок нет подложки, поэтому каждый список чатов
      * обрезается по нижнему краю панели, и чаты не видны между кнопками. В виде «Telegram» обрезки нет.
      */
+    private final Runnable hgClipSettle = this::hgClipNow;
+
     private void hgClipListsUnderTabs() {
+        hgClipNow();
+        // после анимаций (поиск, прокрутка) положение панели и списка устаканивается позже последней отрисовки:
+        // пересчитываем обрезку ещё раз, когда всё остановилось
+        AndroidUtilities.cancelRunOnUIThread(hgClipSettle);
+        AndroidUtilities.runOnUIThread(hgClipSettle, 450);
+    }
+
+    private void hgClipNow() {
         if (viewPages == null || filterTabsView == null) {
             return;
         }

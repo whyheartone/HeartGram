@@ -146,7 +146,7 @@ public class SettingsHelper {
 
     private static final Set<String> EXTERALESS_SCREENS = new HashSet<>(Arrays.asList(
             "settings", "general", "appearance", "chats", "plugins", "pillstack", "other",
-            "ayumoments", "navigation", "menus", "media", "hiding"));
+            "ayumoments", "navigation", "menus", "media", "hiding", "bypass"));
 
     public static boolean isDeepLink(String path) {
         if (path == null) {
@@ -191,6 +191,8 @@ public class SettingsHelper {
                 return HOST_EXTERALESS + "/pillstack";
             case "exteraless_navigation":
                 return HOST_EXTERALESS + "/navigation";
+            case "heartgram_wsproxy":
+                return HOST_EXTERALESS + "/bypass";
             default:
                 return HOST_NAGRAM + "/" + key;
         }
@@ -268,6 +270,9 @@ public class SettingsHelper {
                 case "other":
                     fragment = neko_fragment = new OpenExteraOtherActivity();
                     break;
+                case "bypass":
+                    fragment = neko_fragment = new app.heartgram.settings.HeartGramSettingsActivity();
+                    break;
                 case "ayumoments":
                     fragment = neko_fragment = new OpenExteraAyuMomentsActivity();
                     break;
@@ -325,6 +330,10 @@ public class SettingsHelper {
                     break;
                 case "exteraless_other":
                     fragment = neko_fragment = new OpenExteraOtherActivity();
+                    break;
+                case "bypass":
+                case "heartgram_wsproxy":
+                    fragment = neko_fragment = new app.heartgram.settings.HeartGramSettingsActivity();
                     break;
                 case "exteraless_ayumoments":
                     fragment = neko_fragment = new OpenExteraAyuMomentsActivity();

@@ -548,7 +548,13 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         hgRows.build();
         hgStart = rowCount;
         for (int i = 0; i < hgRows.count(); i++) {
-            addRow();
+            final int row = addRow();
+            final String hgKey = hgRows.keyAt(i);
+            if (hgKey != null) {
+                // долгое нажатие даёт ссылку на настройку, ссылка открывает этот экран на нужной строке
+                rowMap.put("hg_" + hgKey, row);
+                rowMapReverse.put(row, "hg_" + hgKey);
+            }
         }
     }
 

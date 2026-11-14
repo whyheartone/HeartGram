@@ -146,6 +146,11 @@ public final class HeartGramSettingsRows {
         rows.add(info(tr("За фото в просмотре появляется мягкий ореол его цветов.", "A soft halo of the photo's colors appears behind it in the viewer.")));
     }
 
+    /** Ключ настройки в строке (для ссылок на неё) или null у заголовков и подписей. */
+    public String keyAt(int index) {
+        return index >= 0 && index < rows.size() ? rows.get(index).key : null;
+    }
+
     public int count() {
         return rows.size();
     }
