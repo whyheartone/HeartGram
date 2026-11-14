@@ -28,8 +28,10 @@ NS = 'xmlns:android="http://schemas.android.com/apk/res/android"'
 
 
 
-def curve_points(cx, cy, width, n=1800, smooth=90):
-    """Сердце по кривой Nothing; углы (низ и ложбинка сверху) слегка скруглены скользящим средним."""
+def curve_points(cx, cy, width, n=1800, smooth=90, rounding=0.045):
+    """Сердце по кривой Nothing: скользящее среднее убирает резкие углы, затем «открытие» с радиусом
+    rounding*width слегка закругляет выпуклые углы (низ и верх лепестков), форма остаётся той же."""
+    from shapely.geometry import Polygon
     raw = []
     for i in range(n):
         t = 2 * math.pi * i / n
@@ -42,12 +44,17 @@ def curve_points(cx, cy, width, n=1800, smooth=90):
         sx = sum(raw[(i + k) % n][0] for k in range(-half, half + 1)) / (smooth + 1)
         sy = sum(raw[(i + k) % n][1] for k in range(-half, half + 1)) / (smooth + 1)
         pts.append((cx + sx * width / 32.0, cy - sy * width / 32.0 - width * 0.03))
+    if rounding:
+        r = rounding * width
+        poly = Polygon(pts).buffer(-r, 32).buffer(r, 32)
+        pts = list(poly.exterior.coords)[:-1]
     return pts
 
 
 def _heart_path(cx=54.0, cy=54.0, width=41.8, n=96):
     """Контур сердца для вектора (viewport 108)."""
-    pts = curve_points(cx, cy, width)[::1800 // n]
+    pts = curve_points(cx, cy, width)
+    pts = pts[::max(1, len(pts) // n)]
     return "M" + " L".join("%.2f,%.2f" % p for p in pts) + " Z"
 
 
