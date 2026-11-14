@@ -45,7 +45,9 @@ import tw.nekomimi.nekogram.settings.NekoTranslatorSettingsActivity;
 public class SettingsHelper {
 
     private static final String HOST_NAGRAM = "nasettings";
-    private static final String HOST_EXTERALESS = "exteraless";
+    // ссылки на настройки ведут в наш канал; старый адрес exteraless тоже понимается
+    private static final String HOST_EXTERALESS = "HeartGramSettings";
+    private static final String HOST_EXTERALESS_LEGACY = "exteraless";
 
     private static final Map<String, String> SEARCH_TITLE_ALIASES = new HashMap<>();
     private static final Map<String, String> TRANSLATOR_ROWS = new HashMap<>();
@@ -153,6 +155,9 @@ public class SettingsHelper {
         if (path.startsWith(HOST_NAGRAM + "/")) {
             return true;
         }
+        if (path.startsWith(HOST_EXTERALESS_LEGACY + "/")) {
+            return EXTERALESS_SCREENS.contains(path.substring(HOST_EXTERALESS_LEGACY.length() + 1));
+        }
         if (!path.startsWith(HOST_EXTERALESS + "/")) {
             return false;
         }
@@ -201,7 +206,7 @@ public class SettingsHelper {
             unknown.run();
             return;
         }
-        final boolean exteraless = HOST_EXTERALESS.equals(segments.get(0));
+        final boolean exteraless = HOST_EXTERALESS.equalsIgnoreCase(segments.get(0)) || HOST_EXTERALESS_LEGACY.equals(segments.get(0));
         if (!exteraless && !HOST_NAGRAM.equals(segments.get(0))) {
             unknown.run();
             return;

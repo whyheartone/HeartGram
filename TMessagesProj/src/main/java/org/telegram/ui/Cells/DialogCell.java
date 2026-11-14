@@ -782,6 +782,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 emojiStatus.draw(canvas);
             }
         };
+        // звёздочки рядом со значком выходят за границы самого значка: не обрезаем их по размеру вью
+        setClipChildren(false);
+        emojiStatusView.setWillNotDraw(false);
         addView(emojiStatusView);
         emojiStatus = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(emojiStatusView, dp(22));
         botVerificationView = new View(context) {
@@ -4780,7 +4783,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                     } else {
                         emojiStatusVisible = true;
                     }
-                    emojiStatus.setColor(Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
+                    // звёздочки и цветной статус: цвет эмодзи, пока он не посчитан, цвет темы
+                    Integer hgEmojiColor = app.heartgram.badges.EmojiColor.of(emojiStatus);
+                    emojiStatus.setColor(hgEmojiColor != null ? hgEmojiColor : Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
                 } else {
                     Drawable premiumDrawable = PremiumGradient.getInstance().premiumStarDrawableMini;
                     setDrawableBounds(premiumDrawable, nameMuteLeft - dp(1), dp(useForceThreeLines || SharedConfig.useThreeLinesLayout ? 12.5f : 15.5f));

@@ -213,10 +213,8 @@ public final class AppUtils {
         builder.append(" ");
         builder.append(BuildVars.BUILD_VERSION_STRING);
         try {
-            PackageInfo info = ApplicationLoader.applicationContext.getPackageManager()
-                    .getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
             builder.append(" (");
-            builder.append(info.versionCode);
+            builder.append(org.telegram.messenger.BuildConfig.BUILD_NUMBER);
             builder.append(")");
         } catch (Exception e) {
             FileLog.e(e);

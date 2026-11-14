@@ -287,6 +287,7 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
 
         SharedConfig.loadConfig();
         app.heartgram.wsproxy.WsProxyManager.onAppStart();
+        app.heartgram.HeartGramAnalytics.apply();
         NekoConfig.init();
         NaConfig.init();
         OpenExteraConfig.init();
@@ -464,8 +465,8 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
         } else if (pushServiceType != 0 && !remoteFailed && PushListenerController.getProvider().hasServices()) {
             return;
         } else {
-            // по умолчанию уведомления работают в приложении (своя служба), пока нет собственного api_id для FCM
-            enabled = pushServiceType == 0
+            // FCM по умолчанию; если Firebase не отдал токен (или выбран режим «В приложении»), работает своя служба
+            enabled = pushServiceType == 0 || remoteFailed
                     || MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
             SharedPreferences.Editor editor = preferences.edit();
             editor.putBoolean("pushService", enabled);

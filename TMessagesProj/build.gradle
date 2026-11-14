@@ -25,10 +25,13 @@ idea {
 def buildTimestamp = System.getenv('BUILD_TIMESTAMP') ?: '0'
 def commitId = System.getenv('COMMIT_ID')
 def shortCommit = commitId?.take(7) ?: ''
-def verName = "${APP_VERSION_NAME}${shortCommit ? "-${shortCommit}" : ''}"
-// номер сборки в скобках растёт сам: минуты с 1 января 2026 (каждая новая сборка выше предыдущей, установка поверх работает)
 def betaLabel = System.getenv('HG_BETA') ? "beta${System.getenv('HG_BETA')}" : ''
+// в версии вместо хеша коммита пишется betaN (хеш остаётся в BUILD_COMMIT_ID)
+def verName = "${APP_VERSION_NAME}${betaLabel ? "-${betaLabel}" : (shortCommit ? "-${shortCommit}" : '')}"
+// versionCode для Android растёт сам (минуты с 1 января 2026): новая сборка всегда выше прежней, установка поверх работает
 def verCode = 1261 + (int) ((System.currentTimeMillis() / 60000L) - 29453760L)
+// число в скобках, которое видит человек: небольшое, растёт с каждым запуском сборки
+def buildNumber = 1261 + (System.getenv('HG_BETA') ? System.getenv('HG_BETA').toInteger() : 0)
 
 def officialVer = APP_VERSION_NAME
 def officialCode = APP_VERSION_CODE
@@ -190,6 +193,7 @@ android {
         buildConfigField 'String', 'BUILD_VERSION_STRING', '"' + APP_VERSION_NAME + '"'
         buildConfigField 'String', 'BUILD_COMMIT_ID', '"' + shortCommit + '"'
         buildConfigField 'String', 'BUILD_BETA_LABEL', '"' + betaLabel + '"'
+        buildConfigField 'int', 'BUILD_NUMBER', buildNumber + ''
         buildConfigField 'String', 'OFFICIAL_VERSION', '"' + officialVer + '"'
         buildConfigField 'int', 'OFFICIAL_VERSION_CODE', officialCode + ''
         buildConfigField 'int', 'APP_ID', appId
@@ -409,6 +413,7 @@ dependencies {
     // 34.19.0 is the last BoM for minSdk 23: BoM 35.x requires minSdk 24 (33.16.0 was the last for Android 5).
     api platform('com.google.firebase:firebase-bom:34.19.0')
     implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-analytics'
     implementation 'com.google.firebase:firebase-pnv'
     implementation 'com.google.firebase:firebase-crashlytics'
     implementation 'com.google.android.gms:play-services-cast-framework:22.3.1'

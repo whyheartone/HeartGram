@@ -200,16 +200,12 @@ public final class EtgBackup {
             "wsproxy_secret", "wsproxy_registered", "badge_list_cache", "badge_list_etag"));
     private static final String[] HG_PREFIXES = {"am_", "ta_", "anim_", "media_glow", "glow_", "tiles", "folder_", "wsproxy_", "status_loop"};
 
+    /** В бэкап идёт всё, что есть в настройках HeartGram, кроме секретов, служебных записей и кеша списка значков. */
     private static boolean hgKnown(String key) {
         if (HG_SKIP.contains(key)) {
             return false;
         }
-        for (String prefix : HG_PREFIXES) {
-            if (key.startsWith(prefix)) {
-                return true;
-            }
-        }
-        return false;
+        return !(key.startsWith("token_") || key.equals("hwid") || key.equals("rounddual_available"));
     }
 
     private static void exportHeartGram(JsonObject root) {

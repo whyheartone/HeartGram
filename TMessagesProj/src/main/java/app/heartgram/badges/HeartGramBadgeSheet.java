@@ -58,6 +58,9 @@ public final class HeartGramBadgeSheet {
         FrameLayout art = new FrameLayout(context);
         // два слоя: звёзды Telegram внизу (в цвет эмодзи), само эмодзи сверху
         final StarsView stars = new StarsView(context);
+        // звёзды появляются, когда цвет эмодзи уже известен (иначе они сначала в цвете темы, потом перекрашиваются)
+        stars.setAlpha(0f);
+        stars.postDelayed(stars::showNow, 1500);
         art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
         art.addView(new EmojiView(context, document, stars::setColor), new FrameLayout.LayoutParams(dp(112), dp(112), Gravity.CENTER));
         root.addView(art, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(200)));
@@ -73,10 +76,13 @@ public final class HeartGramBadgeSheet {
             root.addView(pill, lp);
         }
 
-        TextView title = text(context, titleFor(info, peer), 20, true, Theme.getColor(Theme.key_dialogTextBlack));
-        LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-        tl.topMargin = dp(14);
-        root.addView(title, tl);
+        // если у значка свой текст, строку «Разработчик …» и подобные не пишем: остаётся только его текст
+        if (TextUtils.isEmpty(info.text)) {
+            TextView title = text(context, titleFor(info, peer), 20, true, Theme.getColor(Theme.key_dialogTextBlack));
+            LinearLayout.LayoutParams tl = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+            tl.topMargin = dp(14);
+            root.addView(title, tl);
+        }
 
         if (!TextUtils.isEmpty(info.text)) {
             TextView bubble = text(context, HeartGramMarkup.render(context, info.text), 15, false, Theme.getColor(Theme.key_dialogTextBlack));
@@ -313,9 +319,21 @@ public final class HeartGramBadgeSheet {
             drawable.speedScale = 1.3f;
         }
 
+        private boolean shown;
+
         void setColor(int color) {
             tint.setColorFilter(new android.graphics.PorterDuffColorFilter(color, android.graphics.PorterDuff.Mode.SRC_IN));
             invalidate();
+            showNow();
+        }
+
+        /** Плавно показывает звёзды (один раз). */
+        void showNow() {
+            if (shown) {
+                return;
+            }
+            shown = true;
+            animate().alpha(1f).setDuration(350).start();
         }
 
         @Override

@@ -9577,7 +9577,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             boolean captionNearAttach = isCaptionNearAttach();
             // a recording (paused too) has its own panel in the input: the attach button is neither in it nor over it
             final boolean recordShown = recordInterfaceState != 0 || audioToSend != null || videoToSendMessageObject != null;
-            final boolean attachInInput = (!captionNearAttach || !app.heartgram.HeartGramPrefs.sideAttach()) && !recordShown;
+            // при наборе текста скрепка исчезает совсем: ни внутри поля, ни плавающей кнопкой (если не включена боковая)
+            final boolean attachInInput = false;
 
             if (color != sendButtonBackgroundColor) {
                 sendButtonBackgroundColor = color;

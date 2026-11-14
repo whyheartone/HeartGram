@@ -110,11 +110,7 @@ public class AboutHeaderCell extends LinearLayout {
             sb.append(' ').append(org.telegram.messenger.BuildConfig.BUILD_BETA_LABEL);
         }
         try {
-            PackageInfo info = ApplicationLoader.applicationContext.getPackageManager()
-                    .getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
-            if (info != null) {
-                sb.append(" (").append(info.versionCode).append(")");
-            }
+            sb.append(" (").append(org.telegram.messenger.BuildConfig.BUILD_NUMBER).append(")");
         } catch (Exception ignore) {
         }
         if (TextUtils.isEmpty(org.telegram.messenger.BuildConfig.BUILD_BETA_LABEL) && !TextUtils.isEmpty(BuildVars.BUILD_COMMIT_ID)) {

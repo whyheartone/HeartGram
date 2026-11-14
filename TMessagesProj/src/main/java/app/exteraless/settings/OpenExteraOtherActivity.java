@@ -69,6 +69,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
     private int wsProxyRow = -1;
     private int wsProxyDividerRow = -1;
     private int supportRefreshes;
+    private int analyticsRow = -1;
     private int supportHeaderRow = -1;
     private int supportStartRow = -1;
     private int supportDividerRow = -1;
@@ -142,13 +143,6 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         experimentalHeaderRow = localPremiumRow = experimentalDividerRow = -1;
         unlimitedPinnedDialogsRow = voiceEnhancementsRow = enhancedVideoBitrateRow = sensitiveContentRow = -1;
 
-        if (tw.nekomimi.nekogram.utils.AndroidUtil.hasOwnFirebase()) {
-            // свои отчёты о падениях (наш Firebase, включаются вручную)
-            googleHeaderRow = addRow("googleHeader");
-            crashReportsRow = addRow("crashReports");
-            googleDividerRow = addRow();
-        }
-
         supportItems = app.heartgram.badges.HeartGramBadges.supportItems();
         supportHeaderRow = supportStartRow = supportDividerRow = -1;
         if (!supportItems.isEmpty()) {
@@ -161,6 +155,14 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         }
         wsProxyRow = addRow("wsProxy");
         wsProxyDividerRow = addRow();
+
+        if (tw.nekomimi.nekogram.utils.AndroidUtil.hasOwnFirebase()) {
+            // отчёты о сбоях и статистика: наш Firebase, обе вещи включаются вручную
+            googleHeaderRow = addRow("googleHeader");
+            crashReportsRow = addRow("crashReports");
+            analyticsRow = addRow("analytics");
+            googleDividerRow = addRow();
+        }
 
         backupHeaderRow = addRow("backupHeader");
         exportEtgRow = addRow("exportEtgSettings");
@@ -219,6 +221,15 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
     protected void onItemClick(View view, int position, float x, float y) {
         if (position == wsProxyRow) {
             presentFragment(new app.heartgram.settings.HeartGramSettingsActivity());
+            return;
+        }
+        if (position == analyticsRow) {
+            boolean on = !app.heartgram.HeartGramPrefs.prefs().getBoolean("analytics", false);
+            app.heartgram.HeartGramPrefs.prefs().edit().putBoolean("analytics", on).apply();
+            app.heartgram.HeartGramAnalytics.apply();
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(on);
+            }
             return;
         }
         if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
@@ -291,6 +302,51 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             }
         }
         return emoji + " " + item[0];
+    }
+
+    /** Подпись под способами поддержки: «Поддержите разработку» — ссылка на пояснение. */
+    private CharSequence supportCallToAction() {
+        final String link = app.heartgram.HeartGramLabels.tr("Поддержите разработку", "Support the development");
+        final String tail = app.heartgram.HeartGramLabels.tr(" и получите уникальный значок.", " and get a unique badge.");
+        android.text.SpannableString text = new android.text.SpannableString(link + tail);
+        text.setSpan(new android.text.style.ClickableSpan() {
+            @Override
+            public void onClick(View widget) {
+                showSupportInfo();
+            }
+
+            @Override
+            public void updateDrawState(android.text.TextPaint ds) {
+                ds.setColor(Theme.getColor(Theme.key_windowBackgroundWhiteLinkText));
+                ds.setUnderlineText(false);
+            }
+        }, 0, link.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        return text;
+    }
+
+    private void showSupportInfo() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        String note = app.heartgram.badges.HeartGramBadges.supportNote();
+        String how = note != null && !note.trim().isEmpty() ? note.trim() : app.heartgram.HeartGramLabels.tr(
+                "Выберите любой способ выше и отправьте любую сумму. Затем напишите автору, что оплатили: значок добавят вручную.",
+                "Pick any option above and send any amount. Then message the author that you paid: the badge is added by hand.");
+        String what = app.heartgram.HeartGramLabels.tr(
+                "Уникальный значок появится рядом с вашим именем в списке чатов, профиле и сообщениях у всех, кто пользуется HeartGram. Его можно выбрать из набора анимированных эмодзи.",
+                "A unique badge appears next to your name in chats, your profile and messages for everyone using HeartGram. You pick it from a set of animated emoji.");
+        android.text.SpannableStringBuilder message = new android.text.SpannableStringBuilder();
+        String head1 = app.heartgram.HeartGramLabels.tr("Что получите", "What you get");
+        String head2 = app.heartgram.HeartGramLabels.tr("Как получить", "How to get it");
+        message.append(head1).append('\n').append(what).append("\n\n").append(head2).append('\n').append(how);
+        message.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, head1.length(), 0);
+        int start = head1.length() + 1 + what.length() + 2;
+        message.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, start + head2.length(), 0);
+        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity());
+        builder.setTitle(app.heartgram.HeartGramLabels.tr("Поддержите разработку", "Support the development"));
+        builder.setMessage(message);
+        builder.setPositiveButton("OK", null);
+        showDialog(builder.create());
     }
 
     /** Адрес для копирования: из «copy:адрес» или из второго поля. */
@@ -624,9 +680,13 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                     TextCheckCell cell = (TextCheckCell) holder.itemView;
                     cell.setEnabled(true, null);
                     if (position == crashReportsRow) {
-                        cell.setTextAndCheck(getString(R.string.OEGeneralCrashReports),
+                        cell.setTextAndCheck(app.heartgram.HeartGramLabels.tr("Отчёты о сбоях", "Crash reports"),
                                 GeneralConfig.crashReports(), true);
                         cell.setIcon(R.drawable.msg_report);
+                    } else if (position == analyticsRow) {
+                        cell.setTextAndCheck(app.heartgram.HeartGramLabels.tr("Анонимная статистика", "Anonymous statistics"),
+                                app.heartgram.HeartGramPrefs.prefs().getBoolean("analytics", false), false);
+                        cell.setIcon(R.drawable.msg_stats);
                     } else if (position == contentCaptureRow) {
                         cell.setTextAndValueAndCheck(getString(R.string.OEGeneralContentCapture),
                                 getString(R.string.OEGeneralContentCaptureInfo), GeneralConfig.contentCapture(), true, false);
@@ -695,7 +755,11 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;
                     boolean bottom = position == bottomDividerRow;
                     if (position == googleDividerRow) {
-                        cell.setText(getString(R.string.OEGeneralCrashReportsInfo));
+                        cell.setText(app.heartgram.HeartGramLabels.tr(
+                                "Выключено по умолчанию. Отчёты о сбоях и статистика уходят только в проект HeartGram и только если вы их включили. Содержимое чатов не отправляется.",
+                                "Off by default. Crash reports and statistics are sent only to the HeartGram project and only if you turn them on. Chat content is never sent."));
+                    } else if (position == supportDividerRow) {
+                        cell.setText(supportCallToAction());
                     } else if (position == glyphDividerRow) {
                         cell.setText(getString(R.string.OEGlyphInfo));
                     } else {
@@ -717,8 +781,11 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             if (position == supportHeaderRow) {
                 return TYPE_HEADER;
             }
-            if (position == supportDividerRow || position == wsProxyDividerRow) {
+            if (position == wsProxyDividerRow) {
                 return TYPE_SHADOW;
+            }
+            if (position == supportDividerRow) {
+                return TYPE_INFO_PRIVACY;
             }
             if (position == nagramHeaderRow || position == googleHeaderRow
                     || position == experimentalHeaderRow || position == backupHeaderRow) {
