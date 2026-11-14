@@ -26,9 +26,21 @@ from PIL import Image, ImageDraw  # noqa: E402
 DENSITIES = {"mdpi": 108, "hdpi": 162, "xhdpi": 216, "xxhdpi": 324, "xxxhdpi": 432}
 NS = 'xmlns:android="http://schemas.android.com/apk/res/android"'
 
+
+
+def _heart_path(cx=54.0, cy=56.0, width=41.8, n=96):
+    """Контур сердца по той же кривой, что у матрицы Nothing (viewport 108)."""
+    pts = []
+    for i in range(n):
+        t = 2 * math.pi * i / n
+        x = 16 * math.sin(t) ** 3
+        y = 13 * math.cos(t) - 5 * math.cos(2 * t) - 2 * math.cos(3 * t) - math.cos(4 * t)
+        pts.append((cx + x * width / 32.0, cy - y * width / 32.0 - width * 0.03))
+    return "M" + " L".join("%.2f,%.2f" % p for p in pts) + " Z"
+
+
 # сердце одной формы везде (viewport 108)
-HEART_PATH = ("M54,75.5 C52.6,74.4 33.5,61.6 33.5,47.6 C33.5,41.2 38.3,36.5 44.1,36.5 C48.3,36.5 51.9,39 54,42.6 "
-              "C56.1,39 59.7,36.5 63.9,36.5 C69.7,36.5 74.5,41.2 74.5,47.6 C74.5,61.6 55.4,74.4 54,75.5 Z")
+HEART_PATH = _heart_path()
 
 # id, название, сердце: "pink" как у основной иконки или цвет
 VARIANTS = [("midnight", "Неон"), ("snow", "Снег"), ("lavender", "Сирень"), ("ocean", "Космос"), ("mint", "Мята"), ("sunset", "Постер")]
@@ -140,10 +152,6 @@ def mono_nothing():
     # Mono: тёмный фон, тонкие линии, белый контур сердца
     mono = Image.new("RGB", (S, S), (31, 31, 31))
     dm = ImageDraw.Draw(mono)
-    line, w = (72, 72, 72), int(S * 0.012)
-    for a, b, c, e in [(0, 0.30, 0.30, 0.30), (0.30, 0.30, 0.30, 0.0), (1.0, 0.34, 0.72, 0.34), (0.72, 0.34, 0.72, 0.0),
-                       (0, 0.70, 0.34, 0.70), (0.34, 0.70, 0.34, 1.0), (0.70, 1.0, 0.70, 0.68), (0.70, 0.68, 1.0, 0.68)]:
-        dm.line((a * S, b * S, c * S, e * S), fill=line, width=w)
     r = S * 0.012
     for x, y in heart_points(S / 2, S / 2, heart_w):
         dm.ellipse((x - r, y - r, x + r, y + r), fill=(255, 255, 255))

@@ -1341,13 +1341,13 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
     }
 
     public static String settingsLink(String pluginId, String linkAlias) {
-        String link = "https://t.me/exteraSettings?p=" + android.net.Uri.encode(pluginId);
+        String link = "https://t.me/HeartGramSettings?p=" + android.net.Uri.encode(pluginId);
         return TextUtils.isEmpty(linkAlias) ? link : link + "&s=" + android.net.Uri.encode(linkAlias);
     }
 
     public static boolean isSettingsLink(String path, android.net.Uri data) {
         return path != null && data != null
-                && ("exterasettings".equalsIgnoreCase(path) || "exteraless".equalsIgnoreCase(path))
+                && ("heartgramsettings".equalsIgnoreCase(path) || "exterasettings".equalsIgnoreCase(path) || "exteraless".equalsIgnoreCase(path))
                 && !TextUtils.isEmpty(data.getQueryParameter("p"));
     }
 

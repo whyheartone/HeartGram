@@ -43,7 +43,7 @@ public abstract class SettingItem {
             return null;
         }
         final String alias = prefix == null ? linkAlias : prefix + ':' + linkAlias;
-        return "https://t.me/exteraSettings?p=" + pluginId + "&s=" + alias;
+        return "https://t.me/HeartGramSettings?p=" + pluginId + "&s=" + alias;
     }
 
     public final String getType() {

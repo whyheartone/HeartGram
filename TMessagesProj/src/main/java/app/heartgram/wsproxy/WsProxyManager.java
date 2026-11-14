@@ -40,11 +40,11 @@ public final class WsProxyManager {
     }
 
     public static boolean fronting() {
-        return p().getBoolean(K_FRONTING, true);
+        return p().getBoolean(K_FRONTING, false);
     }
 
     public static boolean tcpFallback() {
-        return p().getBoolean(K_TCP, true);
+        return p().getBoolean(K_TCP, false);
     }
 
     /** Ручные адреса шлюзов в виде «2:149.154.167.220,4:149.154.167.220»; для остальных ДЦ берутся стандартные. */

@@ -36,13 +36,19 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
         final String title;
         final boolean def;
         final Runnable onToggle;
+        final String subtitle;
 
         Row(Kind kind, String key, String title, boolean def, Runnable onToggle) {
+            this(kind, key, title, def, onToggle, null);
+        }
+
+        Row(Kind kind, String key, String title, boolean def, Runnable onToggle, String subtitle) {
             this.kind = kind;
             this.key = key;
             this.title = title;
             this.def = def;
             this.onToggle = onToggle;
+            this.subtitle = subtitle;
         }
     }
 
@@ -68,8 +74,12 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
                         + "Сообщения по-прежнему шифруются, прокси их не читает. Основа: tg-ws-proxy (Flowseal).",
                 "Telegram traffic goes through a built-in local proxy and then over WebSocket to Telegram servers. "
                         + "Messages stay encrypted, the proxy cannot read them. Based on tg-ws-proxy (Flowseal)."), false, null));
-        rows.add(new Row(Kind.TOGGLE, "wsproxy_fronting", tr("Маскировка соединения", "Connection masking"), true, null));
-        rows.add(new Row(Kind.TOGGLE, "wsproxy_tcp", tr("Запасной прямой путь (TCP)", "Direct fallback (TCP)"), true, null));
+        rows.add(new Row(Kind.TOGGLE, "wsproxy_fronting", tr("Маскировка соединения", "Connection masking"), false, null, tr(
+                "В TLS-рукопожатии подставляется другое имя сервера, чтобы соединение труднее было опознать. Сертификат при этом не проверяется. Включайте, только если без неё не подключается.",
+                "Another server name is sent in the TLS handshake so the connection is harder to recognize. The certificate is not checked. Enable only if it does not connect without it.")));
+        rows.add(new Row(Kind.TOGGLE, "wsproxy_tcp", tr("Запасной прямой путь (TCP)", "Direct fallback (TCP)"), false, null, tr(
+                "Если соединение по WebSocket не удалось, трафик идёт к серверам Telegram напрямую, без обхода. Нужен для дата-центров, которые шлюз не обслуживает (медиа, эмодзи). При блокировке может не работать.",
+                "If the WebSocket connection fails, traffic goes to Telegram servers directly, without bypass. Needed for data centers the gateway does not serve (media, emoji). May not work under blocking.")));
         rows.add(new Row(Kind.INFO, null, status(), false, null));
     }
 
@@ -160,7 +170,11 @@ public class HeartGramSettingsActivity extends BaseNekoSettingsActivity {
                     ((HeaderCell) holder.itemView).setText(row.title);
                     break;
                 case TYPE_CHECK:
-                    ((TextCheckCell) holder.itemView).setTextAndCheck(row.title, p().getBoolean(row.key, row.def), !isLast(position));
+                    if (row.subtitle != null) {
+                        ((TextCheckCell) holder.itemView).setTextAndValueAndCheck(row.title, row.subtitle, p().getBoolean(row.key, row.def), true, !isLast(position));
+                    } else {
+                        ((TextCheckCell) holder.itemView).setTextAndCheck(row.title, p().getBoolean(row.key, row.def), !isLast(position));
+                    }
                     break;
                 case TYPE_INFO_PRIVACY: {
                     TextInfoPrivacyCell cell = (TextInfoPrivacyCell) holder.itemView;

@@ -327,8 +327,17 @@ public class DrawerHeaderView extends FrameLayout {
             hgBadgeDrawable.setParticles(true, true);
             hgBadgeDrawable.setColor(statusColor);
             nameView.setRightDrawable2(hgBadgeDrawable);
+            final org.telegram.tgnet.TLRPC.User badgeUser = user;
+            nameView.setRightDrawable2OnClick(v -> {
+                // значок в боковом меню: подпись выезжает снизу на текущем экране, как в профиле
+                org.telegram.ui.ActionBar.BaseFragment fragment = org.telegram.ui.LaunchActivity.getSafeLastFragment();
+                if (fragment != null) {
+                    app.heartgram.badges.HeartGramBadges.openBadge(fragment, badgeUser);
+                }
+            });
         } else {
             nameView.setRightDrawable2(null);
+            nameView.setRightDrawable2OnClick(null);
         }
 
         updateProxyStatus();

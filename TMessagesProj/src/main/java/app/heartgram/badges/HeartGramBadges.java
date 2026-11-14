@@ -360,7 +360,7 @@ public final class HeartGramBadges {
             final android.view.View parent = (android.view.View) bulletin.getLayout().getParent();
             if (parent != null && parent.getLayoutParams() instanceof android.view.ViewGroup.MarginLayoutParams) {
                 android.view.ViewGroup.MarginLayoutParams lp = (android.view.ViewGroup.MarginLayoutParams) parent.getLayoutParams();
-                lp.bottomMargin += AndroidUtilities.dp(36);
+                lp.bottomMargin += AndroidUtilities.dp(12);
                 parent.setLayoutParams(lp);
             }
         } catch (Throwable t) {

@@ -176,17 +176,13 @@ def make(kind, size=S):
         for cx, cy, r in ((0.16, 0.2, 20), (0.86, 0.78, 26), (0.78, 0.12, 12)):
             _sparkle(img, cx * s, cy * s, r * s / 432, (255, 224, 140))
         return img.convert("RGB")
-    if kind == "mint":  # мята: диагональный градиент и плавные полупрозрачные волны
-        arr = _vgrad(s, "#9AF3CF", "#0F9E8C", 0.35)
-        arr = _radial(s, 0.2, 0.1, 0.9, "#F2FFF8", 0.8, arr)
+    if kind == "mint":  # мята: глубокий зелёно-бирюзовый градиент и крупные мягкие круги
+        arr = _vgrad(s, "#5EEDBE", "#0A7A68", 0.5)
         img = _to_img(arr).convert("RGBA")
-        x = np.linspace(0, 1, s)
-        for k, (base, amp, ph, alpha) in enumerate(((0.58, 0.07, 0.0, 70), (0.70, 0.06, 1.7, 80), (0.82, 0.05, 3.1, 95))):
-            wave = Image.new("RGBA", (s, s), (0, 0, 0, 0))
-            ys = (base + amp * np.sin(x * 2 * np.pi * 1.15 + ph)) * s
-            pts = [(float(xx * s), float(yy)) for xx, yy in zip(x, ys)] + [(s, s), (0, s)]
-            ImageDraw.Draw(wave).polygon(pts, fill=(255, 255, 255, alpha) if k == 0 else (8, 110, 100, alpha))
-            img.alpha_composite(wave.filter(ImageFilter.GaussianBlur(s / 220)))
+        for (cx, cy, r, alpha) in ((0.95, 1.0, 0.62, 46), (0.05, 0.0, 0.42, 34), (0.78, 0.18, 0.2, 26)):
+            ring = Image.new("RGBA", (s, s), (0, 0, 0, 0))
+            ImageDraw.Draw(ring).ellipse((s * (cx - r), s * (cy - r), s * (cx + r), s * (cy + r)), fill=(255, 255, 255, alpha))
+            img.alpha_composite(ring.filter(ImageFilter.GaussianBlur(s / 90)))
         return img.convert("RGB")
     if kind == "rose":  # роза: винный фон, крупные розы с листьями по углам, свет сверху
         arr = _vgrad(s, "#6A1736", "#2A0A18", 0.2)
@@ -282,7 +278,7 @@ def make_heart(kind, mask):
     if kind == "ocean":  # космос: белое сердце с голубым свечением
         return flat((255, 255, 255), (5, 20, 90), 0.4, glow=((110, 170, 255), 0.75))
     if kind == "mint":  # белое сердце, переходящее в нежно-розовый
-        return flat(None, (0, 70, 60), 0.4, grad=((255, 255, 255), (255, 214, 232)))
+        return flat((255, 255, 255), (0, 80, 64), 0.4)
     if kind == "sunset":  # постер: плоское сердце с жёсткой тенью и контуром
         off = int(s * 0.03)
         dark = np.full((s, s, 3), np.array([70, 20, 70], np.float32))

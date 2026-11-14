@@ -423,7 +423,7 @@ public class PluginInstallBottomSheet extends com.exteragram.messenger.plugins.u
 
     /** Зелёная плашка: источник плагина из списка проверенных. */
     public static android.view.View createVerifiedBox(Context context, CharSequence titleText, CharSequence infoText) {
-        return createBox(context, titleText, infoText, null, Theme.key_windowBackgroundWhiteGreenText2);
+        return createBox(context, titleText, infoText, null, Theme.key_windowBackgroundWhiteGreenText);
     }
 
     private static android.view.View createBox(Context context, CharSequence titleText,
@@ -433,7 +433,7 @@ public class PluginInstallBottomSheet extends com.exteragram.messenger.plugins.u
         box.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(10),
                 AndroidUtilities.dp(12), AndroidUtilities.dp(10));
         box.setBackground(Theme.createRoundRectDrawable(AndroidUtilities.dp(10),
-                ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 30)));
+                ColorUtils.setAlphaComponent(Theme.getColor(colorKey), 64)));
 
         TextView title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14);

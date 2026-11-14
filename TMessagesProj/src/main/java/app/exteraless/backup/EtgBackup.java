@@ -128,6 +128,7 @@ public final class EtgBackup {
             }
             section.add(entry.key, value);
         }
+        exportHeartGram(root);
         String json = GSON.toJson(root);
         return encrypt ? InvisibleEncryptor.encode(json) : json;
     }
@@ -186,6 +187,86 @@ public final class EtgBackup {
             } catch (Exception e) {
                 FileLog.e(e);
             }
+        }
+        applied += importHeartGram(root);
+        return applied;
+    }
+
+    // ---- Настройки HeartGram (анимации, плитки, папки, обход блокировок) ----
+
+    private static final String SECTION_HEARTGRAM = "heartgram_ui";
+    /** Ключи, которые в бэкап не попадают: секрет прокси, служебные записи и кеш списка значков. */
+    private static final java.util.Set<String> HG_SKIP = new java.util.HashSet<>(java.util.Arrays.asList(
+            "wsproxy_secret", "wsproxy_registered", "badge_list_cache", "badge_list_etag"));
+    private static final String[] HG_PREFIXES = {"am_", "ta_", "anim_", "media_glow", "glow_", "tiles", "folder_", "wsproxy_", "status_loop"};
+
+    private static boolean hgKnown(String key) {
+        if (HG_SKIP.contains(key)) {
+            return false;
+        }
+        for (String prefix : HG_PREFIXES) {
+            if (key.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void exportHeartGram(JsonObject root) {
+        try {
+            JsonObject section = new JsonObject();
+            for (java.util.Map.Entry<String, ?> e : app.heartgram.HeartGramPrefs.prefs().getAll().entrySet()) {
+                Object v = e.getValue();
+                if (!hgKnown(e.getKey())) {
+                    continue;
+                }
+                if (v instanceof Boolean) {
+                    section.addProperty(e.getKey(), (Boolean) v);
+                } else if (v instanceof Integer) {
+                    section.addProperty(e.getKey(), (Integer) v);
+                } else if (v instanceof String && ((String) v).length() < 4096) {
+                    section.addProperty(e.getKey(), (String) v);
+                }
+            }
+            if (section.size() > 0) {
+                root.add(SECTION_HEARTGRAM, section);
+            }
+        } catch (Exception e) {
+            FileLog.e(e);
+        }
+    }
+
+    private static int importHeartGram(JsonObject root) {
+        int applied = 0;
+        try {
+            if (root == null || !root.has(SECTION_HEARTGRAM) || !root.get(SECTION_HEARTGRAM).isJsonObject()) {
+                return 0;
+            }
+            SharedPreferences.Editor editor = app.heartgram.HeartGramPrefs.prefs().edit();
+            for (java.util.Map.Entry<String, JsonElement> e : root.getAsJsonObject(SECTION_HEARTGRAM).entrySet()) {
+                if (!hgKnown(e.getKey()) || !e.getValue().isJsonPrimitive()) {
+                    continue;
+                }
+                JsonPrimitive p = e.getValue().getAsJsonPrimitive();
+                if (p.isBoolean()) {
+                    editor.putBoolean(e.getKey(), p.getAsBoolean());
+                } else if (p.isNumber()) {
+                    Integer i = exactInteger(p);
+                    if (i == null) {
+                        continue;
+                    }
+                    editor.putInt(e.getKey(), i);
+                } else if (p.isString() && p.getAsString().length() < 4096) {
+                    editor.putString(e.getKey(), p.getAsString());
+                } else {
+                    continue;
+                }
+                applied++;
+            }
+            editor.apply();
+            app.heartgram.animations.MediaGlow.refreshEnabled();
+        } catch (Exception e) {
+            FileLog.e(e);
         }
         return applied;
     }
