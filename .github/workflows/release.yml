@@ -43,6 +43,8 @@ jobs:
       NATIVE_TARGET: ${{ matrix.target }}
       HG_LIST_URL: ${{ secrets.HG_LIST_URL }}
       HG_SEAL_KEY: ${{ secrets.HG_SEAL_KEY }}
+      TELEGRAM_APP_ID: ${{ secrets.TELEGRAM_APP_ID }}
+      TELEGRAM_APP_HASH: ${{ secrets.TELEGRAM_APP_HASH }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -83,6 +85,14 @@ jobs:
           if [ $MEMORY_GB -ge 12 ]; then
             sed -i '/^org\.gradle\.jvmargs=/d' gradle.properties
             echo "org.gradle.jvmargs=-Xmx8G -XX:MaxMetaspaceSize=2G -XX:+UseParallelGC -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8" >> gradle.properties
+          fi
+      - name: Firebase config (own project, if provided)
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          if [ -n "$GOOGLE_SERVICES_JSON" ]; then
+            echo "$GOOGLE_SERVICES_JSON" > TMessagesProj/google-services.json
+            echo "own google-services.json written"
           fi
       - name: Restore signing key
         env:
