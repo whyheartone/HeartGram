@@ -106,6 +106,9 @@ public class AboutHeaderCell extends LinearLayout {
     /** "12.9.2 (1258)" — версия плюс versionCode из PackageInfo, как в оригинале. */
     public static String buildVersionString() {
         StringBuilder sb = new StringBuilder(BuildVars.BUILD_VERSION_STRING);
+        if (!TextUtils.isEmpty(org.telegram.messenger.BuildConfig.BUILD_BETA_LABEL)) {
+            sb.append(' ').append(org.telegram.messenger.BuildConfig.BUILD_BETA_LABEL);
+        }
         try {
             PackageInfo info = ApplicationLoader.applicationContext.getPackageManager()
                     .getPackageInfo(ApplicationLoader.applicationContext.getPackageName(), 0);
@@ -114,7 +117,7 @@ public class AboutHeaderCell extends LinearLayout {
             }
         } catch (Exception ignore) {
         }
-        if (!TextUtils.isEmpty(BuildVars.BUILD_COMMIT_ID)) {
+        if (TextUtils.isEmpty(org.telegram.messenger.BuildConfig.BUILD_BETA_LABEL) && !TextUtils.isEmpty(BuildVars.BUILD_COMMIT_ID)) {
             sb.append(" · ").append(BuildVars.BUILD_COMMIT_ID);
         }
         return sb.toString();

@@ -43,6 +43,7 @@ jobs:
       NATIVE_TARGET: ${{ matrix.target }}
       HG_LIST_URL: ${{ secrets.HG_LIST_URL }}
       HG_SEAL_KEY: ${{ secrets.HG_SEAL_KEY }}
+      HG_BETA: ${{ github.run_number }}
       TELEGRAM_APP_ID: ${{ secrets.TELEGRAM_APP_ID }}
       TELEGRAM_APP_HASH: ${{ secrets.TELEGRAM_APP_HASH }}
     steps:

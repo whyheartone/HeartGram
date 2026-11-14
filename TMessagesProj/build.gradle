@@ -27,6 +27,7 @@ def commitId = System.getenv('COMMIT_ID')
 def shortCommit = commitId?.take(7) ?: ''
 def verName = "${APP_VERSION_NAME}${shortCommit ? "-${shortCommit}" : ''}"
 // номер сборки в скобках растёт сам: минуты с 1 января 2026 (каждая новая сборка выше предыдущей, установка поверх работает)
+def betaLabel = System.getenv('HG_BETA') ? "beta${System.getenv('HG_BETA')}" : ''
 def verCode = 1261 + (int) ((System.currentTimeMillis() / 60000L) - 29453760L)
 
 def officialVer = APP_VERSION_NAME
@@ -188,6 +189,7 @@ android {
 
         buildConfigField 'String', 'BUILD_VERSION_STRING', '"' + APP_VERSION_NAME + '"'
         buildConfigField 'String', 'BUILD_COMMIT_ID', '"' + shortCommit + '"'
+        buildConfigField 'String', 'BUILD_BETA_LABEL', '"' + betaLabel + '"'
         buildConfigField 'String', 'OFFICIAL_VERSION', '"' + officialVer + '"'
         buildConfigField 'int', 'OFFICIAL_VERSION_CODE', officialCode + ''
         buildConfigField 'int', 'APP_ID', appId
