@@ -2817,9 +2817,11 @@ public class LocaleController {
     }
 
     public static String formatDateOnline(long date, boolean[] madeShorter, boolean localActivity, boolean relative) {
-        final int seenRes = localActivity ? R.string.OELastActivityFormatted : R.string.LastSeenFormatted;
-        final String seenDateKey = localActivity ? "OELastActivityDateFormatted" : "LastSeenDateFormatted";
-        final int seenDateRes = localActivity ? R.string.OELastActivityDateFormatted : R.string.LastSeenDateFormatted;
+        // подпись «был(а)» берётся из языка, выбранного человеком (в языковом пакете может быть своя, например «убежал(а)»),
+        // а не из зашитой строки: так локальная активность выглядит так же, как обычное «был(а) в сети»
+        final int seenRes = R.string.LastSeenFormatted;
+        final String seenDateKey = "LastSeenDateFormatted";
+        final int seenDateRes = R.string.LastSeenDateFormatted;
         try {
             if (relative && OpenExteraConfig.relativeLastSeen()) {
                 long diff = System.currentTimeMillis() / 1000 - date;
