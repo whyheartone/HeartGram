@@ -501,6 +501,33 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
         }
     }
 
+    /** Долгое нажатие на «Исключения»: режим выбирается сразу в меню у строки, без отдельного окна. */
+    @Override
+    protected boolean onItemLongClick(View view, int position, float x, float y) {
+        if (position != deletedExceptionsModeRow && position != editedExceptionsModeRow) {
+            return super.onItemLongClick(view, position, x, y);
+        }
+        final ConfigItem config = position == deletedExceptionsModeRow
+                ? NaConfig.INSTANCE.getSaveDeletedExceptionsMode()
+                : NaConfig.INSTANCE.getSaveEditedExceptionsMode();
+        final int row = position;
+        org.telegram.ui.Components.ItemOptions options = org.telegram.ui.Components.ItemOptions.makeOptions(this, view);
+        options.addChecked(config.Int() != 1, getString(R.string.SaveExceptionsAllExceptSelected), () -> {
+            config.setConfigInt(0);
+            if (listAdapter != null) {
+                listAdapter.notifyItemChanged(row);
+            }
+        });
+        options.addChecked(config.Int() == 1, getString(R.string.SaveExceptionsOnlySelected), () -> {
+            config.setConfigInt(1);
+            if (listAdapter != null) {
+                listAdapter.notifyItemChanged(row);
+            }
+        });
+        options.show();
+        return true;
+    }
+
     private void showSaveExceptionsModeDialog(ConfigItem config, int row) {
         Context context = getParentActivity();
         if (context == null) {
