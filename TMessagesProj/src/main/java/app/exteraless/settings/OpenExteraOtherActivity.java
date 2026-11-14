@@ -200,6 +200,15 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
     }
 
     @Override
+    protected boolean onItemLongClick(View view, int position, float x, float y) {
+        if (supportStartRow >= 0 && position >= supportStartRow && position < supportStartRow + supportItems.size()) {
+            copySupport(supportItems.get(position - supportStartRow));
+            return true;
+        }
+        return super.onItemLongClick(view, position, x, y);
+    }
+
+    @Override
     protected void onItemClick(View view, int position, float x, float y) {
         if (position == wsProxyRow) {
             presentFragment(new app.heartgram.settings.HeartGramSettingsActivity());
@@ -277,11 +286,46 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         return emoji + " " + item[0];
     }
 
+    /** Адрес для копирования: из «copy:адрес» или из второго поля. */
+    private static String supportValue(String[] item) {
+        String url = item[2];
+        if (url != null && url.startsWith("copy:")) {
+            return url.substring(5);
+        }
+        return item[1];
+    }
+
+    /** Похоже на адрес TON-кошелька (UQ…/EQ…, 48 символов). */
+    private static boolean isTonAddress(String v) {
+        return v != null && v.matches("^[UE]Q[A-Za-z0-9_-]{46}$");
+    }
+
+    private void copySupport(String[] item) {
+        String value = supportValue(item);
+        if (value != null && !value.isEmpty()) {
+            org.telegram.messenger.AndroidUtilities.addToClipboard(value);
+            org.telegram.ui.Components.BulletinFactory.of(this).createCopyBulletin(value).show();
+        }
+    }
+
     private void openSupport(String[] item) {
         if (getParentActivity() == null) {
             return;
         }
         String url = item[2];
+        String tonValue = supportValue(item);
+        if (isTonAddress(tonValue)) {
+            // TON: короткое нажатие открывает кошелёк (Tonkeeper и т.п.), зажатие копирует адрес
+            try {
+                getParentActivity().startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
+                        android.net.Uri.parse("ton://transfer/" + tonValue)));
+                return;
+            } catch (Exception ignored) {
+                // кошелька нет: копируем адрес
+            }
+            copySupport(item);
+            return;
+        }
         if (url != null && url.startsWith("copy:")) {
             // «copy:адрес» из API: копируем адрес кошелька
             String value = url.substring(5);
