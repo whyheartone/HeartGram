@@ -3162,6 +3162,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 if (isLiveComment) return false;
                 if (NekoConfig.useChatAttachMediaMenu.Bool() && !isStories)
                     return super.onTouchEvent(motionEvent);
+                if (hgCameraPopupDrag(motionEvent)) {
+                    return true;
+                }
                 createRecordCircle();
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                     if (recordCircle.isSendButtonVisible()) {
@@ -17791,6 +17794,65 @@ public class ChatActivityEnterView extends FrameLayout implements
         startLockTransition();
     }
 
+    // выбор камеры для кружка одним жестом: зажал кнопку, повёл палец на пункт, отпустил — пункт выбран
+    private ActionBarMenuSubItem[] hgCameraItems;
+    private ActionBarMenuSubItem hgCameraHover;
+
+    private ActionBarMenuSubItem hgCameraItemAt(float rawX, float rawY) {
+        if (hgCameraItems == null) {
+            return null;
+        }
+        int[] loc = new int[2];
+        for (ActionBarMenuSubItem item : hgCameraItems) {
+            if (item == null || !item.isAttachedToWindow()) {
+                continue;
+            }
+            item.getLocationOnScreen(loc);
+            if (rawX >= loc[0] && rawX <= loc[0] + item.getWidth() && rawY >= loc[1] && rawY <= loc[1] + item.getHeight()) {
+                return item;
+            }
+        }
+        return null;
+    }
+
+    private boolean hgCameraPopupDrag(MotionEvent event) {
+        if (cameraSelectionPopup == null || !cameraSelectionPopup.isShowing() || hgCameraItems == null) {
+            return false;
+        }
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            return false;
+        }
+        ActionBarMenuSubItem item = hgCameraItemAt(event.getRawX(), event.getRawY());
+        if (action == MotionEvent.ACTION_MOVE) {
+            if (item != hgCameraHover) {
+                if (hgCameraHover != null) {
+                    hgCameraHover.setPressed(false);
+                }
+                hgCameraHover = item;
+                if (item != null) {
+                    item.setPressed(true);
+                    if (!NekoConfig.disableVibration.Bool()) {
+                        performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);
+                    }
+                }
+            }
+            return true;
+        }
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+            if (hgCameraHover != null) {
+                hgCameraHover.setPressed(false);
+            }
+            hgCameraHover = null;
+            if (action == MotionEvent.ACTION_UP && item != null) {
+                item.performClick();
+            }
+            // отпустили мимо пунктов: меню остаётся, можно выбрать нажатием
+            return true;
+        }
+        return true;
+    }
+
     private void showCameraSelectionPopup(View anchorView, Runnable onFrontSelected, Runnable onRearSelected) {
         if (parentActivity == null) {
             return;
@@ -17824,6 +17886,8 @@ public class ChatActivityEnterView extends FrameLayout implements
             onRearSelected.run();
         });
         rearItem.setMinimumWidth(dp(196));
+        hgCameraItems = new ActionBarMenuSubItem[]{frontItem, rearItem};
+        hgCameraHover = null;
         popupLayout.addView(rearItem, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 48, LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT, 0, 48, 0, 0));
         popupLayout.updateRadialSelectors();
 
