@@ -114,6 +114,7 @@ jobs:
           export LOCAL_PROPERTIES="${{ secrets.LOCAL_PROPERTIES }}"
           BUILD_TIMESTAMP=$(date +%s)
           export BUILD_TIMESTAMP
+          # shellcheck disable=SC2086
           ./gradlew --stacktrace ${GRADLE_EXTRA:-} TMessagesProj:assembleRelease
       - name: Name the APK by ABI
         run: |
