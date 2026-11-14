@@ -139,7 +139,7 @@ jobs:
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
           else
-            TAG="v${VERSION}-hg${GITHUB_RUN_NUMBER}"
+            TAG="v${VERSION}-beta${GITHUB_RUN_NUMBER}"
           fi
           NOTES="${NOTES_INPUT:-HeartGram ${TAG}}"
           FLAGS=""
