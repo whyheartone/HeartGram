@@ -124,7 +124,7 @@ public final class MediaGlow {
             } else {
                 android.graphics.drawable.Drawable d = self.getDrawable(); // GIF, превью видео и т.п.
                 if (d != null && self == c) {
-                    drawMoving(canvas, d, reg, a);
+                    drawMoving(canvas, self, d, reg, a);
                 }
             }
             if (self == c) {
@@ -370,9 +370,10 @@ public final class MediaGlow {
     }
 
     /** GIF и видео, которые рисует сам ImageReceiver. */
-    private static void drawMoving(Canvas canvas, android.graphics.drawable.Drawable d, RectF r, float alpha) {
+    private static void drawMoving(Canvas canvas, Object owner, android.graphics.drawable.Drawable d, RectF r, float alpha) {
         long now = SystemClock.uptimeMillis();
-        boolean first = dynOwner.get() != d || dynBmp == null;
+        // владелец ореола — приёмник картинки, а не сам Drawable: у GIF он меняется между кадрами, и ореол «моргал»
+        boolean first = dynOwner.get() != owner || dynBmp == null;
         if (first || (videoEnabled() && now - dynLastSample >= SAMPLE_MS)) {
             dynLastSample = now;
             Bitmap frame = frameOf(d);
@@ -381,13 +382,13 @@ public final class MediaGlow {
                 int[] dims = new int[2];
                 int[] px = blurredPixels(frame, pad, dims);
                 if (px != null) {
-                    accept(d, px, dims[0], dims[1], pad);
+                    accept(owner, px, dims[0], dims[1], pad);
                 }
             } else {
-                push(d, frame, null);
+                push(owner, frame, null);
             }
         }
-        drawDynamic(canvas, d, r, alpha, null);
+        drawDynamic(canvas, owner, r, alpha, null);
     }
 
     /**

@@ -68,6 +68,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
 
     private int wsProxyRow = -1;
     private int wsProxyDividerRow = -1;
+    private int supportRefreshes;
     private int supportHeaderRow = -1;
     private int supportStartRow = -1;
     private int supportDividerRow = -1;
@@ -267,6 +268,14 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                 if (doc == null) {
                     org.telegram.ui.Components.AnimatedEmojiDrawable.make(org.telegram.messenger.UserConfig.selectedAccount,
                             org.telegram.ui.Components.AnimatedEmojiDrawable.CACHE_TYPE_KEYBOARD, id);
+                    // эмодзи ещё грузится: перерисовываем список позже, пока документ не появится (до 5 раз)
+                    if (supportRefreshes++ < 5) {
+                        org.telegram.messenger.AndroidUtilities.runOnUIThread(() -> {
+                            if (listAdapter != null) {
+                                listAdapter.notifyDataSetChanged();
+                            }
+                        }, 700);
+                    }
                 } else {
                     String alt = org.telegram.messenger.MessageObject.findAnimatedEmojiEmoticon(doc, null);
                     emoji = alt == null ? "" : alt;

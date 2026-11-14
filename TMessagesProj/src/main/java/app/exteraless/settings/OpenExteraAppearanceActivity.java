@@ -80,6 +80,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     /** Две карточки-превью формы плавающей кнопки. */
     private static final int TYPE_FAB_SHAPE = 106;
     private static final int TYPE_FOLDER_STYLE = 107;
+    private static final int TYPE_PILL_SLIDER = 108;
 
     // Appearance
     private int appearanceHeaderRow;
@@ -994,6 +995,17 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     chatListPreviewCell = new ChatListPreviewCell(mContext);
                     view = chatListPreviewCell;
                     break;
+                case TYPE_PILL_SLIDER: {
+                    AvatarCornersSeekBar pill = new AvatarCornersSeekBar(mContext, value -> {
+                        app.heartgram.HeartGramPrefs.prefs().edit().putInt("folder_pill_h", value).apply();
+                        org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface);
+                    }, 24, 40, app.heartgram.HeartGramLabels.tr("Высота кнопки", "Button height"), "24", "40");
+                    pill.setValueSuffix("dp");
+                    pill.setValue(app.heartgram.HeartGramPrefs.folderPillHeight());
+                    pill.setBackgroundColor(getThemedColor(Theme.key_windowBackgroundWhite));
+                    view = pill;
+                    break;
+                }
                 case TYPE_FOLDER_STYLE:
                     view = new app.heartgram.folders.FolderStyleView(mContext, () -> {
                         org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface);
@@ -1274,6 +1286,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                 return TYPE_FOLDERS;
             } else if (position == folderStyleRow) {
                 return TYPE_FOLDER_STYLE;
+            } else if (position == folderPillHeightRow) {
+                return TYPE_PILL_SLIDER;
             } else if (position == sectionRadiusRow) {
                 return TYPE_SECTION_SLIDER;
             } else if (position == appearanceHeaderRow || position == sectionsHeaderRow
