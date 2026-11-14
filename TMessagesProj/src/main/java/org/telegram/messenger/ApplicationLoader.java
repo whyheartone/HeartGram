@@ -461,10 +461,12 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
             enabled = false;
         } else if (preferences.contains("pushService")) {
             enabled = preferences.getBoolean("pushService", true);
-        } else if (!remoteFailed && PushListenerController.getProvider().hasServices()) {
+        } else if (pushServiceType != 0 && !remoteFailed && PushListenerController.getProvider().hasServices()) {
             return;
         } else {
-            enabled = MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
+            // по умолчанию уведомления работают в приложении (своя служба), пока нет собственного api_id для FCM
+            enabled = pushServiceType == 0
+                    || MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("keepAliveService", false);
             SharedPreferences.Editor editor = preferences.edit();
             editor.putBoolean("pushService", enabled);
             editor.putBoolean("pushConnection", enabled);
