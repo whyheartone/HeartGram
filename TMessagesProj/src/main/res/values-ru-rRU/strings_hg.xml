@@ -30,4 +30,5 @@
     <string name="HGXiaomiGms">Сервисы Google</string>
     <string name="HGUpdating">Скачивание обновления %1$d%%</string>
     <string name="HGMd3Tiles">Чаты плитками</string>
+    <string name="HGMd3EditorInfo">Живой предпросмотр на ваших чатах: форма и цвет плиток, остальные стили</string>
 </resources>

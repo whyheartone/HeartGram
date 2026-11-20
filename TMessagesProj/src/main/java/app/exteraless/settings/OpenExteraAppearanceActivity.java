@@ -158,6 +158,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private int emojiSetsRow;
     private int pillStackRow;
     private int playerStyleRow;
+    private int md3EditorRow;
     private int hidingRow;
     private int linksDividerRow;
 
@@ -229,6 +230,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         emojiSetsRow = addRow("emojiSets", "EmojiSets");
         pillStackRow = addRow("pillStack");
         playerStyleRow = addRow("playerStyle");
+        md3EditorRow = addRow("hgMd3Editor");
         hidingRow = addRow("hiding");
         linksDividerRow = addRow();
 
@@ -737,6 +739,9 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             return;
         } else if (position == playerStyleRow) {
             app.exteraless.player.PlayerSheet.openStyleEditor(this);
+            return;
+        } else if (position == md3EditorRow) {
+            presentFragment(new app.heartgram.settings.HeartGramMd3Activity());
             return;
         } else if (position == appNavigationRow) {
             presentFragment(new OpenExteraAppNavigationActivity());
@@ -1280,6 +1285,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                         cell.setTextAndValueAndIcon(getString(R.string.OEAppearancePillStack), getString(R.string.OEAppearancePillStackInfo), R.drawable.outline_header_search, true);
                     } else if (position == playerStyleRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.OEPlayerStyleTitle), getString(R.string.OEPlayerStyleInfo), R.drawable.msg_filled_data_music, true);
+                    } else if (position == md3EditorRow) {
+                        cell.setTextAndValueAndIcon("Material Design 3", getString(R.string.HGMd3EditorInfo), R.drawable.msg_theme, true);
                     } else if (position == hidingRow) {
                         cell.setTextAndValueAndIcon(getString(R.string.OEAppearanceHiding), getString(R.string.OEAppearanceHidingInfo), R.drawable.msg_archive_hide, false);
                     }
@@ -1354,7 +1361,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             } else if (position == fabShapeRow) {
                 return TYPE_FAB_SHAPE;
             } else if (position == appNavigationRow || position == iconPacksRow
-                    || position == emojiSetsRow || position == pillStackRow || position == playerStyleRow || position == hidingRow) {
+                    || position == emojiSetsRow || position == pillStackRow || position == playerStyleRow || position == md3EditorRow || position == hidingRow) {
                 return TYPE_DETAIL_SETTINGS;
             } else if (position == md3GroupRow || position == iosGroupRow) {
                 return TYPE_EXPANDABLE_SWITCH;

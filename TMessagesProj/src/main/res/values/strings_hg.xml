@@ -33,4 +33,5 @@
     <string name="HGXiaomiGms">Google services</string>
     <string name="HGUpdating">Downloading update %1$d%%</string>
     <string name="HGMd3Tiles">Chat tiles</string>
+    <string name="HGMd3EditorInfo">Live preview of your chats: tile shape and color, other styles</string>
 </resources>
