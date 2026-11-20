@@ -262,7 +262,16 @@ public final class MediaGlow {
 
     private static void drawStill(Canvas canvas, Bitmap b, RectF r, float alpha, ImageReceiver receiver) {
         int pad = PADS[size()];
-        blit(canvas, cachedGlow(b, pad, receiver), pad, r, alpha);
+        Bitmap glow = cachedGlow(b, pad, receiver);
+        if (glow == null && receiver != null) {
+            // ореол полного фото считается в фоне; пока он не готов, берём ореол миниатюры (он считается сразу),
+            // поэтому свечение есть с первого кадра, а не появляется с опозданием
+            Bitmap thumb = receiver.getThumbBitmap();
+            if (thumb != null && thumb != b && !thumb.isRecycled()) {
+                glow = cachedGlow(thumb, pad, receiver);
+            }
+        }
+        blit(canvas, glow, pad, r, alpha);
     }
 
     private static android.graphics.ColorMatrixColorFilter boostFilter;
