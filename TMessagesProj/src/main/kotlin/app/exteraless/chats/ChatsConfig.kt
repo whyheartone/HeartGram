@@ -154,6 +154,10 @@ object ChatsConfig {
     @JvmField
     val hideCameraTile = addConfig("OEChatsHideCameraTile", ConfigItem.configTypeBool, false)
 
+    /** Не показывать подсказку «Удерживайте для записи» при нажатии на кнопку записи. */
+    @JvmField
+    val hideVoiceHint = addConfig("OEChatsHideVoiceHint", ConfigItem.configTypeBool, true)
+
     @JvmField
     val inlineMathResult = addConfig("OEChatsInlineMathResult", ConfigItem.configTypeBool, true)
 

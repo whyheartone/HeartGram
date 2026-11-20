@@ -35,25 +35,29 @@ public class QuickToggleActivity extends Activity {
             message = "Ошибка ярлыка: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " - " + e.getMessage());
         }
         if (message != null) {
-            // окно не закрываем сразу: на части прошивок (MIUI/HyperOS) уведомление пропадает вместе с закрытым окном
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
-            try {
-                android.os.Vibrator vibrator = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
-                if (vibrator != null) {
-                    vibrator.vibrate(30);
-                }
-            } catch (Throwable ignored) {
-            }
-            new android.os.Handler(getMainLooper()).postDelayed(this::finish, 1600);
-            return;
+        } else {
+            FileLog.e("QuickToggleActivity: unknown action " + action);
         }
-        FileLog.e("QuickToggleActivity: unknown action " + action);
+        // ярлык включает режим и сразу открывает приложение уже в нём
+        try {
+            android.content.Intent launch = getPackageManager().getLaunchIntentForPackage(getPackageName());
+            if (launch != null) {
+                launch.addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED);
+                startActivity(launch);
+            }
+        } catch (Throwable e) {
+            FileLog.e(e);
+        }
         finish();
     }
 
     private CharSequence toggleGhostMode() {
         try {
-            NekoConfig.toggleGhostMode();
+            // «зайти с призраком»: включаем, а не переключаем, чтобы второй тап не выключал режим перед входом
+            if (!NekoConfig.isGhostModeActive()) {
+                NekoConfig.toggleGhostMode();
+            }
         } catch (Throwable e) {
             FileLog.e(e);
         }
@@ -64,8 +68,10 @@ public class QuickToggleActivity extends Activity {
 
     private CharSequence toggleSafeMode() {
         final PluginsController controller = PluginsController.getInstance();
-        final boolean enabled = !controller.isSafeMode();
-        controller.restart(enabled);
+        final boolean enabled = true;
+        if (!controller.isSafeMode()) {
+            controller.restart(true);
+        }
         return LocaleController.getString(enabled
                 ? R.string.PluginsSafeModeEnabledNow
                 : R.string.PluginsSafeModeDisabledNow);

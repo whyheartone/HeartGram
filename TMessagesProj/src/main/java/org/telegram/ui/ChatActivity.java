@@ -14764,8 +14764,8 @@ public class ChatActivity extends BaseFragment implements
             return;
         }
         if (NekoConfig.useChatAttachMediaMenu.Bool()) return;
-        // HeartGram: подсказка «Удерживайте для записи» по умолчанию не показывается (включается в настройках HeartGram)
-        if (!hide && !app.heartgram.HeartGramPrefs.prefs().getBoolean("voice_hint", false)) return;
+        // «Скрытие элементов» → «Скрыть подсказку «Удерживайте для записи»» (по умолчанию включено)
+        if (!hide && app.exteraless.chats.ChatsConfig.hideVoiceHint.Bool()) return;
         if (voiceHintTextView == null) {
             SizeNotifierFrameLayout frameLayout = contentView;
             int index = frameLayout.indexOfChild(chatInputViewsContainer);

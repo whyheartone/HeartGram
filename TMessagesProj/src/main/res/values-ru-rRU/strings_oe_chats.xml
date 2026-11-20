@@ -36,6 +36,7 @@
     <string name="OEChatsPhoto">Фото</string>
     <string name="OEChatsAlwaysSendInHD">Всегда отправлять в HD</string>
     <string name="OEChatsHideCameraTile">Скрыть плитку камеры</string>
+    <string name="OEChatsHideVoiceHint">Скрыть подсказку «Удерживайте для записи»</string>
 
     <string name="OEChatsDoubleTapSeekDuration">Перемотка двойным тапом</string>
     <string name="OEChatsPauseOnMinimize">Автопауза</string>

@@ -115,6 +115,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private int chatListPreviewRow;
     private int forceSnowRow;
     private int centerTitleRow;
+    private int statusAlwaysRow;
     // Material Design 3: сворачиваемая группа и пять вложенных стилей.
     private int md3GroupRow;
     private int md3LoadingRow;
@@ -199,6 +200,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         chatListPreviewRow = addRow("chatListPreview");
         forceSnowRow = addRow("forceSnow");
         centerTitleRow = addRow("centerTitle");
+        statusAlwaysRow = addRow("hgStatusAlways");
         senderMiniAvatarsRow = addRow("senderMiniAvatars");
         tilesRow = -1;
         // плитки настраиваются на экране «Material Design 3» (с живым предпросмотром), отдельных строк здесь нет
@@ -873,6 +875,13 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                 showRestartHint();
             });
             return;
+        } else if (position == statusAlwaysRow) {
+            boolean on = !app.heartgram.HeartGramPrefs.prefs().getBoolean("status_always", false);
+            app.heartgram.HeartGramPrefs.prefs().edit().putBoolean("status_always", on).apply();
+            if (view instanceof org.telegram.ui.Cells.TextCheckCell) {
+                ((org.telegram.ui.Cells.TextCheckCell) view).setChecked(on);
+            }
+            return;
         } else if (position == centerTitleRow) {
             // Обычный переключатель, а не селектор из четырёх пунктов:
             // центровка либо есть, либо нет.
@@ -1123,7 +1132,10 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     // иначе строка, побывавшая заблокированной, останется полупрозрачной.
                     cell.setEnabled(position != separateHeadersRow
                             || !AppearanceConfig.sectionsSeparatedHeadersForced(), null);
-                    if (position == centerTitleRow) {
+                    if (position == statusAlwaysRow) {
+                        cell.setTextAndCheck(app.heartgram.HeartGramLabels.tr("Всегда анимировать статус", "Always animate the status"),
+                                app.heartgram.HeartGramPrefs.prefs().getBoolean("status_always", false), true);
+                    } else if (position == centerTitleRow) {
                         cell.setTextAndCheck(getString(R.string.OEAppearanceCenterTitle),
                                 AppearanceConfig.INSTANCE.centerTitle(), true);
                     } else if (position == useSystemFontsRow) {

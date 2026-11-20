@@ -37,6 +37,7 @@
     <string name="OEChatsPhoto">Photo</string>
     <string name="OEChatsAlwaysSendInHD">Always Send in HD</string>
     <string name="OEChatsHideCameraTile">Hide Instant Camera Tile</string>
+    <string name="OEChatsHideVoiceHint">Hide the “Hold to record” hint</string>
 
     <string name="OEChatsDoubleTapSeekDuration">Double Tap Skip Time</string>
     <string name="OEChatsPauseOnMinimize">Auto-Pause</string>

@@ -327,6 +327,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
     private int hdrPhotosRow = -1;
     private int disableInstantCameraRow = -1;
     private int hideCameraTileRow = -1;
+    private int hideVoiceHintRow = -1;
     private int photoDividerRow = -1;
 
     // Videos
@@ -767,6 +768,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             hideReactionsChannelsRow = hideReactionsGroupsRow = hideReactionsPrivateRow = -1;
         }
         hideCameraTileRow = addRow("hideCameraTile");
+        hideVoiceHintRow = addRow("hideVoiceHint");
         hidingChatsDividerRow = addRow();
 
         hidingStickersHeaderRow = addRow("hidingStickersHeader");
@@ -2181,6 +2183,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         if (position == zoomSliderRow) return ChatsConfig.zoomSlider;
         if (position == staticZoomRow) return ChatsConfig.staticZoom;
         if (position == hideCameraTileRow) return ChatsConfig.hideCameraTile;
+        if (position == hideVoiceHintRow) return ChatsConfig.hideVoiceHint;
         if (position == hdrPhotosRow) return ChatsConfig.hdrPhotos;
         if (position == preferOriginalQualityRow) return ChatsConfig.preferOriginalQuality;
         if (position == swipeToPipRow) return ChatsConfig.swipeToPip;
@@ -2887,7 +2890,9 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                         getString(R.string.OEChatsHdrPhotosInfo),
                         ChatsConfig.hdrPhotos.Bool(), true, true);
             } else if (position == hideCameraTileRow) {
-                cell.setTextAndCheck(getString(R.string.OEChatsHideCameraTile), ChatsConfig.hideCameraTile.Bool(), false);
+                cell.setTextAndCheck(getString(R.string.OEChatsHideCameraTile), ChatsConfig.hideCameraTile.Bool(), true);
+            } else if (position == hideVoiceHintRow) {
+                cell.setTextAndCheck(getString(R.string.OEChatsHideVoiceHint), ChatsConfig.hideVoiceHint.Bool(), false);
             } else if (position == preferOriginalQualityRow) {
                 cell.setTextAndCheck(getString(R.string.OEChatsPreferOriginalQuality), ChatsConfig.preferOriginalQuality.Bool(), true);
             } else if (position == swipeToPipRow) {
