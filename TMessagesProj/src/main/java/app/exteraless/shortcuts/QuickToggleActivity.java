@@ -31,10 +31,23 @@ public class QuickToggleActivity extends Activity {
             }
         } catch (Throwable e) {
             FileLog.e(e);
+            // раньше ошибка глоталась молча, и ярлык казался «мёртвым»
+            message = "Ошибка ярлыка: " + e.getClass().getSimpleName() + (e.getMessage() == null ? "" : " - " + e.getMessage());
         }
         if (message != null) {
-            Toast.makeText(getApplicationContext(), message, Toast.LENGTH_SHORT).show();
+            // окно не закрываем сразу: на части прошивок (MIUI/HyperOS) уведомление пропадает вместе с закрытым окном
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            try {
+                android.os.Vibrator vibrator = (android.os.Vibrator) getSystemService(VIBRATOR_SERVICE);
+                if (vibrator != null) {
+                    vibrator.vibrate(30);
+                }
+            } catch (Throwable ignored) {
+            }
+            new android.os.Handler(getMainLooper()).postDelayed(this::finish, 1600);
+            return;
         }
+        FileLog.e("QuickToggleActivity: unknown action " + action);
         finish();
     }
 

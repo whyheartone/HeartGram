@@ -145,6 +145,11 @@ public final class HeartGramSettingsRows {
         }
         rows.add(info(tr("За фото в просмотре появляется мягкий ореол его цветов.", "A soft halo of the photo's colors appears behind it in the viewer.")));
 
+        rows.add(header(tr("Чат", "Chat")));
+        rows.add(toggle("voice_hint", tr("Подсказка «Удерживайте для записи»", "“Hold to record” hint"), false));
+        rows.add(info(tr("Показывается, когда нажимаете кнопку записи, а не удерживаете её.",
+                "Shown when you tap the record button instead of holding it.")));
+
         rows.add(header(tr("Эмодзи-статус", "Emoji status")));
         rows.add(toggle("status_always", tr("Всегда анимировать статус", "Always animate the status"), false, () ->
                 org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface)));
