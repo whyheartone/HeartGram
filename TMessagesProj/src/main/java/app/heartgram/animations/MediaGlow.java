@@ -202,17 +202,13 @@ public final class MediaGlow {
                 return fallback;
             }
         }
-        final Bitmap small = shrink(b);
-        if (small == null) {
-            synchronized (pending) {
-                pending.remove(b);
-            }
-            return fallback;
-        }
         ensureWorker();
         worker.execute(() -> {
+            // и уменьшение, и размытие считаются в фоне: на главном потоке (копия аппаратной картинки и масштабирование
+            // полноразмерного фото) это давало подлаг при входе в просмотр
+            final Bitmap small = shrink(b);
             final int[] dims = new int[2];
-            final int[] px = blurSmall(small, pad, dims);
+            final int[] px = small == null ? null : blurSmall(small, pad, dims);
             main.post(() -> {
                 synchronized (pending) {
                     pending.remove(b);
