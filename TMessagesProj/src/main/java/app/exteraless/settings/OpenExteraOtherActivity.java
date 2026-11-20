@@ -335,18 +335,53 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         String what = app.heartgram.HeartGramLabels.tr(
                 "Уникальный значок появится рядом с вашим именем в списке чатов, профиле и сообщениях у всех, кто пользуется HeartGram. Его можно выбрать из набора анимированных эмодзи.",
                 "A unique badge appears next to your name in chats, your profile and messages for everyone using HeartGram. You pick it from a set of animated emoji.");
-        android.text.SpannableStringBuilder message = new android.text.SpannableStringBuilder();
-        String head1 = app.heartgram.HeartGramLabels.tr("Что получите", "What you get");
-        String head2 = app.heartgram.HeartGramLabels.tr("Как получить", "How to get it");
-        message.append(head1).append('\n').append(what).append("\n\n").append(head2).append('\n').append(how);
-        message.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), 0, head1.length(), 0);
-        int start = head1.length() + 1 + what.length() + 2;
-        message.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), start, start + head2.length(), 0);
-        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(getParentActivity());
+        final android.content.Context context = getParentActivity();
+        android.widget.LinearLayout box = new android.widget.LinearLayout(context);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        box.setPadding(org.telegram.messenger.AndroidUtilities.dp(24), org.telegram.messenger.AndroidUtilities.dp(4),
+                org.telegram.messenger.AndroidUtilities.dp(24), org.telegram.messenger.AndroidUtilities.dp(8));
+
+        // сердце — значок, который получает поддержавший
+        android.widget.ImageView heart = new android.widget.ImageView(context);
+        heart.setImageResource(R.drawable.exteraless_icon_menu);
+        heart.setColorFilter(new android.graphics.PorterDuffColorFilter(0xFFF7889E, android.graphics.PorterDuff.Mode.SRC_IN));
+        android.widget.LinearLayout.LayoutParams hp = new android.widget.LinearLayout.LayoutParams(
+                org.telegram.messenger.AndroidUtilities.dp(72), org.telegram.messenger.AndroidUtilities.dp(72));
+        hp.gravity = android.view.Gravity.CENTER_HORIZONTAL;
+        hp.bottomMargin = org.telegram.messenger.AndroidUtilities.dp(8);
+        box.addView(heart, hp);
+
+        box.addView(supportSection(context, app.heartgram.HeartGramLabels.tr("Что получите", "What you get"), what, true));
+        box.addView(supportSection(context, app.heartgram.HeartGramLabels.tr("Как получить", "How to get it"), how, false));
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(context);
+        scroll.addView(box);
+        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
         builder.setTitle(app.heartgram.HeartGramLabels.tr("Поддержите разработку", "Support the development"));
-        builder.setMessage(message);
+        builder.setView(scroll);
         builder.setPositiveButton("OK", null);
         showDialog(builder.create());
+    }
+
+    private android.view.View supportSection(android.content.Context context, String title, String body, boolean first) {
+        android.widget.LinearLayout section = new android.widget.LinearLayout(context);
+        section.setOrientation(android.widget.LinearLayout.VERTICAL);
+        android.widget.TextView head = new android.widget.TextView(context);
+        head.setText(title);
+        head.setTextSize(15);
+        head.setTypeface(org.telegram.messenger.AndroidUtilities.bold());
+        head.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
+        section.addView(head);
+        android.widget.TextView text = new android.widget.TextView(context);
+        text.setText(body);
+        text.setTextSize(14);
+        text.setTextColor(Theme.getColor(Theme.key_dialogTextGray2));
+        text.setPadding(0, org.telegram.messenger.AndroidUtilities.dp(4), 0, 0);
+        section.addView(text);
+        if (!first) {
+            section.setPadding(0, org.telegram.messenger.AndroidUtilities.dp(14), 0, 0);
+        }
+        return section;
     }
 
     /** Адрес для копирования: из «copy:адрес» или из второго поля. */
