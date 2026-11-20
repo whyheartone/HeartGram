@@ -258,7 +258,10 @@ public final class HeartGramEditor {
         JSONObject def = self.optJSONObject("default");
         JSONObject limits = self.optJSONObject("limits");
         final int captionMax = limits == null ? 200 : limits.optInt("captionMax", 200);
-        String caption = edit != null ? edit.optString("caption") : def != null ? def.optString("caption") : "";
+        // поле пустое, пока человек сам ничего не написал: тогда в окне значка стоит текст уровня из админки;
+        // стёр подпись - снова текст уровня. Текст по умолчанию показывается только подсказкой.
+        String caption = edit != null ? edit.optString("caption") : "";
+        final String defaultCaption = def != null ? def.optString("caption") : "";
         final long me = HeartGramApi.me();
         final long defaultDocument = HeartGramBadges.defaultDocument(me);
         String emojiRef = edit != null ? edit.optString("emoji") : "";
@@ -280,7 +283,7 @@ public final class HeartGramEditor {
 
         final EditText field = new EditText(activity);
         field.setText(caption);
-        field.setHint(tr("Подпись под значком", "Caption under the badge"));
+        field.setHint(TextUtils.isEmpty(defaultCaption) ? tr("Подпись под значком", "Caption under the badge") : defaultCaption);
         field.setTextColor(Theme.getColor(Theme.key_dialogTextBlack));
         field.setHintTextColor(Theme.getColor(Theme.key_dialogTextGray2));
         field.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);

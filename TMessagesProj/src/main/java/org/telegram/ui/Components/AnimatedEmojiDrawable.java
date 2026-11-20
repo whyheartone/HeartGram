@@ -763,7 +763,7 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private void updateAutoRepeat(ImageReceiver imageReceiver) {
-        if (cacheType == CACHE_TYPE_EMOJI_STATUS && app.heartgram.HeartGramPrefs.prefs().getBoolean("status_loop", true)
+        if ((cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS) && app.heartgram.HeartGramPrefs.prefs().getBoolean("status_loop", true)
                 && app.heartgram.badges.HeartGramBadges.isBadgeDocument(documentId)) {
             // HeartGram: значок крутится без остановки
             imageReceiver.setAutoRepeatCount(0);
