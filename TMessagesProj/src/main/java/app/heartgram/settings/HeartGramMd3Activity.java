@@ -117,6 +117,9 @@ public class HeartGramMd3Activity extends BaseFragment {
 
         // --- остальные стили MD3 ---
         content.addView(header(context, tr("Остальные стили", "Other styles")));
+        content.addView(check(context, tr("Меню блоками (ответить, ⋮)", "Menus as blocks (reply, ⋮)"), ChatTiles.menus(), true, on -> {
+            HeartGramPrefs.prefs().edit().putBoolean("md3_menus", on).apply();
+        }));
         content.addView(check(context, getString(R.string.OEAppearanceNewLoadingStyle), AppearanceConfig.newLoadingStyle.Bool(), true, on -> {
             AppearanceConfig.newLoadingStyle.setConfigBool(on);
             rebuildOthers();

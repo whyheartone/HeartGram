@@ -293,6 +293,18 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
         }
     }
 
+    /** Основная кнопка диалога: в стиле MD3 это тональная плашка цвета кнопки, иначе обычная прозрачная с рябью. */
+    private static android.graphics.drawable.Drawable hgPositiveBackground(int color) {
+        android.graphics.drawable.Drawable ripple = Theme.getRoundRectSelectorDrawable(dp(20), color);
+        if (!app.heartgram.tiles.ChatTiles.menus()) {
+            return ripple;
+        }
+        android.graphics.drawable.GradientDrawable fill = new android.graphics.drawable.GradientDrawable();
+        fill.setCornerRadius(dp(20));
+        fill.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(color, 38));
+        return new android.graphics.drawable.LayerDrawable(new android.graphics.drawable.Drawable[]{fill, ripple});
+    }
+
     public static class AlertDialogCell extends FrameLayout {
 
         private final Theme.ResourcesProvider resourcesProvider;
@@ -1256,7 +1268,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                     @Override
                     public void setTextColor(int color) {
                         super.setTextColor(color);
-                        setBackground(Theme.getRoundRectSelectorDrawable(dp(20), color));
+                        setBackground(hgPositiveBackground(color));
                     }
                 };
                 textView.setMinWidth(dp(64));
@@ -1266,7 +1278,7 @@ public class AlertDialog extends Dialog implements Drawable.Callback, Notificati
                 textView.setGravity(Gravity.CENTER);
                 textView.setTypeface(AndroidUtilities.bold());
                 textView.setText(positiveButtonText);
-                textView.setBackground(Theme.getRoundRectSelectorDrawable(dp(20), getThemedColor(dialogButtonColorKey)));
+                textView.setBackground(hgPositiveBackground(getThemedColor(dialogButtonColorKey)));
                 textView.setPadding(dp(12), 0, dp(12), 0);
                 if (verticalButtons) {
                     buttonsLayout.addView(textView, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 40, Gravity.FILL_HORIZONTAL));

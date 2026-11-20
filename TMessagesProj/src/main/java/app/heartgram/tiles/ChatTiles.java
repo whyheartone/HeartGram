@@ -43,6 +43,12 @@ public final class ChatTiles {
         return HeartGramPrefs.prefs().getBoolean("tiles", false);
     }
 
+    /** Меню в стиле MD3 (пункты блоками). Пока не выбрано явно, следует за плитками чатов. */
+    public static boolean menus() {
+        android.content.SharedPreferences p = HeartGramPrefs.prefs();
+        return p.contains("md3_menus") ? p.getBoolean("md3_menus", false) : enabled();
+    }
+
     public static int gap() {
         return HeartGramPrefs.prefs().getInt("tiles_gap2", 2);
     }

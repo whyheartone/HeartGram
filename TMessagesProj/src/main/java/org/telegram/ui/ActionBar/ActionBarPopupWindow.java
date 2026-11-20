@@ -203,23 +203,52 @@ public class ActionBarPopupWindow extends PopupWindow {
             }
 
             linearLayout = new LinearLayout(context) {
-                // MD3 (вместе с плитками чатов): каждый пункт меню — отдельный скруглённый блок
+                // MD3 (как на ПК): пункты меню — блоки; у первого и последнего в группе большое скругление, у средних малое
                 private final Paint hgTilePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
                 private final android.graphics.RectF hgTileRect = new android.graphics.RectF();
+                private final android.graphics.Path hgTilePath = new android.graphics.Path();
 
                 private boolean hgMd3() {
-                    return app.heartgram.tiles.ChatTiles.enabled();
+                    return app.heartgram.tiles.ChatTiles.menus();
+                }
+
+                private boolean hgFirst(int index) {
+                    for (int i = index - 1; i >= 0; i--) {
+                        View v = getChildAt(i);
+                        if (v.getVisibility() != GONE) {
+                            return !(v instanceof ActionBarMenuSubItem);
+                        }
+                    }
+                    return true;
+                }
+
+                private boolean hgLast(int index) {
+                    for (int i = index + 1, n = getChildCount(); i < n; i++) {
+                        View v = getChildAt(i);
+                        if (v.getVisibility() != GONE) {
+                            return !(v instanceof ActionBarMenuSubItem);
+                        }
+                    }
+                    return true;
                 }
 
                 private void hgStyleItems() {
                     int selector = Theme.getColor(Theme.key_listSelector, resourcesProvider);
                     for (int a = 0, n = getChildCount(); a < n; a++) {
                         View child = getChildAt(a);
-                        if (child instanceof ActionBarMenuSubItem && child.getTag(R.id.parent_tag) == null) {
-                            child.setTag(R.id.parent_tag, Boolean.TRUE);
-                            child.setBackground(new android.graphics.drawable.InsetDrawable(
-                                    Theme.createRadSelectorDrawable(selector, 12, 12), dp(4), dp(1.5f), dp(4), dp(1.5f)));
+                        if (!(child instanceof ActionBarMenuSubItem) || child.getVisibility() == GONE) {
+                            continue;
                         }
+                        final boolean first = hgFirst(a), last = hgLast(a);
+                        final int state = 4 | (first ? 1 : 0) | (last ? 2 : 0);
+                        Object tag = child.getTag(R.id.parent_tag);
+                        if (tag instanceof Integer && (Integer) tag == state) {
+                            continue;
+                        }
+                        child.setTag(R.id.parent_tag, state);
+                        child.setBackground(new android.graphics.drawable.InsetDrawable(
+                                Theme.createRadSelectorDrawable(selector, first ? 14 : 5, last ? 14 : 5),
+                                dp(6), dp(first ? 2 : 1), dp(6), dp(last ? 2 : 1)));
                     }
                 }
 
@@ -280,9 +309,15 @@ public class ActionBarPopupWindow extends PopupWindow {
                         int fg = Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                         hgTilePaint.setColor(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, 0.07f));
                         hgTilePaint.setAlpha((int) (Color.alpha(hgTilePaint.getColor()) * child.getAlpha()));
-                        hgTileRect.set(child.getLeft() + dp(4), child.getTop() + child.getTranslationY() + dp(1.5f),
-                                child.getRight() - dp(4), child.getBottom() + child.getTranslationY() - dp(1.5f));
-                        canvas.drawRoundRect(hgTileRect, dp(12), dp(12), hgTilePaint);
+                        final int index = indexOfChild(child);
+                        final boolean first = hgFirst(index), last = hgLast(index);
+                        hgTileRect.set(child.getLeft() + dp(6), child.getTop() + child.getTranslationY() + dp(first ? 2 : 1),
+                                child.getRight() - dp(6), child.getBottom() + child.getTranslationY() - dp(last ? 2 : 1));
+                        final float big = Math.min(dp(14), hgTileRect.height() * 0.34f), small = dp(5);
+                        final float up = first ? big : small, low = last ? big : small;
+                        hgTilePath.reset();
+                        hgTilePath.addRoundRect(hgTileRect, new float[]{up, up, up, up, low, low, low, low}, android.graphics.Path.Direction.CW);
+                        canvas.drawPath(hgTilePath, hgTilePaint);
                     }
                     return super.drawChild(canvas, child, drawingTime);
                 }
