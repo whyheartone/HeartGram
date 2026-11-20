@@ -3010,6 +3010,41 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
      */
     private final Runnable hgClipSettle = this::hgClipNow;
 
+    // кнопка «Обновить» (как в оригинале): показывается, когда найдена новая сборка в выбранном канале
+    private android.widget.TextView hgUpdatePill;
+    private final Runnable hgUpdateListener = this::hgRefreshUpdatePill;
+
+    private void hgCreateUpdatePill(Context context) {
+        hgUpdatePill = new android.widget.TextView(context);
+        hgUpdatePill.setTextSize(15);
+        hgUpdatePill.setTypeface(AndroidUtilities.bold());
+        hgUpdatePill.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
+        hgUpdatePill.setGravity(Gravity.CENTER);
+        hgUpdatePill.setPadding(dp(20), 0, dp(20), 0);
+        hgUpdatePill.setBackground(Theme.createRoundRectDrawable(dp(22), Theme.getColor(Theme.key_featuredStickers_addButton)));
+        hgUpdatePill.setElevation(dp(4));
+        hgUpdatePill.setVisibility(View.GONE);
+        hgUpdatePill.setOnClickListener(v -> app.exteraless.updater.GitHubUpdater.openPending());
+        contentView.addView(hgUpdatePill, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 104));
+        app.exteraless.updater.GitHubUpdater.addPendingListener(hgUpdateListener);
+        hgRefreshUpdatePill();
+    }
+
+    private void hgRefreshUpdatePill() {
+        AndroidUtilities.runOnUIThread(() -> {
+            if (hgUpdatePill == null) {
+                return;
+            }
+            app.exteraless.updater.GitHubUpdater.Release r = app.exteraless.updater.GitHubUpdater.pendingRelease();
+            boolean show = r != null && folderId == 0 && !onlySelect
+                    && NaConfig.INSTANCE.getAutoUpdateChannel().Int() != tw.nekomimi.nekogram.helpers.remote.UpdateHelper.UPDATE_OFF;
+            if (show) {
+                hgUpdatePill.setText(LocaleController.formatString("HGUpdateTo", R.string.HGUpdateTo, r.displayVersion()));
+            }
+            hgUpdatePill.setVisibility(show ? View.VISIBLE : View.GONE);
+        });
+    }
+
     private void hgClipListsUnderTabs() {
         hgClipNow();
         // после анимаций (поиск, прокрутка) положение панели и списка устаканивается позже последней отрисовки:
@@ -3162,6 +3197,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public void onFragmentDestroy() {
         super.onFragmentDestroy();
+        app.exteraless.updater.GitHubUpdater.removePendingListener(hgUpdateListener);
         if (observersGroup != null) {
             observersGroup.removeAllObservers();
             observersGroup = null;
@@ -4226,6 +4262,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         ContentView contentView = new ContentView(context);
         fragmentView = contentView;
+        hgCreateUpdatePill(context);
 
         final PointF tmpPoint = new PointF();
         iBlur3Capture = (canvas, position) -> {

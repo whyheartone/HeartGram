@@ -53,6 +53,86 @@ public final class GitHubUpdater {
     private static final String KEY_SKIPPED = "skipped_tag";
     private static final Pattern VERSION = Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)");
 
+    // найденное обновление: показывается кнопкой «Обновить» в списке чатов, пока человек его не поставит
+    private static volatile Release pending;
+    private static final java.util.List<Runnable> pendingListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
+    private static final Pattern BETA = Pattern.compile("beta(\\d+)");
+
+    public static Release pendingRelease() {
+        if (pending == null) {
+            try {
+                String raw = prefs().getString("pending_release", null);
+                if (raw != null) {
+                    JSONObject o = new JSONObject(raw);
+                    Release r = new Release();
+                    r.tag = o.optString("tag");
+                    r.name = o.optString("name");
+                    r.body = o.optString("body");
+                    r.apkUrl = o.optString("apkUrl");
+                    r.apkName = o.optString("apkName");
+                    r.apkSize = o.optLong("apkSize");
+                    r.published = o.optLong("published");
+                    // уже установленное или устаревшее не показываем
+                    Integer remoteBeta = betaNumber(r.tag), localBeta = betaNumber(BuildConfig.BUILD_BETA_LABEL);
+                    if (remoteBeta != null && localBeta != null && remoteBeta > localBeta) {
+                        pending = r;
+                    } else {
+                        prefs().edit().remove("pending_release").apply();
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        return pending;
+    }
+
+    private static void setPending(Release r) {
+        pending = r;
+        try {
+            if (r == null) {
+                prefs().edit().remove("pending_release").apply();
+            } else {
+                JSONObject o = new JSONObject();
+                o.put("tag", r.tag);
+                o.put("name", r.name);
+                o.put("body", r.body);
+                o.put("apkUrl", r.apkUrl);
+                o.put("apkName", r.apkName);
+                o.put("apkSize", r.apkSize);
+                o.put("published", r.published);
+                prefs().edit().putString("pending_release", o.toString()).apply();
+            }
+        } catch (Exception ignored) {
+        }
+        for (Runnable l : pendingListeners) {
+            l.run();
+        }
+    }
+
+    public static void addPendingListener(Runnable l) {
+        pendingListeners.add(l);
+    }
+
+    public static void removePendingListener(Runnable l) {
+        pendingListeners.remove(l);
+    }
+
+    /** Открывает окно обновления для найденной версии (кнопка «Обновить»). */
+    public static void openPending() {
+        Release r = pendingRelease();
+        if (r != null) {
+            show(r);
+        }
+    }
+
+    private static Integer betaNumber(String text) {
+        if (text == null) {
+            return null;
+        }
+        Matcher m = BETA.matcher(text);
+        return m.find() ? Integer.valueOf(Integer.parseInt(m.group(1))) : null;
+    }
+
     private static volatile OkHttpClient client;
     private static volatile boolean checking;
     private static volatile Call download;
@@ -120,6 +200,9 @@ public final class GitHubUpdater {
         fetch((found, isNewer, failed) -> {
             checking = false;
             boolean offer = found != null && (Boolean.TRUE.equals(isNewer) || force && isNewer == null);
+            if (!failed) {
+                setPending(found != null && Boolean.TRUE.equals(isNewer) ? found : null);
+            }
             if (offer && (force || !TextUtils.equals(found.tag, prefs().getString(KEY_SKIPPED, null)))) {
                 show(found);
             } else if (force) {
@@ -280,6 +363,14 @@ public final class GitHubUpdater {
     }
 
     private static Boolean isNewer(Release release) throws Exception {
+        // наши релизы нумеруются betaN: сравниваем номера, без запроса к GitHub
+        Integer remoteBeta = betaNumber(release.tag), localBeta = betaNumber(BuildConfig.BUILD_BETA_LABEL);
+        if (remoteBeta != null && localBeta != null) {
+            Integer order = compareVersion(release);
+            if (order == null || order == 0) {
+                return remoteBeta > localBeta;
+            }
+        }
         Integer versionOrder = compareVersion(release);
         if (versionOrder != null && versionOrder != 0) {
             return versionOrder > 0;

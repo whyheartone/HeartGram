@@ -22,4 +22,5 @@
     <string name="HGIconMonet">Monet</string>
     <string name="HGHybridPush">Держать соединение в фоне</string>
     <string name="HGHybridPushInfo">Работает вместе с Google FCM. Надёжнее на Xiaomi при заблокированном экране; чуть больше расходует батарею.</string>
+    <string name="HGUpdateTo">Обновить до %1$s</string>
 </resources>
