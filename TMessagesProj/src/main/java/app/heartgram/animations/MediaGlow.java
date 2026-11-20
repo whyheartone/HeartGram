@@ -45,7 +45,7 @@ public final class MediaGlow {
     private static ExecutorService worker;
 
     // ── статичные картинки: несколько готовых ореолов (текущее фото и соседние) ──
-    private static final int CACHE = 4;
+    private static final int CACHE = 24;
     private static final Object[] cacheKey = new Object[CACHE]; // WeakReference<Object>
     private static final Bitmap[] cacheGlow = new Bitmap[CACHE];
     private static final int[] cachePad = new int[CACHE];
@@ -202,6 +202,34 @@ public final class MediaGlow {
                 return fallback;
             }
         }
+        // миниатюры (маленькие картинки) считаем сразу: это единицы миллисекунд, зато ореол есть с первого кадра,
+        // а не появляется через время; крупные фото считаются в фоне
+        if ((long) b.getWidth() * b.getHeight() <= 150_000L) {
+            try {
+                final Bitmap smallNow = shrink(b);
+                final int[] dimsNow = new int[2];
+                final int[] pxNow = smallNow == null ? null : blurSmall(smallNow, pad, dimsNow);
+                synchronized (pending) {
+                    pending.remove(b);
+                }
+                if (pxNow != null) {
+                    Bitmap g = Bitmap.createBitmap(pxNow, dimsNow[0], dimsNow[1], Bitmap.Config.ARGB_8888);
+                    int i = cacheNext;
+                    cacheNext = (cacheNext + 1) % CACHE;
+                    cacheKey[i] = new WeakReference<Object>(b);
+                    cacheRecv[i] = new WeakReference<Object>(receiver);
+                    cacheGlow[i] = g;
+                    cachePad[i] = pad;
+                    return g;
+                }
+                return fallback;
+            } catch (Throwable t) {
+                synchronized (pending) {
+                    pending.remove(b);
+                }
+                return fallback;
+            }
+        }
         ensureWorker();
         worker.execute(() -> {
             // и уменьшение, и размытие считаются в фоне: на главном потоке (копия аппаратной картинки и масштабирование
@@ -271,7 +299,7 @@ public final class MediaGlow {
         if (worker == null) {
             worker = Executors.newSingleThreadExecutor(r -> {
                 Thread t = new Thread(r, "hg-glow");
-                t.setPriority(Thread.MIN_PRIORITY);
+                t.setPriority(Thread.NORM_PRIORITY - 1);
                 return t;
             });
         }
