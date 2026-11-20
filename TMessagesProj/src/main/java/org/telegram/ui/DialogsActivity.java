@@ -3014,7 +3014,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private android.widget.TextView hgUpdatePill;
     private final Runnable hgUpdateListener = this::hgRefreshUpdatePill;
 
-    private void hgCreateUpdatePill(Context context) {
+    private void hgCreateUpdatePill(Context context, android.widget.FrameLayout host) {
         hgUpdatePill = new android.widget.TextView(context);
         hgUpdatePill.setTextSize(15);
         hgUpdatePill.setTypeface(AndroidUtilities.bold());
@@ -3025,7 +3025,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         hgUpdatePill.setElevation(dp(4));
         hgUpdatePill.setVisibility(View.GONE);
         hgUpdatePill.setOnClickListener(v -> app.exteraless.updater.GitHubUpdater.openPending());
-        contentView.addView(hgUpdatePill, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 104));
+        host.addView(hgUpdatePill, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 104));
         app.exteraless.updater.GitHubUpdater.addPendingListener(hgUpdateListener);
         hgRefreshUpdatePill();
     }
@@ -4262,7 +4262,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
 
         ContentView contentView = new ContentView(context);
         fragmentView = contentView;
-        hgCreateUpdatePill(context);
+        hgCreateUpdatePill(context, contentView);
 
         final PointF tmpPoint = new PointF();
         iBlur3Capture = (canvas, position) -> {
