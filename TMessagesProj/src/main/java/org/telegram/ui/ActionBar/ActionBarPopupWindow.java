@@ -145,6 +145,14 @@ public class ActionBarPopupWindow extends PopupWindow {
             return bgPaddings;
         }
 
+        /** Окно меню в стиле MD3: чистая скруглённая подложка без полос и обводки, как на ПК. */
+        private static Drawable hgMenuBackground() {
+            android.graphics.drawable.GradientDrawable fill = new android.graphics.drawable.GradientDrawable();
+            fill.setColor(Color.WHITE);
+            fill.setCornerRadius(dp(22));
+            return new android.graphics.drawable.InsetDrawable(fill, dp(8));
+        }
+
         public ActionBarPopupWindowLayout(Context context) {
             this(context, null);
         }
@@ -162,7 +170,7 @@ public class ActionBarPopupWindow extends PopupWindow {
             this.resourcesProvider = resourcesProvider;
 
             if (resId != 0) {
-                backgroundDrawable = getResources().getDrawable(resId).mutate();
+                backgroundDrawable = app.heartgram.tiles.ChatTiles.menus() ? hgMenuBackground() : getResources().getDrawable(resId).mutate();
                 setPadding(dp(8), dp(8), dp(8), dp(8));
             }
             if (backgroundDrawable != null) {
@@ -307,7 +315,7 @@ public class ActionBarPopupWindow extends PopupWindow {
                     if (hgMd3() && child instanceof ActionBarMenuSubItem && child.getVisibility() == VISIBLE && child.getAlpha() > 0) {
                         int bg = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
                         int fg = Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
-                        hgTilePaint.setColor(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, 0.07f));
+                        hgTilePaint.setColor(app.heartgram.tiles.ChatTiles.adjust(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, 0.07f)));
                         hgTilePaint.setAlpha((int) (Color.alpha(hgTilePaint.getColor()) * child.getAlpha()));
                         final int index = indexOfChild(child);
                         final boolean first = hgFirst(index), last = hgLast(index);
@@ -542,6 +550,10 @@ public class ActionBarPopupWindow extends PopupWindow {
                         hasGap = true;
                         break;
                     }
+                }
+                if (hasGap && gapStartY == -1000000 && app.heartgram.tiles.ChatTiles.menus()) {
+                    // у MD3-меню группы разделены просто зазором, без полосы-разделителя
+                    hasGap = false;
                 }
                 for (int a = 0; a < 2; a++) {
                     if (a == 1 && start < -dp(16)) {

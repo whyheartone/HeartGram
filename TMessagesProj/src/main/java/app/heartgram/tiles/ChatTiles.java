@@ -69,7 +69,11 @@ public final class ChatTiles {
 
     /** Цвет плитки: фон с примесью цвета текста, затем окраска и яркость из настроек MD3. */
     public static int tileColor() {
-        int color = baseTileColor();
+        return adjust(baseTileColor());
+    }
+
+    /** Окраска и яркость из настроек MD3: так же красятся и другие плитки (пункты меню). */
+    public static int adjust(int color) {
         if (tint() == 1) {
             color = ColorUtils.blendARGB(color, Theme.getColor(Theme.key_featuredStickers_addButton), 0.12f);
         }

@@ -820,11 +820,29 @@ public class AnimatedEmojiDrawable extends Drawable {
         return dp(sizedp);
     }
 
+    private int hgAlwaysState = -1;
+
+    /** HeartGram: настройку «Всегда анимировать статус» применяем на лету, без пересоздания эмодзи. */
+    private void hgSyncStatusLoop() {
+        if (cacheType != CACHE_TYPE_EMOJI_STATUS && cacheType != CACHE_TYPE_ALERT_EMOJI_STATUS) {
+            return;
+        }
+        int state = app.heartgram.HeartGramPrefs.prefs().getBoolean("status_always", false) ? 1 : 0;
+        if (state != hgAlwaysState) {
+            hgAlwaysState = state;
+            updateAutoRepeat(imageReceiver);
+            if (state == 1) {
+                imageReceiver.startAnimation();
+            }
+        }
+    }
+
     @Override
     public void draw(@NonNull Canvas canvas) {
         if (imageReceiver == null) {
             return;
         }
+        hgSyncStatusLoop();
         imageReceiver.setImageCoords(getBounds());
         imageReceiver.setAlpha(alpha);
         imageReceiver.draw(canvas);
@@ -834,6 +852,7 @@ public class AnimatedEmojiDrawable extends Drawable {
         if (imageReceiver == null) {
             return;
         }
+        hgSyncStatusLoop();
         imageReceiver.setImageCoords(drawableBounds);
         imageReceiver.setAlpha(alpha);
         imageReceiver.draw(canvas);
