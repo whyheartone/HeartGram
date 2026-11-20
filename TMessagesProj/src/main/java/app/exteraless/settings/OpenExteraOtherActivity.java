@@ -381,7 +381,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             // TON: короткое нажатие открывает кошелёк (Tonkeeper и т.п.), зажатие копирует адрес
             try {
                 getParentActivity().startActivity(new android.content.Intent(android.content.Intent.ACTION_VIEW,
-                        android.net.Uri.parse("ton://transfer/" + tonValue)));
+                        android.net.Uri.parse("ton://transfer/" + tonValue + "?text=" + getUserConfig().getClientUserId())));
                 return;
             } catch (Exception ignored) {
                 // кошелька нет: копируем адрес

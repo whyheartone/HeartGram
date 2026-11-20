@@ -1612,7 +1612,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             nameLayoutEllipsizeByGradient = true;
                             emojiStatus.center = LocaleController.isRTL;
                             emojiStatus.set(DialogObject.getEmojiStatusDocumentId(chat.emoji_status), false);
-                            emojiStatus.setParticles(true, false);
+                            emojiStatus.setParticles(false, false);
                         } else {
                             drawVerified = !forbidVerified && chat.verified;
                             drawBotVerified = !forbidVerified && chat.bot_verification_icon != 0;
@@ -1647,7 +1647,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             if (emojiStatusId != null) {
                                 nameLayoutEllipsizeByGradient = true;
                                 emojiStatus.set(emojiStatusId, false);
-                                emojiStatus.setParticles(true, false);
+                                emojiStatus.setParticles(false, false);
                             } else {
                                 nameLayoutEllipsizeByGradient = true;
                                 emojiStatus.set(PremiumGradient.getInstance().premiumStarDrawableMini, false);
@@ -3615,7 +3615,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         if (user != null && DialogObject.getEmojiStatusDocumentId(user.emoji_status) != 0) {
                             nameLayoutEllipsizeByGradient = true;
                             emojiStatus.set(DialogObject.getEmojiStatusDocumentId(user.emoji_status), animated);
-                            emojiStatus.setParticles(true, animated);
+                            emojiStatus.setParticles(false, animated);
                         } else {
                             nameLayoutEllipsizeByGradient = true;
                             emojiStatus.set(PremiumGradient.getInstance().premiumStarDrawableMini, animated);
@@ -3629,7 +3629,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                         if (chat != null && DialogObject.getEmojiStatusDocumentId(chat.emoji_status) != 0)  {
                             nameLayoutEllipsizeByGradient = true;
                             emojiStatus.set(DialogObject.getEmojiStatusDocumentId(chat.emoji_status), animated);
-                            emojiStatus.setParticles(true, animated);
+                            emojiStatus.setParticles(false, animated);
                         } else {
                             nameLayoutEllipsizeByGradient = true;
                             emojiStatus.set(PremiumGradient.getInstance().premiumStarDrawableMini, animated);

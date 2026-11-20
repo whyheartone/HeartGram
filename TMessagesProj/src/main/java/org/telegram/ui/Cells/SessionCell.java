@@ -416,6 +416,13 @@ public class SessionCell extends FrameLayout {
             colorKey = Theme.key_avatar_backgroundPink;
             colorKey2 = Theme.key_avatar_background2Pink;
         }
+        if (session.app_name.contains("HeartGram")) {
+            // у нашего клиента в списке сеансов настоящая иконка приложения, а не значок на цветном круге
+            Drawable appIcon = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.exteraless_icon);
+            if (appIcon != null) {
+                return new HgAppIconDrawable(appIcon.mutate(), dp(sz));
+            }
+        }
         Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, iconId).mutate();
         iconDrawable.setColorFilter(new PorterDuffColorFilter(Theme.getColor(Theme.key_avatar_text), PorterDuff.Mode.SRC_IN));
         Drawable bgDrawable = new CircleGradientDrawable(dp(sz), colorKey == -1 ? 0xFF000000 : Theme.getColor(colorKey), colorKey2 == -1 ? 0xFF000000 : Theme.getColor(colorKey2));
@@ -424,6 +431,54 @@ public class SessionCell extends FrameLayout {
             drawable.setIconSize((int) (iconDrawable.getIntrinsicWidth() / 44.0f * sz), (int) (iconDrawable.getIntrinsicHeight() / 44.0f * sz));
         }
         return drawable;
+    }
+
+    /** Иконка приложения, обрезанная кругом. */
+    public static class HgAppIconDrawable extends Drawable {
+        private final Drawable icon;
+        private final int size;
+        private final android.graphics.Path clip = new android.graphics.Path();
+
+        public HgAppIconDrawable(Drawable icon, int size) {
+            this.icon = icon;
+            this.size = size;
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            android.graphics.Rect b = getBounds();
+            clip.reset();
+            clip.addCircle(b.centerX(), b.centerY(), Math.min(b.width(), b.height()) / 2f, android.graphics.Path.Direction.CW);
+            canvas.save();
+            canvas.clipPath(clip);
+            icon.setBounds(b);
+            icon.draw(canvas);
+            canvas.restore();
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+            icon.setAlpha(alpha);
+        }
+
+        @Override
+        public void setColorFilter(@Nullable ColorFilter colorFilter) {
+        }
+
+        @Override
+        public int getOpacity() {
+            return PixelFormat.TRANSLUCENT;
+        }
+
+        @Override
+        public int getIntrinsicWidth() {
+            return size;
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return size;
+        }
     }
 
     public static class CircleGradientDrawable extends Drawable {
