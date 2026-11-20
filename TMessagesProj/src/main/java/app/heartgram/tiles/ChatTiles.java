@@ -59,7 +59,7 @@ public final class ChatTiles {
         boolean dark = lum < 0.5;
         if (dark && lum > 0.012) {
             // серая тёмная тема: плитка чуть темнее фона, а не светлее (на чёрном фоне темнить некуда, там светлее)
-            return ColorUtils.blendARGB(surface, 0xFF000000, 0.25f);
+            return ColorUtils.blendARGB(surface, 0xFF000000, 0.10f);
         }
         return ColorUtils.blendARGB(surface, text, dark ? 0.06f : 0.035f);
     }

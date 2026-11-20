@@ -29,4 +29,5 @@
     <string name="HGXiaomiAutostart">Автозапуск</string>
     <string name="HGXiaomiGms">Сервисы Google</string>
     <string name="HGUpdating">Скачивание обновления %1$d%%</string>
+    <string name="HGMd3Tiles">Чаты плитками</string>
 </resources>
