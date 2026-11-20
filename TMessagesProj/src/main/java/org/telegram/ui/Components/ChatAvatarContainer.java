@@ -143,6 +143,50 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatusDrawable;
     // наш значок рядом с обычным эмодзи-статусом
     private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable hgExtraDrawable;
+    private HgBadgeMutedDrawable hgComposite;
+    private boolean hgExtraShown;
+
+    /** Наш значок и, правее него, значок «без звука»: вторая правая иконка заголовка у нас одна. */
+    private final class HgBadgeMutedDrawable extends Drawable {
+        Drawable muted;
+
+        @Override
+        public int getIntrinsicWidth() {
+            return dp(24) + (muted != null ? dp(4) + muted.getIntrinsicWidth() : 0);
+        }
+
+        @Override
+        public int getIntrinsicHeight() {
+            return dp(24);
+        }
+
+        @Override
+        public void draw(@NonNull Canvas canvas) {
+            android.graphics.Rect b = getBounds();
+            hgExtraDrawable.setBounds(b.left, b.top, b.left + dp(24), b.bottom);
+            hgExtraDrawable.draw(canvas);
+            if (muted != null) {
+                int mh = muted.getIntrinsicHeight();
+                int left = b.left + dp(24) + dp(4);
+                int top = b.centerY() - mh / 2;
+                muted.setBounds(left, top, left + muted.getIntrinsicWidth(), top + mh);
+                muted.draw(canvas);
+            }
+        }
+
+        @Override
+        public void setAlpha(int alpha) {
+        }
+
+        @Override
+        public void setColorFilter(android.graphics.ColorFilter colorFilter) {
+        }
+
+        @Override
+        public int getOpacity() {
+            return android.graphics.PixelFormat.TRANSLUCENT;
+        }
+    }
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable botVerificationDrawable;
 
     protected boolean useAnimatedSubtitle() {
@@ -473,6 +517,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
 
         emojiStatusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleTextView, dp(24));
         hgExtraDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleTextView, dp(24));
+        hgComposite = new HgBadgeMutedDrawable();
         botVerificationDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleTextView, dp(17));
     }
 
@@ -1157,7 +1202,13 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             } else {
                 rightDrawable2ContentDescription = null;
             }
-            titleTextView.setRightDrawable2(mutedIcon);
+            if (hgExtraShown) {
+                // значок HeartGram первым, за ним «без звука»
+                hgComposite.muted = mutedIcon;
+                titleTextView.setRightDrawable2(hgComposite);
+            } else {
+                titleTextView.setRightDrawable2(mutedIcon);
+            }
         }
         checkActionBar(true);
     }
@@ -1218,10 +1269,11 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         final boolean hgSelf = hgPeer instanceof TLRPC.User && UserObject.isUserSelf((TLRPC.User) hgPeer);
         final long hgDocument = !hgSelf && !scam && !fake && !verified && DialogObject.getEmojiStatusDocumentId(emojiStatus) == 0
                 ? app.heartgram.badges.HeartGramBadges.documentFor(hgPeer) : 0;
-        if (titleTextView.getRightDrawable2() == hgExtraDrawable) {
+        if (hgExtraShown && titleTextView.getRightDrawable2() == hgComposite) {
             titleTextView.setRightDrawable2(null);
             titleTextView.setRightDrawable2OnClick(null);
         }
+        hgExtraShown = false;
         if (hgDocument != 0) {
             // значок HeartGram там, где был бы эмодзи-статус
             emojiStatusDrawable.set(hgDocument, animated);
@@ -1259,7 +1311,8 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
                     hgExtraDrawable.set(hgExtra, animated);
                     hgExtraDrawable.setParticles(true, animated);
                     hgExtraDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
-                    titleTextView.setRightDrawable2(hgExtraDrawable);
+                    hgExtraShown = true;
+                    titleTextView.setRightDrawable2(hgComposite);
                     titleTextView.setRightDrawable2OnClick(v -> app.heartgram.badges.HeartGramBadges.openBadge(parentFragment, hgPeer));
                 }
             }
