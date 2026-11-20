@@ -78,6 +78,8 @@ if (nativeTarget == 'SKIP') {
 
 android {
     defaultConfig.applicationId = APP_PACKAGE
+    // имя пакета для ярлыков рабочего стола (в xml нельзя подставлять applicationId напрямую)
+    defaultConfig.resValue 'string', 'hg_app_package', APP_PACKAGE
 
     androidResources {
         localeFilters += [

@@ -1235,11 +1235,12 @@ object NaConfig {
             ConfigItem.configTypeBool,
             true
         )
+    // HeartGram: профиль открывается на первой вкладке, а не на «Общих группах»
     val preferCommonGroupsTab =
         addConfig(
             "PreferCommonGroupsTab",
             ConfigItem.configTypeBool,
-            true
+            false
         )
     val groupedMessageMenu =
         addConfig(

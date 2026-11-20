@@ -2558,6 +2558,11 @@ public class ChatActivity extends BaseFragment implements
 
         @Override
         public void onSwitchRecordMode(boolean video) {
+            // подсказка «Удерживайте для записи» нужна, пока запись не идёт: после начала записи не показываем её заново
+            if (chatActivityEnterView != null && chatActivityEnterView.isRecordingAudioVideo()) {
+                showVoiceHint(true, video);
+                return;
+            }
             showVoiceHint(false, video);
         }
 
