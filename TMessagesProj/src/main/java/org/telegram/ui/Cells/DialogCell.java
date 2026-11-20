@@ -705,6 +705,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     private boolean drawBotVerified;
     private boolean drawPremium;
     private final View emojiStatusView;
+    // значок HeartGram рядом с обычным эмодзи-статусом (если у человека есть и то и другое)
+    private final View hgBadgeView;
+    private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable hgBadge;
+    private boolean hgExtraBadge;
     private final View botVerificationView;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatus;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable botVerification;
@@ -787,6 +791,16 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         emojiStatusView.setWillNotDraw(false);
         addView(emojiStatusView);
         emojiStatus = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(emojiStatusView, dp(22));
+        hgBadgeView = new View(context) {
+            @Override
+            protected void onDraw(@NonNull Canvas canvas) {
+                hgBadge.setBounds(0, 0, getWidth(), getHeight());
+                hgBadge.draw(canvas);
+            }
+        };
+        hgBadgeView.setVisibility(View.INVISIBLE);
+        addView(hgBadgeView);
+        hgBadge = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(hgBadgeView, dp(22));
         botVerificationView = new View(context) {
             @Override
             protected void onDraw(@NonNull Canvas canvas) {
@@ -1043,6 +1057,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
         if (emojiStatus != null) {
             emojiStatus.detach();
+            hgBadge.detach();
         }
         if (botVerification != null) {
             botVerification.detach();
@@ -1069,6 +1084,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         animatedEmojiStackName =  AnimatedEmojiSpan.update(AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES, this, animatedEmojiStackName, nameLayout);
         if (emojiStatus != null) {
             emojiStatus.attach();
+            hgBadge.attach();
         }
         if (botVerification != null) {
             botVerification.attach();
@@ -1088,6 +1104,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         setTranslationY(0);
         if (emojiStatus != null && attachedToWindow) {
             emojiStatus.attach();
+            hgBadge.attach();
         }
         if (botVerification != null && attachedToWindow) {
             botVerification.attach();
@@ -1096,6 +1113,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        if (hgBadgeView != null) {
+            hgBadgeView.measure(
+                MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY),
+                MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY)
+            );
+        }
         if (emojiStatusView != null) {
             emojiStatusView.measure(
                 MeasureSpec.makeMeasureSpec(dp(22), MeasureSpec.EXACTLY),
@@ -1170,6 +1193,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         if (currentDialogId == 0 && customDialog == null) {
             return;
+        }
+        if (hgBadgeView != null) {
+            hgBadgeView.layout(0, 0, dp(22), dp(22));
         }
         if (emojiStatusView != null) {
             emojiStatusView.layout(0, 0, dp(22), dp(22));
@@ -1415,6 +1441,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         drawVerified = false;
         drawBotVerified = false;
         drawPremium = false;
+        hgExtraBadge = false;
         drawForwardIcon = false;
         drawGiftIcon = false;
         drawScam = 0;
@@ -1613,6 +1640,12 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                             emojiStatus.center = LocaleController.isRTL;
                             emojiStatus.set(DialogObject.getEmojiStatusDocumentId(chat.emoji_status), false);
                             emojiStatus.setParticles(false, false);
+                            com.exteragram.messenger.api.dto.BadgeDTO hgChatExtra = com.exteragram.messenger.badges.BadgesController.INSTANCE.getBadge(chat);
+                            if (hgChatExtra != null) {
+                                hgExtraBadge = true;
+                                hgBadge.set(hgChatExtra.getDocumentId(), false);
+                                hgBadge.setParticles(true, false);
+                            }
                         } else {
                             drawVerified = !forbidVerified && chat.verified;
                             drawBotVerified = !forbidVerified && chat.bot_verification_icon != 0;
@@ -1652,6 +1685,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                                 nameLayoutEllipsizeByGradient = true;
                                 emojiStatus.set(PremiumGradient.getInstance().premiumStarDrawableMini, false);
                                 emojiStatus.setParticles(false, false);
+                            }
+                        }
+                        if (drawPremium && UserObject.getEmojiStatusDocumentId(user) != null && !drawVerified && drawScam == 0 && !UserObject.isUserSelf(user)) {
+                            com.exteragram.messenger.api.dto.BadgeDTO hgExtra = com.exteragram.messenger.badges.BadgesController.INSTANCE.getBadge(user);
+                            if (hgExtra != null) {
+                                hgExtraBadge = true;
+                                hgBadge.set(hgExtra.getDocumentId(), false);
+                                hgBadge.setParticles(true, false);
                             }
                         }
                         // значок HeartGram в слоте статуса, если у человека нет премиум-статуса и галочки
@@ -2489,6 +2530,9 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         final boolean reserveMuteSlot = (dialogMuted || isHiddenInCommunity || drawUnmute || dialogMutedProgress > 0) && !drawVerified && drawScam == 0;
         if (drawPremium && emojiStatus.getDrawable() != null) {
             int w = dp(6 + 24 + 6);
+            if (hgExtraBadge) {
+                w += dp(24);
+            }
             if (reserveMuteSlot) {
                 w += dp(6) + Theme.dialogs_muteDrawable.getIntrinsicWidth();
             }
@@ -3088,7 +3132,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if ((dialogMuted || true) || drawUnmute || drawVerified || drawPremium || drawScam != 0) {
                     nameMuteLeft = (int) (nameLeft + left + dp(6));
                     if (drawPremium) {
-                        nameMutedIconLeft = nameMuteLeft + dp(24 + 6);
+                        nameMutedIconLeft = nameMuteLeft + dp(24 + 6) + (hgExtraBadge ? dp(24) : 0);
                     }
                 }
             }
@@ -4066,12 +4110,14 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             canvas.restore();
 
             emojiStatusView.setVisibility(View.INVISIBLE);
+            hgBadgeView.setVisibility(View.INVISIBLE);
             botVerificationView.setVisibility(View.INVISIBLE);
             return;
         }
 
         float gtx = 0, gty = 0;
         boolean emojiStatusVisible = false;
+        boolean hgBadgeVisible = false;
         boolean botVerificationVisible = false;
 
         final boolean clipArchive = drawArchive && (currentDialogFolderId != 0 || isTopic && forumTopic != null && forumTopic.id == 1) && archivedChatsDrawable != null && translationX == 0.0f && parentFragment != null && parentFragment.hasHiddenArchive()
@@ -4772,6 +4818,13 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
                 if (emojiStatus != null) {
                     emojiStatusView.setTranslationX(gtx + nameMuteLeft - dp(2));
                     emojiStatusView.setTranslationY(gty + y - dp(4));
+                    if (hgExtraBadge) {
+                        hgBadgeView.setTranslationX(gtx + nameMuteLeft - dp(2) + dp(24));
+                        hgBadgeView.setTranslationY(gty + y - dp(4));
+                        hgBadgeVisible = true;
+                        Integer hgColor = app.heartgram.badges.EmojiColor.of(hgBadge);
+                        hgBadge.setColor(hgColor != null ? hgColor : Theme.getColor(Theme.key_chats_verifiedBackground, resourcesProvider));
+                    }
                     if (rightFragmentOpenedProgress > 0) {
                         emojiStatus.setBounds(
                             nameMuteLeft - dp(2),
@@ -5217,6 +5270,7 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         }
 
         emojiStatusView.setVisibility(emojiStatusVisible ? View.VISIBLE : View.INVISIBLE);
+        hgBadgeView.setVisibility(hgBadgeVisible && hgExtraBadge ? View.VISIBLE : View.INVISIBLE);
         botVerificationView.setVisibility(botVerificationVisible ? View.VISIBLE : View.INVISIBLE);
 
         if (needInvalidate) {

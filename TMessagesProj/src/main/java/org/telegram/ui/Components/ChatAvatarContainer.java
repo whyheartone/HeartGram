@@ -141,6 +141,8 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     public boolean premiumIconHiddable = false;
 
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable emojiStatusDrawable;
+    // наш значок рядом с обычным эмодзи-статусом
+    private AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable hgExtraDrawable;
     private final AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable botVerificationDrawable;
 
     protected boolean useAnimatedSubtitle() {
@@ -470,6 +472,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         }
 
         emojiStatusDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleTextView, dp(24));
+        hgExtraDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleTextView, dp(24));
         botVerificationDrawable = new AnimatedEmojiDrawable.SwapAnimatedEmojiDrawable(titleTextView, dp(17));
     }
 
@@ -1215,6 +1218,10 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         final boolean hgSelf = hgPeer instanceof TLRPC.User && UserObject.isUserSelf((TLRPC.User) hgPeer);
         final long hgDocument = !hgSelf && !scam && !fake && !verified && DialogObject.getEmojiStatusDocumentId(emojiStatus) == 0
                 ? app.heartgram.badges.HeartGramBadges.documentFor(hgPeer) : 0;
+        if (titleTextView.getRightDrawable2() == hgExtraDrawable) {
+            titleTextView.setRightDrawable2(null);
+            titleTextView.setRightDrawable2OnClick(null);
+        }
         if (hgDocument != 0) {
             // значок HeartGram там, где был бы эмодзи-статус
             emojiStatusDrawable.set(hgDocument, animated);
@@ -1245,6 +1252,17 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             }
             emojiStatusDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
             titleTextView.setRightDrawable(emojiStatusDrawable);
+            if (DialogObject.getEmojiStatusDocumentId(emojiStatus) != 0 && !hgSelf && !scam && !fake && !verified) {
+                // и обычный статус, и наш значок: значок встаёт правее статуса
+                final long hgExtra = app.heartgram.badges.HeartGramBadges.documentFor(hgPeer);
+                if (hgExtra != 0) {
+                    hgExtraDrawable.set(hgExtra, animated);
+                    hgExtraDrawable.setParticles(true, animated);
+                    hgExtraDrawable.setColor(getThemedColor(Theme.key_profile_verifiedBackground));
+                    titleTextView.setRightDrawable2(hgExtraDrawable);
+                    titleTextView.setRightDrawable2OnClick(v -> app.heartgram.badges.HeartGramBadges.openBadge(parentFragment, hgPeer));
+                }
+            }
             rightDrawableIsScamOrVerified = false;
             rightDrawableContentDescription = getString(R.string.AccDescrPremium);
             if (isCentered()) {
@@ -1811,6 +1829,9 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         if (emojiStatusDrawable != null) {
             emojiStatusDrawable.attach();
         }
+        if (hgExtraDrawable != null) {
+            hgExtraDrawable.attach();
+        }
         if (botVerificationDrawable != null) {
             botVerificationDrawable.attach();
         }
@@ -1827,6 +1848,9 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         removeNotificationObservers();
         if (emojiStatusDrawable != null) {
             emojiStatusDrawable.detach();
+        }
+        if (hgExtraDrawable != null) {
+            hgExtraDrawable.detach();
         }
         if (botVerificationDrawable != null) {
             botVerificationDrawable.detach();
