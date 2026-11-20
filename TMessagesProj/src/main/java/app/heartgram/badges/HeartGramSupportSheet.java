@@ -39,6 +39,11 @@ public final class HeartGramSupportSheet {
     }
 
     public static void show(final BaseFragment fragment, boolean startCool) {
+        show(fragment, startCool, 0);
+    }
+
+    /** previewDocument: эмодзи того, чей значок нажали; 0 - свой значок или сердце. */
+    public static void show(final BaseFragment fragment, boolean startCool, long previewDocument) {
         Activity activity = fragment == null ? null : fragment.getParentActivity();
         if (activity == null) {
             return;
@@ -53,18 +58,15 @@ public final class HeartGramSupportSheet {
 
         // сердце на тёмном круге; у поддержавшего со своим эмодзи вместо сердца его эмодзи
         FrameLayout art = new FrameLayout(context);
-        GradientDrawable circle = new GradientDrawable(GradientDrawable.Orientation.TL_BR,
-                new int[]{0xFF4A1F2B, 0xFF1E0E14});
-        circle.setShape(GradientDrawable.OVAL);
-        art.setBackground(circle);
-        long mine = HeartGramBadges.documentFor(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser());
-        if (mine != 0) {
-            art.addView(HeartGramBadgeSheet.createEmojiView(context, mine), new FrameLayout.LayoutParams(dp(56), dp(56), Gravity.CENTER));
+        long shown = previewDocument != 0 ? previewDocument
+                : HeartGramBadges.documentFor(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser());
+        if (shown != 0) {
+            art.addView(HeartGramBadgeSheet.createEmojiView(context, shown), new FrameLayout.LayoutParams(dp(84), dp(84), Gravity.CENTER));
         } else {
             ImageView heart = new ImageView(context);
             heart.setImageResource(R.drawable.exteraless_icon_menu);
             heart.setColorFilter(new PorterDuffColorFilter(0xFFF7889E, PorterDuff.Mode.SRC_IN));
-            art.addView(heart, new FrameLayout.LayoutParams(dp(58), dp(58), Gravity.CENTER));
+            art.addView(heart, new FrameLayout.LayoutParams(dp(80), dp(80), Gravity.CENTER));
         }
         LinearLayout.LayoutParams artLp = new LinearLayout.LayoutParams(dp(96), dp(96));
         artLp.gravity = Gravity.CENTER_HORIZONTAL;
@@ -88,7 +90,7 @@ public final class HeartGramSupportSheet {
         final LinearLayout tiers = new LinearLayout(context);
         tiers.setOrientation(LinearLayout.HORIZONTAL);
         final TextView tierBasic = chip(context, tr("Значок", "Badge"));
-        final TextView tierCool = chip(context, tr("Крутой значок", "Cool badge"));
+        final TextView tierCool = chip(context, tr("Изменяемый значок", "Editable badge"));
         tiers.addView(tierBasic, new LinearLayout.LayoutParams(0, dp(36), 1f));
         LinearLayout.LayoutParams coolLp = new LinearLayout.LayoutParams(0, dp(36), 1f);
         coolLp.leftMargin = dp(8);
@@ -107,20 +109,41 @@ public final class HeartGramSupportSheet {
             steps.removeAllViews();
             fillSteps(context, steps, cool[0]);
         };
-        tierBasic.setOnClickListener(v -> {
-            cool[0] = false;
+        // переключение уровня: старое содержимое тает, новое появляется, высота окна меняется плавно
+        final Runnable animatedFill = () -> {
+            android.transition.TransitionSet set = new android.transition.TransitionSet()
+                    .addTransition(new android.transition.Fade())
+                    .addTransition(new android.transition.ChangeBounds())
+                    .setOrdering(android.transition.TransitionSet.ORDERING_TOGETHER)
+                    .setDuration(240);
+            set.setInterpolator(org.telegram.ui.Components.CubicBezierInterpolator.EASE_OUT);
+            android.transition.TransitionManager.beginDelayedTransition(root, set);
             fill.run();
+        };
+        tierBasic.setOnClickListener(v -> {
+            if (cool[0]) {
+                cool[0] = false;
+                animatedFill.run();
+            }
         });
         tierCool.setOnClickListener(v -> {
-            cool[0] = true;
-            fill.run();
+            if (!cool[0]) {
+                cool[0] = true;
+                animatedFill.run();
+            }
         });
         fill.run();
 
-        TextView close = text(context, tr("Закрыть", "Close"), 16, true, Theme.getColor(Theme.key_featuredStickers_buttonText), Gravity.CENTER);
+        TextView close = text(context, tr("Поддержать", "Support"), 16, true, Theme.getColor(Theme.key_featuredStickers_buttonText), Gravity.CENTER);
         close.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(12), Theme.getColor(Theme.key_featuredStickers_addButton),
                 Theme.blendOver(Theme.getColor(Theme.key_featuredStickers_addButton), 0x33FFFFFF)));
-        close.setOnClickListener(v -> sheet.dismiss());
+        close.setOnClickListener(v -> {
+            sheet.dismiss();
+            // способы поддержки лежат в «Другом»: открываем этот экран (если мы уже на нём, просто закрываем окно)
+            if (!(fragment instanceof app.exteraless.settings.OpenExteraOtherActivity)) {
+                fragment.presentFragment(new app.exteraless.settings.OpenExteraOtherActivity());
+            }
+        });
         LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(-1, dp(50));
         closeLp.topMargin = dp(18);
         root.addView(close, closeLp);
@@ -136,21 +159,21 @@ public final class HeartGramSupportSheet {
         steps.addView(step(context, R.drawable.filter_money, tr("Сделать донат", "Make a donation"),
                 tr("Переведите " + HeartGramBadges.priceText(cool) + " на любой из реквизитов: они в настройках HeartGram, раздел «Другое».",
                         "Send " + HeartGramBadges.priceText(cool) + " to any of the options: they are in HeartGram settings, section “Other”."),
-                null));
+                null, true));
         steps.addView(step(context, R.drawable.msg_photos, tr("Отправить чек", "Send the receipt"),
-                tr("Пришлите скриншот перевода в личные сообщения. Должны быть видны сумма, дата и время.",
-                        "Send a screenshot of the transfer in a private message. The amount, date and time must be visible."),
-                contact));
+                tr("Пришлите скриншот перевода в личные сообщения %s. Должны быть видны сумма, дата и время.",
+                        "Send a screenshot of the transfer in a private message to %s. The amount, date and time must be visible."),
+                contact, false));
         steps.addView(step(context, R.drawable.msg_reactions2, tr("Получить значок", "Get the badge"),
                 cool
-                        ? tr("Когда платёж проверен, появится крутой значок. Его можно изменить: выберите любое эмодзи и свою подпись (жирный текст, ссылки, @username). Другие пользователи HeartGram увидят его у вашего имени.",
-                        "Once the payment is checked you get a cool badge. You can change it: pick any emoji and your own caption (bold text, links, @username). Other HeartGram users see it next to your name.")
+                        ? tr("Когда платёж проверен, появится изменяемый значок. Его можно менять: выберите любое эмодзи и свою подпись (жирный текст, ссылки, @username). Другие пользователи HeartGram увидят его у вашего имени.",
+                        "Once the payment is checked you get an editable badge. You can change it any time: pick any emoji and your own caption (bold text, links, @username). Other HeartGram users see it next to your name.")
                         : tr("Когда платёж проверен, значок появится в вашем профиле и у имени в чатах. Его увидят другие пользователи HeartGram.",
                         "Once the payment is checked the badge appears in your profile and next to your name in chats. Other HeartGram users will see it."),
-                null));
+                null, false));
     }
 
-    private static View step(Context context, int iconRes, String title, String body, final String contact) {
+    private static View step(Context context, int iconRes, String title, String body, final String contact, boolean ton) {
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setPadding(0, dp(14), 0, 0);
@@ -167,13 +190,32 @@ public final class HeartGramSupportSheet {
         col.addView(text(context, title, 16, true, Theme.getColor(Theme.key_dialogTextBlack), Gravity.START));
         TextView text = text(context, body, 14, false, Theme.getColor(Theme.key_dialogTextGray2), Gravity.START);
         text.setPadding(0, dp(2), 0, 0);
-        col.addView(text);
         if (!TextUtils.isEmpty(contact)) {
-            TextView nick = text(context, contact, 15, true, Theme.getColor(Theme.key_dialogTextBlack), Gravity.START);
-            nick.setPadding(0, dp(6), 0, 0);
-            nick.setOnClickListener(v -> org.telegram.messenger.browser.Browser.openUrl(context, "https://t.me/" + contact.replace("@", "")));
-            col.addView(nick);
+            // ник стоит прямо в предложении: жирный и нажимается
+            int at = body.indexOf("%s");
+            android.text.SpannableStringBuilder sb = new android.text.SpannableStringBuilder(body.replace("%s", contact));
+            if (at >= 0) {
+                sb.setSpan(new android.text.style.StyleSpan(android.graphics.Typeface.BOLD), at, at + contact.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                sb.setSpan(new android.text.style.ForegroundColorSpan(Theme.getColor(Theme.key_dialogTextBlack)), at, at + contact.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                sb.setSpan(new android.text.style.ClickableSpan() {
+                    @Override
+                    public void onClick(View widget) {
+                        org.telegram.messenger.browser.Browser.openUrl(context, "https://t.me/" + contact.replace("@", ""));
+                    }
+
+                    @Override
+                    public void updateDrawState(android.text.TextPaint ds) {
+                        ds.setUnderlineText(false);
+                    }
+                }, at, at + contact.length(), android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            }
+            text.setText(sb);
+            text.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+        } else if (ton) {
+            // «≈ 3.68 TON» с иконкой TON, как на ПК
+            text.setText(org.telegram.ui.ChannelMonetizationLayout.replaceTON(body, text.getPaint(), 1f, false));
         }
+        col.addView(text);
         row.addView(col, new LinearLayout.LayoutParams(0, -2, 1f));
         return row;
     }

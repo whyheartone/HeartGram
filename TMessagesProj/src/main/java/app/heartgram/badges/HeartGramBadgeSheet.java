@@ -49,7 +49,7 @@ public final class HeartGramBadgeSheet {
         }
         // поддержавший без своего текста: то же окно, что «Поддержать HeartGram» (как на ПК)
         if ("supporter".equals(info.kind) && TextUtils.isEmpty(info.text)) {
-            HeartGramSupportSheet.show(fragment, false);
+            HeartGramSupportSheet.show(fragment, false, document);
             return true;
         }
         final Context context = activity;
