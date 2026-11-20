@@ -23,4 +23,12 @@
     <string name="HGHybridPush">Keep a background connection</string>
     <string name="HGHybridPushInfo">Works together with Google FCM. More reliable on Xiaomi when the screen is locked; uses a bit more battery.</string>
     <string name="HGUpdateTo">Update to %1$s</string>
+    <string name="HGXiaomiPush">Xiaomi: background push</string>
+    <string name="HGXiaomiPushValue">Autostart and restrictions</string>
+    <string name="HGXiaomiPushInfo">To get notifications while the screen is locked:
+1) enable Autostart for HeartGram;
+2) set Battery saver to No restrictions for HeartGram and Google Play Services;
+3) lock HeartGram in recents.</string>
+    <string name="HGXiaomiAutostart">Autostart</string>
+    <string name="HGXiaomiGms">Google services</string>
 </resources>

@@ -143,6 +143,7 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
     private int residentNotificationRow;
     private int notificationBubblesRow;
     private int hybridPushRow = -1;
+    private int xiaomiPushRow = -1;
     private int pushStatusRow;
     private int batteryOptimizationRow;
     private int glyphRow;
@@ -230,6 +231,7 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
         notificationBubblesRow = addRow("disableNotificationBubbles");
         pushStatusRow = addRow("pushStatus");
         batteryOptimizationRow = addRow("batteryOptimization");
+        xiaomiPushRow = isXiaomi() ? addRow("xiaomiPush") : -1;
         glyphRow = Build.MANUFACTURER.equalsIgnoreCase("Nothing") ? addRow("glyph") : -1;
         notificationsDividerRow = addRow();
     }
@@ -387,6 +389,10 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
 
         if (position == batteryOptimizationRow) {
             openBatteryOptimizationSettings();
+            return;
+        }
+        if (position == xiaomiPushRow) {
+            showXiaomiPushHelper();
             return;
         }
 
@@ -724,6 +730,43 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
                 getString(R.string.PushServiceTypeMicroG)};
     }
 
+    private static boolean isXiaomi() {
+        String m = Build.MANUFACTURER == null ? "" : Build.MANUFACTURER.toLowerCase();
+        return m.contains("xiaomi") || m.contains("redmi") || m.contains("poco");
+    }
+
+    /** Памятка и быстрые переходы в настройки Xiaomi/HyperOS, где система убивает фон и откладывает пуши. */
+    private void showXiaomiPushHelper() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.HGXiaomiPush));
+        builder.setMessage(getString(R.string.HGXiaomiPushInfo));
+        builder.setPositiveButton(getString(R.string.HGXiaomiAutostart), (d, w) -> {
+            Intent i = new Intent();
+            i.setComponent(new android.content.ComponentName("com.miui.securitycenter",
+                    "com.miui.permcenter.autostart.AutoStartManagementActivity"));
+            try {
+                getParentActivity().startActivity(i);
+            } catch (Exception e) {
+                openAppSettings("com.heartgram.messanger");
+            }
+        });
+        builder.setNeutralButton(getString(R.string.HGXiaomiGms), (d, w) -> openAppSettings("com.google.android.gms"));
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
+    }
+
+    private void openAppSettings(String packageName) {
+        try {
+            Intent i = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    android.net.Uri.parse("package:" + packageName));
+            getParentActivity().startActivity(i);
+        } catch (Exception ignored) {
+        }
+    }
+
     private void showPushServiceTypeSelector() {
         if (getParentActivity() == null) {
             return;
@@ -1057,6 +1100,8 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
                     } else if (position == pushStatusRow) {
                         cell.setTextAndValue(getString(R.string.OEGeneralPushStatus),
                                 formatPushStatus(), true);
+                    } else if (position == xiaomiPushRow) {
+                        cell.setTextAndValue(getString(R.string.HGXiaomiPush), getString(R.string.HGXiaomiPushValue), true);
                     } else if (position == batteryOptimizationRow) {
                         cell.setTextAndValue(getString(R.string.OEGeneralBatteryOptimization),
                                 getString(batteryUnrestricted()
@@ -1158,7 +1203,7 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
                     || position == pushServiceTypeRow || position == pushGatewayRow) {
                 return TYPE_SETTINGS;
             } else if (position == mapProviderRow || position == mapPreviewRow
-                    || position == pushStatusRow || position == batteryOptimizationRow
+                    || position == pushStatusRow || position == batteryOptimizationRow || position == xiaomiPushRow
                     || position == savePathRow
                     || position == showIdAndDcRow
                     || position == translatorRow || position == glyphRow) {

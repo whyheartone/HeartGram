@@ -28,6 +28,8 @@ public class NotificationsService extends Service {
 
     private static final String CHANNEL_ID = "push_service_channel";
     private static final String CHANNEL_ID_QUIET = "push_service_channel_min";
+    // HeartGram: невидимый канал (importance NONE): служба работает, но в шторке и на экране блокировки её не видно
+    private static final String CHANNEL_ID_HIDDEN = "push_service_channel_hidden";
 
     @Override
     public void onCreate() {
@@ -38,17 +40,18 @@ public class NotificationsService extends Service {
 
     private void goForeground() {
         final boolean visible = NaConfig.INSTANCE.getPushServiceTypeInAppDialog().Bool();
-        final String channelId = visible ? CHANNEL_ID : CHANNEL_ID_QUIET;
+        final String channelId = visible ? CHANNEL_ID : CHANNEL_ID_HIDDEN;
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         NotificationChannel channel = new NotificationChannel(channelId,
                 LocaleController.getString(R.string.NagramXPushService),
-                visible ? NotificationManager.IMPORTANCE_DEFAULT : NotificationManager.IMPORTANCE_MIN);
+                visible ? NotificationManager.IMPORTANCE_DEFAULT : NotificationManager.IMPORTANCE_NONE);
         channel.setShowBadge(false);
         notificationManager.createNotificationChannel(channel);
         Notification notification = new NotificationCompat.Builder(this, channelId)
                 .setShowWhen(false)
                 .setOngoing(true)
                 .setPriority(visible ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_MIN)
+                .setVisibility(NotificationCompat.VISIBILITY_SECRET)
                 .setSmallIcon(R.drawable.exteraless_notification)
                 .setContentText(LocaleController.getString(R.string.NagramXPushService))
                 .build();
