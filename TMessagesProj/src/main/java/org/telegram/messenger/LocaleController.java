@@ -2817,6 +2817,29 @@ public class LocaleController {
     }
 
     public static String formatDateOnline(long date, boolean[] madeShorter, boolean localActivity, boolean relative) {
+        final String result = formatDateOnlineRaw(date, madeShorter, localActivity, relative);
+        if (!localActivity || result == null) {
+            return result;
+        }
+        // локальная активность приблизительная: после «был(а)» ставим «~» (подпись берётся из языка человека)
+        try {
+            final String marker = "";
+            for (int res : new int[]{R.string.LastSeenFormatted, R.string.LastSeenDateFormatted}) {
+                String template = formatString(res, marker);
+                int at = template.indexOf(marker);
+                if (at >= 0) {
+                    String prefix = template.substring(0, at);
+                    if (result.startsWith(prefix)) {
+                        return prefix + "~" + result.substring(prefix.length());
+                    }
+                }
+            }
+        } catch (Throwable ignore) {
+        }
+        return result;
+    }
+
+    private static String formatDateOnlineRaw(long date, boolean[] madeShorter, boolean localActivity, boolean relative) {
         // подпись «был(а)» берётся из языка, выбранного человеком (в языковом пакете может быть своя, например «убежал(а)»),
         // а не из зашитой строки: так локальная активность выглядит так же, как обычное «был(а) в сети»
         final int seenRes = R.string.LastSeenFormatted;
