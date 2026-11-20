@@ -254,9 +254,13 @@ public class ActionBarPopupWindow extends PopupWindow {
                             continue;
                         }
                         child.setTag(R.id.parent_tag, state);
+                        // View.setBackground переписывает отступы по отступам фона: без этого значок и текст пункта
+                        // прижимались к краю плитки (18 dp превращались в 6 dp), поэтому возвращаем свои
+                        final int pl = child.getPaddingLeft(), pt = child.getPaddingTop(), pr = child.getPaddingRight(), pb = child.getPaddingBottom();
                         child.setBackground(new android.graphics.drawable.InsetDrawable(
                                 Theme.createRadSelectorDrawable(selector, first ? 14 : 5, last ? 14 : 5),
                                 dp(6), dp(first ? 2 : 1), dp(6), dp(last ? 2 : 1)));
+                        child.setPadding(pl, pt, pr, pb);
                     }
                 }
 
