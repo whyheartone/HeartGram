@@ -448,23 +448,23 @@ public final class GitHubUpdater {
         String notes = TextUtils.isEmpty(release.body) ? release.tag : release.body;
         String updateText = size.isEmpty() ? LocaleController.getString(R.string.OEUpdateInstall)
                 : LocaleController.formatString(R.string.OEUpdateInstallSize, size);
-        new UpdateSheet(activity, fragment.getResourceProvider(), LocaleController.getString(R.string.OEUpdateTitle),
+        final UpdateSheet sheet = new UpdateSheet(activity, fragment.getResourceProvider(), LocaleController.getString(R.string.OEUpdateTitle),
                 subtitle.toString(), notes, updateText, new UpdateSheet.Delegate() {
             @Override
-            public void onUpdate(UpdateSheet sheet) {
-                sheet.setDownloading(true);
+            public void onUpdate(UpdateSheet self) {
+                self.setDownloading(true);
                 download(activity, release, new DownloadListener() {
                     @Override
                     public void onProgress(long done, long total) {
-                        sheet.setProgress(done, total);
+                        self.setProgress(done, total);
                     }
 
                     @Override
                     public void onFinished(boolean success, boolean canceled) {
                         if (success) {
-                            sheet.finishDownload();
+                            self.finishDownload();
                         } else if (!canceled) {
-                            sheet.setDownloading(false);
+                            self.setDownloading(false);
                         }
                     }
                 });
@@ -479,7 +479,22 @@ public final class GitHubUpdater {
             public void onCancelDownload() {
                 cancelDownload();
             }
-        }).show();
+        });
+        if (isDownloading()) {
+            // окно открыли заново, пока скачивание идёт: показываем его ход и следим за ним
+            sheet.setDownloading(true);
+            sheet.setProgress(dlDone, dlTotal);
+            final Runnable watcher = () -> {
+                if (!isDownloading()) {
+                    sheet.finishDownload();
+                } else {
+                    sheet.setProgress(dlDone, dlTotal);
+                }
+            };
+            addPendingListener(watcher);
+            sheet.setOnClosed(() -> removePendingListener(watcher));
+        }
+        sheet.show();
     }
 
     public static void download(Activity activity, Release release, DownloadListener listener) {

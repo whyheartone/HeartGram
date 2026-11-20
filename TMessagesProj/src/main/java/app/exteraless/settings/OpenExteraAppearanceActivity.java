@@ -201,14 +201,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         centerTitleRow = addRow("centerTitle");
         senderMiniAvatarsRow = addRow("senderMiniAvatars");
         tilesRow = -1;
-        if (app.heartgram.tiles.ChatTiles.enabled()) {
-            tilesRadiusRow = addRow("hgTilesRadius");
-            tilesGapRow = addRow("hgTilesGap");
-            tilesBrightRow = addRow("hgTilesBright");
-            tilesTintRow = addRow("hgTilesTint");
-        } else {
-            tilesRadiusRow = tilesGapRow = tilesBrightRow = tilesTintRow = -1;
-        }
+        // плитки настраиваются на экране «Material Design 3» (с живым предпросмотром), отдельных строк здесь нет
+        tilesRadiusRow = tilesGapRow = tilesBrightRow = tilesTintRow = -1;
         titleTextRow = addRow("titleText");
         chatListDividerRow = addRow();
 

@@ -144,7 +144,14 @@ public class UpdateSheet extends BottomSheet {
         secondaryButton.setBackground(Theme.AdaptiveRipple.filledRect(getThemedColor(Theme.key_graySection), 10));
         secondaryButton.setGravity(Gravity.CENTER);
         secondaryButton.setText(getString(R.string.OEUpdateLater));
-        secondaryButton.setOnClickListener(v -> dismiss());
+        secondaryButton.setOnClickListener(v -> {
+            // пока идёт скачивание, кнопка отменяет его; обычное закрытие окна скачивание не трогает
+            if (downloading && delegate != null) {
+                delegate.onCancelDownload();
+            }
+            downloading = false;
+            dismiss();
+        });
         buttons.addView(secondaryButton, LayoutHelper.createLinear(0, 46, 1f, Gravity.NO_GRAVITY, 0, 0, 8, 0));
 
         primaryButton = new TextView(context);
@@ -204,17 +211,37 @@ public class UpdateSheet extends BottomSheet {
         return downloading;
     }
 
+    private Runnable onClosed;
+    private boolean closed;
+
+    /** Вызывается один раз, когда окно закрыли (свернули или скачивание закончилось). */
+    public void setOnClosed(Runnable value) {
+        onClosed = value;
+    }
+
     @Override
     public void dismiss() {
-        if (downloading && delegate != null) {
-            delegate.onCancelDownload();
-        }
-        downloading = false;
+        // окно можно свернуть: скачивание идёт в фоне, прогресс виден на плашке внизу списка чатов
+        close();
         super.dismiss();
+    }
+
+    private void close() {
+        if (closed) {
+            return;
+        }
+        closed = true;
+        if (onClosed != null) {
+            onClosed.run();
+        }
     }
 
     public void finishDownload() {
         downloading = false;
+        if (closed) {
+            return;
+        }
+        close();
         super.dismiss();
     }
 

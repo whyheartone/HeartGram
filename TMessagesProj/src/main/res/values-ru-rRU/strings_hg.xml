@@ -23,6 +23,7 @@
     <string name="HGHybridPush">Держать соединение в фоне</string>
     <string name="HGHybridPushInfo">Работает вместе с Google FCM. Надёжнее на Xiaomi при заблокированном экране; чуть больше расходует батарею.</string>
     <string name="HGUpdateTo">Обновить до %1$s</string>
+    <string name="HGUpdateAvailable">Доступно обновление</string>
     <string name="HGXiaomiPush">Xiaomi: пуши в фоне</string>
     <string name="HGXiaomiPushValue">Автозапуск и ограничения</string>
     <string name="HGXiaomiPushInfo">Чтобы уведомления приходили при заблокированном экране:\n1) включите «Автозапуск» для HeartGram;\n2) в «Контроле активности» выберите «Нет ограничений» для HeartGram и для «Сервисов Google Play»;\n3) закрепите HeartGram замком в недавних.</string>

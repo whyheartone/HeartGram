@@ -763,9 +763,11 @@ public class AnimatedEmojiDrawable extends Drawable {
     }
 
     private void updateAutoRepeat(ImageReceiver imageReceiver) {
-        if ((cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS) && app.heartgram.HeartGramPrefs.prefs().getBoolean("status_loop", true)
-                && app.heartgram.badges.HeartGramBadges.isBadgeDocument(documentId)) {
-            // HeartGram: значок крутится без остановки (-1 = бесконечно; 0 у Lottie, наоборот, значит «остановиться после круга»)
+        if ((cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS)
+                && (app.heartgram.HeartGramPrefs.prefs().getBoolean("status_always", false)
+                || app.heartgram.HeartGramPrefs.prefs().getBoolean("status_loop", true) && app.heartgram.badges.HeartGramBadges.isBadgeDocument(documentId))) {
+            // HeartGram: значок (или любой эмодзи-статус, если включено «Всегда анимировать») крутится без остановки
+            // (-1 = бесконечно; 0 у Lottie, наоборот, значит «остановиться после круга»)
             imageReceiver.setAutoRepeatCount(-1);
         } else if (cacheType == CACHE_TYPE_EMOJI_STATUS || cacheType == CACHE_TYPE_ALERT_EMOJI_STATUS || cacheType == CACHE_TYPE_FORUM_TOPIC) {
             imageReceiver.setAutoRepeatCount(2);

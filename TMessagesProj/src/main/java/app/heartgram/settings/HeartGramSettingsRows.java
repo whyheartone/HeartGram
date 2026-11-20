@@ -144,6 +144,12 @@ public final class HeartGramSettingsRows {
             rows.add(toggle("media_glow_video", tr("Свечение под видео и GIF", "Glow under video and GIF"), true));
         }
         rows.add(info(tr("За фото в просмотре появляется мягкий ореол его цветов.", "A soft halo of the photo's colors appears behind it in the viewer.")));
+
+        rows.add(header(tr("Эмодзи-статус", "Emoji status")));
+        rows.add(toggle("status_always", tr("Всегда анимировать статус", "Always animate the status"), false, () ->
+                org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface)));
+        rows.add(info(tr("Эмодзи рядом с названием вверху списка чатов проигрывается по кругу, а не только пару раз после открытия.",
+                "The emoji next to the title at the top of the chat list plays in a loop instead of just a couple of times after opening.")));
     }
 
     /** Ключ настройки в строке (для ссылок на неё) или null у заголовков и подписей. */

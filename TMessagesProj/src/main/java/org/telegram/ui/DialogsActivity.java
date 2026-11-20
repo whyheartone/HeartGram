@@ -3011,22 +3011,15 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private final Runnable hgClipSettle = this::hgClipNow;
 
     // кнопка «Обновить» (как в оригинале): показывается, когда найдена новая сборка в выбранном канале
-    private android.widget.TextView hgUpdatePill;
+    private app.exteraless.updater.UpdatePillView hgUpdatePill;
     private final Runnable hgUpdateListener = this::hgRefreshUpdatePill;
 
     private void hgCreateUpdatePill(Context context, android.widget.FrameLayout host) {
-        hgUpdatePill = new android.widget.TextView(context);
-        hgUpdatePill.setTextSize(15);
-        hgUpdatePill.setTypeface(AndroidUtilities.bold());
-        hgUpdatePill.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
-        hgUpdatePill.setGravity(Gravity.CENTER);
-        hgUpdatePill.setPadding(dp(20), 0, dp(20), 0);
-        // цвет темы, как у кнопки обновления в оригинале
-        hgUpdatePill.setBackground(Theme.createRoundRectDrawable(dp(22), Theme.getColor(Theme.key_featuredStickers_addButton)));
-        hgUpdatePill.setElevation(dp(4));
+        // цвет темы, как у кнопки обновления в оригинале; внизу списка, над панелью вкладок
+        hgUpdatePill = new app.exteraless.updater.UpdatePillView(context);
         hgUpdatePill.setVisibility(View.GONE);
         hgUpdatePill.setOnClickListener(v -> app.exteraless.updater.GitHubUpdater.openPending());
-        host.addView(hgUpdatePill, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 44, Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL, 0, 0, 0, 104));
+        host.addView(hgUpdatePill, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.BOTTOM, 12, 0, 12, 0));
         app.exteraless.updater.GitHubUpdater.addPendingListener(hgUpdateListener);
         hgRefreshUpdatePill();
     }
@@ -3041,12 +3034,26 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             boolean show = (r != null || percent >= 0) && folderId == 0 && !onlySelect
                     && NaConfig.INSTANCE.getAutoUpdateChannel().Int() != tw.nekomimi.nekogram.helpers.remote.UpdateHelper.UPDATE_OFF;
             if (show) {
-                hgUpdatePill.setText(percent >= 0
+                hgUpdatePill.set(percent >= 0
                         ? LocaleController.formatString("HGUpdating", R.string.HGUpdating, percent)
-                        : LocaleController.formatString("HGUpdateTo", R.string.HGUpdateTo, r.displayVersion()));
+                        : LocaleController.getString(R.string.HGUpdateAvailable), percent);
+                hgPositionUpdatePill();
             }
             hgUpdatePill.setVisibility(show ? View.VISIBLE : View.GONE);
         });
+    }
+
+    /** Плашка стоит над нижней панелью вкладок (или над системной навигацией), а не посреди списка. */
+    private void hgPositionUpdatePill() {
+        if (hgUpdatePill == null || !(hgUpdatePill.getLayoutParams() instanceof ViewGroup.MarginLayoutParams)) {
+            return;
+        }
+        ViewGroup.MarginLayoutParams lp = (ViewGroup.MarginLayoutParams) hgUpdatePill.getLayoutParams();
+        final int bottom = navigationBarHeight + additionNavigationBarHeight + getListViewFloatingTabsPadding() + dp(10);
+        if (lp.bottomMargin != bottom) {
+            lp.bottomMargin = bottom;
+            hgUpdatePill.setLayoutParams(lp);
+        }
     }
 
     private void hgClipListsUnderTabs() {
@@ -14180,6 +14187,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         dialogsActivityStatusLayout.setPadding(0, statusBarHeight, 0, 0);
 
         updateFloatingButtonOffset();
+        hgPositionUpdatePill();
 
         ViewGroup.MarginLayoutParams lp;
         for (UndoView undoView : undoView) {

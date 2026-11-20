@@ -4372,7 +4372,10 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
             if (translationX != 0 || cornerProgress != 0.0f) {
                 canvas.save();
 
-                Theme.dialogs_pinnedPaint.setColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+                // у плиток этот кусок справа должен быть цвета плитки, иначе при свайпе на ней виден прямоугольник другого цвета
+                Theme.dialogs_pinnedPaint.setColor(app.heartgram.tiles.ChatTiles.enabled()
+                        ? app.heartgram.tiles.ChatTiles.tileColor()
+                        : Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
                 rect.set(getMeasuredWidth() - dp(64), 0, getMeasuredWidth(), getMeasuredHeight());
                 rect.offset(0, -translateY);
                 canvas.drawRoundRect(rect, cornersRadius, cornersRadius, Theme.dialogs_pinnedPaint);

@@ -198,7 +198,7 @@ public final class EtgBackup {
     /** Ключи, которые в бэкап не попадают: секрет прокси, служебные записи и кеш списка значков. */
     private static final java.util.Set<String> HG_SKIP = new java.util.HashSet<>(java.util.Arrays.asList(
             "wsproxy_secret", "wsproxy_registered", "badge_list_cache", "badge_list_etag"));
-    private static final String[] HG_PREFIXES = {"am_", "ta_", "anim_", "media_glow", "glow_", "tiles", "folder_", "wsproxy_", "status_loop"};
+    private static final String[] HG_PREFIXES = {"am_", "ta_", "anim_", "media_glow", "glow_", "tiles", "folder_", "wsproxy_", "status_"};
 
     /** В бэкап идёт всё, что есть в настройках HeartGram, кроме секретов, служебных записей и кеша списка значков. */
     private static boolean hgKnown(String key) {
