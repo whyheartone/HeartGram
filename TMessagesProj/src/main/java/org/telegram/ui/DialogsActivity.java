@@ -3018,11 +3018,11 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         hgUpdatePill = new android.widget.TextView(context);
         hgUpdatePill.setTextSize(15);
         hgUpdatePill.setTypeface(AndroidUtilities.bold());
-        hgUpdatePill.setTextColor(0xFFFFFFFF);
+        hgUpdatePill.setTextColor(Theme.getColor(Theme.key_featuredStickers_buttonText));
         hgUpdatePill.setGravity(Gravity.CENTER);
         hgUpdatePill.setPadding(dp(20), 0, dp(20), 0);
-        // околокрасный, как просил: заметно, но не кричит
-        hgUpdatePill.setBackground(Theme.createRoundRectDrawable(dp(22), 0xFFE5534B));
+        // цвет темы, как у кнопки обновления в оригинале
+        hgUpdatePill.setBackground(Theme.createRoundRectDrawable(dp(22), Theme.getColor(Theme.key_featuredStickers_addButton)));
         hgUpdatePill.setElevation(dp(4));
         hgUpdatePill.setVisibility(View.GONE);
         hgUpdatePill.setOnClickListener(v -> app.exteraless.updater.GitHubUpdater.openPending());

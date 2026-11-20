@@ -47,7 +47,7 @@ public final class GitHubUpdater {
     private static final String REPO = "whyheartone/HeartGram";
     public static final String RELEASES_URL = "https://github.com/" + REPO + "/releases";
     private static final String API = "https://api.github.com/repos/" + REPO;
-    private static final long AUTO_INTERVAL = TimeUnit.HOURS.toMillis(6);
+    private static final long AUTO_INTERVAL = TimeUnit.HOURS.toMillis(1);
     private static final String PREFS = "exteraless_updater";
     private static final String KEY_LAST_CHECK = "last_check";
     private static final String KEY_SKIPPED = "skipped_tag";
