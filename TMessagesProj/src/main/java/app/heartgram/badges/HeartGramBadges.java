@@ -143,6 +143,32 @@ public final class HeartGramBadges {
         return "";
     }
 
+    /** «Что получите» для окна поддержки и окна значка поддержавшего. */
+    public static String supportWhatText() {
+        return HeartGramLabels.tr(
+                "Значок с эмодзи рядом с вашим именем: в списке чатов, в шапке, в профиле и в сообщениях у всех, кто пользуется HeartGram. Эмодзи можно выбрать любое.",
+                "A badge with an emoji next to your name: in the chat list, header, profile and messages for everyone using HeartGram. You can pick any emoji.");
+    }
+
+    /** «Как получить»: сумма и адресат чека из API, плюс заметка. */
+    public static String supportHowText() {
+        String amount = supportAmountText();
+        String contact = supportContact();
+        if (contact.isEmpty()) {
+            contact = "@whyheartone";
+        }
+        String how = HeartGramLabels.tr(
+                "Отправьте " + (amount.isEmpty() ? "любую сумму" : amount) + " любым способом из раздела «Поддержка» (или эквивалент в TON). "
+                        + "Затем пришлите чек, на котором видны сумма и время, на " + contact + ". Значок добавят после проверки.",
+                "Send " + (amount.isEmpty() ? "any amount" : amount) + " by any option in the Support section (or the TON equivalent). "
+                        + "Then send a receipt showing the amount and time to " + contact + ". The badge is added after a check.");
+        String note = supportNote();
+        if (note != null && !note.trim().isEmpty()) {
+            how = how + "\n\n" + note.trim();
+        }
+        return how;
+    }
+
     /** Кому слать чек (@имя) или пусто. */
     public static String supportContact() {
         return snapshot.supportContact;

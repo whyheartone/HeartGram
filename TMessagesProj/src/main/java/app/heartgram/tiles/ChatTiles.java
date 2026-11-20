@@ -213,7 +213,10 @@ public final class ChatTiles {
             Shape shape = shapes.get(v);
             float upper = shape != null ? shape.upper : AndroidUtilities.dp(radius());
             float lower = shape != null ? shape.lower : AndroidUtilities.dp(radius());
-            float x = v.getLeft(), y = v.getTop() + v.getTranslationY();
+            // при свайпе («прочитать», «закрепить») содержимое строки уезжает влево: плитка уезжает вместе с ним,
+            // а справа остаётся цвет действия, который рисует сама строка
+            float swipe = Math.min(0f, ((DialogCell) v).hgSwipeTranslationX());
+            float x = v.getLeft() + swipe, y = v.getTop() + v.getTranslationY();
             path.reset();
             roundPath(path, x, y, x + v.getWidth(), y + v.getHeight(), upper, lower);
             card.setAlpha(Math.round(255 * v.getAlpha()));

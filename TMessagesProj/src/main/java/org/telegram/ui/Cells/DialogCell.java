@@ -4083,6 +4083,11 @@ public class DialogCell extends BaseCell implements StoriesListPlaceProvider.Ava
         invalidate();
     }
 
+    /** Сдвиг содержимого строки при свайпе (отрицательный влево): плитка за строкой едет вместе с ним. */
+    public float hgSwipeTranslationX() {
+        return translationX;
+    }
+
     public boolean isDrawArchive() {
         return drawArchive && (currentDialogFolderId != 0 || isTopic && forumTopic != null && forumTopic.id == 1) && translationX == 0 && archivedChatsDrawable != null;
     }

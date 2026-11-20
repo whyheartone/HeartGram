@@ -102,6 +102,12 @@ public final class HeartGramBadgeSheet {
             root.addView(bubble, bl);
         }
 
+        // поддержавший без своего текста: то же пояснение, что в разделе «Поддержка» (как на ПК)
+        if ("supporter".equals(info.kind) && TextUtils.isEmpty(info.text)) {
+            root.addView(supportBlock(context, app.heartgram.HeartGramLabels.tr("Что получите", "What you get"), HeartGramBadges.supportWhatText(), 14));
+            root.addView(supportBlock(context, app.heartgram.HeartGramLabels.tr("Как получить", "How to get it"), HeartGramBadges.supportHowText(), 12));
+        }
+
         for (final String[] extra : HeartGramBadges.buttonsFor(peer, info)) {
             TextView eb = text(context, extra[0], 16, true, Theme.getColor(Theme.key_featuredStickers_buttonText));
             eb.setBackground(Theme.createSimpleSelectorRoundRectDrawable(dp(10), Theme.getColor(Theme.key_featuredStickers_addButton),
@@ -144,6 +150,22 @@ public final class HeartGramBadgeSheet {
         sheet.setCustomView(root);
         fragment.showDialog(sheet);
         return true;
+    }
+
+    private static View supportBlock(Context context, String title, String body, int topMarginDp) {
+        LinearLayout block = new LinearLayout(context);
+        block.setOrientation(LinearLayout.VERTICAL);
+        TextView head = text(context, title, 15, true, Theme.getColor(Theme.key_dialogTextBlack));
+        head.setGravity(Gravity.START);
+        block.addView(head);
+        TextView text = text(context, body, 14, false, Theme.getColor(Theme.key_dialogTextGray2));
+        text.setGravity(Gravity.START);
+        text.setPadding(0, dp(4), 0, 0);
+        block.addView(text);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.topMargin = dp(topMarginDp);
+        block.setLayoutParams(lp);
+        return block;
     }
 
     static CharSequence title(HeartGramBadges.Info info) {
