@@ -1351,6 +1351,23 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         return timeItem;
     }
 
+    /**
+     * Бегущая строка имени идёт и под закрывающим экраном (вью рисуется, хоть и закрыто): при возврате из профиля
+     * имя оказывалось в середине круга и «липло» к аватарке. Перед показом шапки начинаем с начала.
+     */
+    public void restartTitleScroll() {
+        if (titleTextView != null) {
+            titleTextView.resetScrolling();
+        }
+        SimpleTextView larger = titleTextLargerCopyView == null ? null : titleTextLargerCopyView.get();
+        if (larger != null) {
+            larger.resetScrolling();
+        }
+        if (subtitleTextView != null) {
+            subtitleTextView.resetScrolling();
+        }
+    }
+
     public SimpleTextView getTitleTextView() {
         return titleTextView;
     }

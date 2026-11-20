@@ -29905,6 +29905,9 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onTransitionAnimationStart(boolean isOpen, boolean backward) {
         super.onTransitionAnimationStart(isOpen, backward);
+        if (isOpen && avatarContainer != null) {
+            avatarContainer.restartTitleScroll();
+        }
         startMs = System.currentTimeMillis();
         int[] alowedNotifications = null;
         if (isOpen) {
@@ -32631,6 +32634,9 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onResume() {
         super.onResume();
+        if (avatarContainer != null) {
+            avatarContainer.restartTitleScroll();
+        }
         cachedIsGestureNavigation = AndroidUtil.isGestureNavigation(getContext());
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();

@@ -718,6 +718,7 @@ public class SimpleTextView extends View implements Drawable.Callback {
 
     public void resetScrolling() {
         scrollingOffset = 0;
+        currentScrollDelay = SCROLL_DELAY_MS;
         checkUi_layerType();
     }
 
