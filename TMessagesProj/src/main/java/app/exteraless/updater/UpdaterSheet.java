@@ -484,9 +484,7 @@ public class UpdaterSheet extends BottomSheet {
     @Override
     public void dismiss() {
         dismissed = true;
-        if (downloading) {
-            GitHubUpdater.cancelDownload();
-        }
+        // скачивание продолжается в фоне, если окно закрыли; отмена только кнопкой «Отменить» в самом окне
         super.dismiss();
     }
 }

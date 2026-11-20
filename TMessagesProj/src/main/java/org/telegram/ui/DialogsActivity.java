@@ -3037,10 +3037,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                 return;
             }
             app.exteraless.updater.GitHubUpdater.Release r = app.exteraless.updater.GitHubUpdater.pendingRelease();
-            boolean show = r != null && folderId == 0 && !onlySelect
+            final int percent = app.exteraless.updater.GitHubUpdater.downloadPercent();
+            boolean show = (r != null || percent >= 0) && folderId == 0 && !onlySelect
                     && NaConfig.INSTANCE.getAutoUpdateChannel().Int() != tw.nekomimi.nekogram.helpers.remote.UpdateHelper.UPDATE_OFF;
             if (show) {
-                hgUpdatePill.setText(LocaleController.formatString("HGUpdateTo", R.string.HGUpdateTo, r.displayVersion()));
+                hgUpdatePill.setText(percent >= 0
+                        ? LocaleController.formatString("HGUpdating", R.string.HGUpdating, percent)
+                        : LocaleController.formatString("HGUpdateTo", R.string.HGUpdateTo, r.displayVersion()));
             }
             hgUpdatePill.setVisibility(show ? View.VISIBLE : View.GONE);
         });

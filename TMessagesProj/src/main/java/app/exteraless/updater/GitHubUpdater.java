@@ -109,6 +109,22 @@ public final class GitHubUpdater {
         }
     }
 
+    private static volatile long dlDone, dlTotal;
+
+    /** Процент скачивания в фоне (или -1, если не качается). */
+    public static int downloadPercent() {
+        if (download == null) {
+            return -1;
+        }
+        return dlTotal > 0 ? (int) (dlDone * 100 / dlTotal) : 0;
+    }
+
+    private static void notifyListeners() {
+        for (Runnable l : pendingListeners) {
+            l.run();
+        }
+    }
+
     public static void addPendingListener(Runnable l) {
         pendingListeners.add(l);
     }
@@ -493,7 +509,12 @@ public final class GitHubUpdater {
                             if (percent != lastPercent) {
                                 lastPercent = percent;
                                 final long doneBytes = done;
-                                AndroidUtilities.runOnUIThread(() -> listener.onProgress(doneBytes, total));
+                                dlDone = doneBytes;
+                                dlTotal = total;
+                                AndroidUtilities.runOnUIThread(() -> {
+                                    listener.onProgress(doneBytes, total);
+                                    notifyListeners();
+                                });
                             }
                         }
                     }
@@ -507,6 +528,9 @@ public final class GitHubUpdater {
             final boolean success = ok;
             AndroidUtilities.runOnUIThread(() -> {
                 download = null;
+                dlDone = 0;
+                dlTotal = 0;
+                notifyListeners();
                 if (success) {
                     listener.onFinished(true, false);
                     install(activity, target);

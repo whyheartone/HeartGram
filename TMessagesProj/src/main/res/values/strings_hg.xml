@@ -31,4 +31,5 @@
 3) lock HeartGram in recents.</string>
     <string name="HGXiaomiAutostart">Autostart</string>
     <string name="HGXiaomiGms">Google services</string>
+    <string name="HGUpdating">Downloading update %1$d%%</string>
 </resources>
