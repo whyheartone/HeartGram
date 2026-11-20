@@ -135,6 +135,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private int tilesRow = -1;
     private int tilesRadiusRow = -1;
     private int tilesGapRow = -1;
+    private int tilesBrightRow = -1;
+    private int tilesTintRow = -1;
     private int titleTextRow;
     private int chatListDividerRow;
 
@@ -201,8 +203,10 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         if (app.heartgram.tiles.ChatTiles.enabled()) {
             tilesRadiusRow = addRow("hgTilesRadius");
             tilesGapRow = addRow("hgTilesGap");
+            tilesBrightRow = addRow("hgTilesBright");
+            tilesTintRow = addRow("hgTilesTint");
         } else {
-            tilesRadiusRow = tilesGapRow = -1;
+            tilesRadiusRow = tilesGapRow = tilesBrightRow = tilesTintRow = -1;
         }
         titleTextRow = addRow("titleText");
         chatListDividerRow = addRow();
@@ -677,6 +681,34 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                 ((TextCheckCell) view).setChecked(on);
             }
             hgRefreshTiles(true);
+            return;
+        } else if (position == tilesBrightRow || position == tilesTintRow) {
+            if (getParentActivity() == null) {
+                return;
+            }
+            AlertDialog.Builder b = new AlertDialog.Builder(getParentActivity());
+            if (position == tilesBrightRow) {
+                final int[] levels = {-30, -20, -10, 0, 10, 20, 30};
+                CharSequence[] names = new CharSequence[levels.length];
+                for (int i = 0; i < levels.length; i++) {
+                    names[i] = levels[i] == 0 ? app.heartgram.HeartGramLabels.tr("Как в теме", "Theme default")
+                            : (levels[i] > 0 ? "+" : "") + levels[i] + "%";
+                }
+                b.setTitle(app.heartgram.HeartGramLabels.tr("Яркость плиток", "Tile brightness"));
+                b.setItems(names, (d, which) -> {
+                    app.heartgram.HeartGramPrefs.prefs().edit().putInt("tiles_bright", levels[which]).apply();
+                    hgRefreshTiles(false);
+                });
+            } else {
+                b.setTitle(app.heartgram.HeartGramLabels.tr("Цвет плиток", "Tile color"));
+                b.setItems(new CharSequence[]{app.heartgram.HeartGramLabels.tr("Нейтральный", "Neutral"),
+                        app.heartgram.HeartGramLabels.tr("С оттенком акцента темы", "Tinted with the theme accent")}, (d, which) -> {
+                    app.heartgram.HeartGramPrefs.prefs().edit().putInt("tiles_tint", which).apply();
+                    hgRefreshTiles(false);
+                });
+            }
+            b.setNegativeButton(getString(R.string.Cancel), null);
+            showDialog(b.create());
             return;
         } else if (position == tilesRadiusRow || position == tilesGapRow) {
             final boolean radius = position == tilesRadiusRow;
@@ -1202,6 +1234,14 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     } else if (position == tilesGapRow) {
                         cell.setTextAndValue(app.heartgram.HeartGramLabels.tr("Зазор между плитками", "Gap between tiles"),
                                 app.heartgram.tiles.ChatTiles.gap() + " dp", true);
+                    } else if (position == tilesBrightRow) {
+                        int br = app.heartgram.tiles.ChatTiles.brightness();
+                        cell.setTextAndValue(app.heartgram.HeartGramLabels.tr("Яркость плиток", "Tile brightness"),
+                                br == 0 ? app.heartgram.HeartGramLabels.tr("Как в теме", "Theme default") : (br > 0 ? "+" : "") + br + "%", true);
+                    } else if (position == tilesTintRow) {
+                        cell.setTextAndValue(app.heartgram.HeartGramLabels.tr("Цвет плиток", "Tile color"),
+                                app.heartgram.tiles.ChatTiles.tint() == 1 ? app.heartgram.HeartGramLabels.tr("С оттенком акцента", "Accent tint")
+                                        : app.heartgram.HeartGramLabels.tr("Нейтральный", "Neutral"), true);
                     } else if (position == dividerStyleRow) {
                         String[] v = {getString(R.string.OEAppearanceDividerHidden), getString(R.string.OEAppearanceDividerLine), getString(R.string.OEAppearanceDividerSegments)};
                         cell.setTextAndValue(getString(R.string.OEAppearanceDividerStyle), v[clamp(AppearanceConfig.dividerStyle.Int(), v.length)], false);
@@ -1324,7 +1364,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     || position == md3PlayerRow || position == md3MiniPlayerRow || position == md3TilesRow
                     || position == iosNavBarRow || position == iosChatHeaderRow) {
                 return TYPE_ROUND_CHECK;
-            } else if (position == folderPillHeightRow || position == tilesRadiusRow || position == tilesGapRow || position == dividerStyleRow || position == glassOutlineRow
+            } else if (position == folderPillHeightRow || position == tilesRadiusRow || position == tilesGapRow || position == tilesBrightRow || position == tilesTintRow || position == dividerStyleRow || position == glassOutlineRow
                     || position == tabTitleStyleRow
                     || position == startupFolderRow
                     || position == tabCounterRow || position == titleTextRow) {

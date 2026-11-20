@@ -51,8 +51,32 @@ public final class ChatTiles {
         return HeartGramPrefs.prefs().getInt("tiles_radius", 20);
     }
 
-    /** Цвет плитки: фон с примесью цвета текста. */
+    /** Яркость плиток в процентах: от -30 (темнее) до +30 (светлее), 0 - как задумано темой. */
+    public static int brightness() {
+        return HeartGramPrefs.prefs().getInt("tiles_bright", 0);
+    }
+
+    /** 0 - нейтральный цвет, 1 - с примесью цвета акцента темы. */
+    public static int tint() {
+        return HeartGramPrefs.prefs().getInt("tiles_tint", 0);
+    }
+
+    /** Цвет плитки: фон с примесью цвета текста, затем окраска и яркость из настроек MD3. */
     public static int tileColor() {
+        int color = baseTileColor();
+        if (tint() == 1) {
+            color = ColorUtils.blendARGB(color, Theme.getColor(Theme.key_featuredStickers_addButton), 0.12f);
+        }
+        int b = brightness();
+        if (b > 0) {
+            color = ColorUtils.blendARGB(color, 0xFFFFFFFF, b / 100f * 0.5f);
+        } else if (b < 0) {
+            color = ColorUtils.blendARGB(color, 0xFF000000, -b / 100f * 0.5f);
+        }
+        return color;
+    }
+
+    private static int baseTileColor() {
         int surface = Theme.getColor(Theme.key_windowBackgroundWhite);
         int text = Theme.getColor(Theme.key_windowBackgroundWhiteBlackText);
         double lum = ColorUtils.calculateLuminance(surface);
