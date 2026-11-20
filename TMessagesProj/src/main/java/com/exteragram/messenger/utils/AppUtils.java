@@ -212,12 +212,9 @@ public final class AppUtils {
         builder.append(LocaleUtils.getAppName());
         builder.append(" ");
         builder.append(BuildVars.BUILD_VERSION_STRING);
-        try {
-            builder.append(" (");
-            builder.append(org.telegram.messenger.BuildConfig.BUILD_NUMBER);
-            builder.append(")");
-        } catch (Exception e) {
-            FileLog.e(e);
+        final String label = org.telegram.messenger.BuildConfig.BUILD_BETA_LABEL;
+        if (label != null && !label.isEmpty()) {
+            builder.append(' ').append(label);
         }
         return builder.toString();
     }

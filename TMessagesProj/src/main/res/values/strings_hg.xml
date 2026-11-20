@@ -20,4 +20,6 @@
     <string name="HGIconMint">Mint</string>
     <string name="HGIconSunset">Poster</string>
     <string name="HGIconMonet">Monet</string>
+    <string name="HGHybridPush">Keep a background connection</string>
+    <string name="HGHybridPushInfo">Works together with Google FCM. More reliable on Xiaomi when the screen is locked; uses a bit more battery.</string>
 </resources>

@@ -142,6 +142,7 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
     private int pushGatewayRow;
     private int residentNotificationRow;
     private int notificationBubblesRow;
+    private int hybridPushRow = -1;
     private int pushStatusRow;
     private int batteryOptimizationRow;
     private int glyphRow;
@@ -225,6 +226,7 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
                 ? addRow("pushServiceTypeUnifiedGateway", "PushServiceTypeUnifiedGateway") : -1;
         residentNotificationRow = pushServiceType == PUSH_SERVICE_IN_APP
                 ? addRow("pushServiceTypeInAppDialog", "PushServiceTypeInAppDialog") : -1;
+        hybridPushRow = pushServiceType != PUSH_SERVICE_IN_APP ? addRow("hybridPush") : -1;
         notificationBubblesRow = addRow("disableNotificationBubbles");
         pushStatusRow = addRow("pushStatus");
         batteryOptimizationRow = addRow("batteryOptimization");
@@ -451,6 +453,8 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
             item = NaConfig.INSTANCE.getSortByUnread();
         } else if (position == residentNotificationRow) {
             item = NaConfig.INSTANCE.getPushServiceTypeInAppDialog();
+        } else if (position == hybridPushRow) {
+            item = NaConfig.INSTANCE.getHybridPush();
         } else if (position == notificationBubblesRow) {
             item = NekoConfig.disableNotificationBubbles;
         } else if (position == translateInSheetRow) {
@@ -500,6 +504,9 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
         }
         if (position == residentNotificationRow) {
             showRestartHint();
+        }
+        if (position == hybridPushRow) {
+            org.telegram.messenger.ApplicationLoader.startPushService();
         }
         if (position == hideArchiveRow) {
             // Папка архива пересобирается сразу.
@@ -1032,6 +1039,9 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
                     } else if (position == residentNotificationRow) {
                         cell.setTextAndCheck(getString(R.string.PushServiceTypeInAppDialog),
                                 NaConfig.INSTANCE.getPushServiceTypeInAppDialog().Bool(), true);
+                    } else if (position == hybridPushRow) {
+                        cell.setTextAndValueAndCheck(getString(R.string.HGHybridPush), getString(R.string.HGHybridPushInfo),
+                                NaConfig.INSTANCE.getHybridPush().Bool(), true, true);
                     } else if (position == notificationBubblesRow) {
                         cell.setTextAndCheck(getString(R.string.disableNotificationBubbles),
                                 NekoConfig.disableNotificationBubbles.Bool(), true);

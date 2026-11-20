@@ -208,7 +208,11 @@ public class AndroidUtil {
     public static String getVersionText() {
         String versionName = "release".equals(BuildConfig.BUILD_TYPE) && !BuildVars.LOGS_ENABLED ? BuildConfig.VERSION_NAME.split("-")[0] : BuildConfig.VERSION_NAME;
         // Подпись внизу «Настроек»: имя форка, а не апстрима.
-        return org.telegram.messenger.LocaleController.getAppName() + " v" + versionName + "(" + BuildConfig.VERSION_CODE + ") " + Build.SUPPORTED_ABIS[0].toLowerCase(Locale.ROOT) + " " + ("debug".equals(BuildConfig.BUILD_TYPE) ? "beta" : BuildConfig.BUILD_TYPE) + (BuildVars.LOGS_ENABLED ? " " + BuildConfig.BUILD_TIMESTAMP : "");
+        // без номера в скобках: версия и метка сборки (beta9), потом архитектура
+        final String label = BuildConfig.BUILD_BETA_LABEL;
+        return org.telegram.messenger.LocaleController.getAppName() + " v" + BuildConfig.VERSION_NAME.split("-")[0]
+                + (label == null || label.isEmpty() ? "" : " " + label) + " " + Build.SUPPORTED_ABIS[0].toLowerCase(Locale.ROOT)
+                + (BuildVars.LOGS_ENABLED ? " " + BuildConfig.BUILD_TIMESTAMP : "");
     }
 
     /*<!-- Controls the navigation bar interaction mode:

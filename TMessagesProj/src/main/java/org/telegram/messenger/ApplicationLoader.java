@@ -457,8 +457,18 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
                 || UnifiedPushService.UP_FAILED.equals(SharedConfig.pushStringStatus));
         final boolean remotePush = pushServiceType != 0 && !remoteFailed
                 && PushListenerController.getProvider().hasServices();
+        // гибрид: FCM остаётся, но фоновая служба тоже работает и держит соединение с Telegram,
+        // потому что на HyperOS при заблокированном экране одного FCM мало
+        final boolean hybrid = remotePush && NaConfig.INSTANCE.getHybridPush().Bool();
         boolean enabled;
-        if (remotePush) {
+        if (hybrid) {
+            enabled = true;
+            SharedPreferences.Editor editor = preferences.edit();
+            editor.putBoolean("pushService", true);
+            editor.putBoolean("pushConnection", true);
+            editor.apply();
+            ConnectionsManager.getInstance(UserConfig.selectedAccount).setPushConnectionEnabled(true);
+        } else if (remotePush) {
             enabled = false;
         } else if (preferences.contains("pushService")) {
             enabled = preferences.getBoolean("pushService", true);
