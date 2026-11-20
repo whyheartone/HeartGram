@@ -101,6 +101,8 @@ public final class HeartGramBadges {
         String supportAmount = "";
         double supportAmountRub = 0;
         String supportContact = "";
+        double priceSupporter = 300, priceCool = 3000, tonRub = 0;
+        String currency = "₽";
         /** Кнопки конкретного человека или канала: {текст, ссылка}. */
         final Map<Long, List<String[]>> personButtons = new HashMap<>();
         /** Своё название проекта у человека (extras[id].project). */
@@ -141,6 +143,27 @@ public final class HeartGramBadges {
             return (v == Math.rint(v) ? String.valueOf((long) v) : String.valueOf(v)) + " ₽";
         }
         return "";
+    }
+
+    public static String projectName() {
+        String p = snapshot.project;
+        return p == null || p.isEmpty() ? "HeartGram" : p;
+    }
+
+    public static String supportContactOrDefault() {
+        String c = snapshot.supportContact;
+        return c == null || c.isEmpty() ? "@whyheartone" : c;
+    }
+
+    /** Цена значка: «300 ₽ (≈ 3.68 TON)», курс TON приходит из API. */
+    public static String priceText(boolean cool) {
+        Snapshot s = snapshot;
+        double v = cool ? s.priceCool : s.priceSupporter;
+        String base = (v == Math.rint(v) ? String.valueOf((long) v) : String.valueOf(v)) + " " + s.currency;
+        if (s.tonRub > 0 && "₽".equals(s.currency)) {
+            base += " (≈ " + String.format(java.util.Locale.US, "%.2f", v / s.tonRub) + " TON)";
+        }
+        return base;
     }
 
     /** «Что получите» для окна поддержки и окна значка поддержавшего. */
@@ -568,6 +591,16 @@ public final class HeartGramBadges {
             s.supportAmount = support.optString("amount", "").trim();
             s.supportAmountRub = support.optDouble("amountRub", 0);
             s.supportContact = support.optString("contact", "").trim();
+            JSONObject prices = support.optJSONObject("prices");
+            if (prices != null) {
+                s.priceSupporter = prices.optDouble("supporter", 300);
+                s.priceCool = prices.optDouble("cool", 3000);
+                String cur = prices.optString("currency", "").trim();
+                if (!cur.isEmpty()) {
+                    s.currency = cur;
+                }
+            }
+            s.tonRub = support.optDouble("tonRub", 0);
             JSONArray items = support.optJSONArray("items");
             for (int i = 0; items != null && i < items.length(); i++) {
                 JSONObject it = items.optJSONObject(i);

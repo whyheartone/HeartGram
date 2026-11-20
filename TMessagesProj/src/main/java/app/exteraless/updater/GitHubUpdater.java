@@ -110,6 +110,20 @@ public final class GitHubUpdater {
     }
 
     private static volatile long dlDone, dlTotal;
+    private static volatile Release downloadingRelease;
+
+    /** Релиз, который сейчас скачивается в фоне (или null). */
+    public static Release downloadingRelease() {
+        return download == null ? null : downloadingRelease;
+    }
+
+    public static long downloadDone() {
+        return dlDone;
+    }
+
+    public static long downloadTotal() {
+        return dlTotal;
+    }
 
     /** Процент скачивания в фоне (или -1, если не качается). */
     public static int downloadPercent() {
@@ -135,7 +149,7 @@ public final class GitHubUpdater {
 
     /** Открывает окно обновления для найденной версии (кнопка «Обновить»). */
     public static void openPending() {
-        Release r = pendingRelease();
+        Release r = downloadingRelease() != null ? downloadingRelease() : pendingRelease();
         if (r != null) {
             show(r);
         }
@@ -488,6 +502,7 @@ public final class GitHubUpdater {
         Call call = client().newCall(new Request.Builder().url(release.apkUrl)
                 .header("User-Agent", "exteraless").build());
         download = call;
+        downloadingRelease = release;
         new Thread(() -> {
             boolean ok = false;
             try (Response response = call.execute()) {

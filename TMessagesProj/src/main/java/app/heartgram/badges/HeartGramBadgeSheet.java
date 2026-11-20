@@ -47,6 +47,11 @@ public final class HeartGramBadgeSheet {
         if (activity == null || info == null || document == 0) {
             return false;
         }
+        // поддержавший без своего текста: то же окно, что «Поддержать HeartGram» (как на ПК)
+        if ("supporter".equals(info.kind) && TextUtils.isEmpty(info.text)) {
+            HeartGramSupportSheet.show(fragment, false);
+            return true;
+        }
         final Context context = activity;
         final BottomSheet sheet = new BottomSheet(context, false, fragment.getResourceProvider());
 

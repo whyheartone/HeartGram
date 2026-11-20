@@ -224,7 +224,11 @@ public class UpdaterSheet extends BottomSheet {
 
         setCustomView(content);
         updateChannel();
-        check();
+        if (GitHubUpdater.isDownloading() && GitHubUpdater.downloadingRelease() != null) {
+            attachToDownload();
+        } else {
+            check();
+        }
     }
 
     private View createLogo(Context context) {
@@ -307,6 +311,38 @@ public class UpdaterSheet extends BottomSheet {
                     : Theme.createSelectorDrawable(getThemedColor(Theme.key_listSelector), Theme.RIPPLE_MASK_ROUNDRECT_6DP));
         }
         channelInfo.setText(getString(CHANNEL_INFO[selected]));
+    }
+
+    private Runnable downloadWatcher;
+
+    /** Окно открыли заново, пока идёт скачивание: показываем, на каком оно этапе, и следим за ним. */
+    private void attachToDownload() {
+        release = GitHubUpdater.downloadingRelease();
+        downloading = true;
+        setState(STATE_AVAILABLE);
+        updateDownloadView();
+        downloadWatcher = () -> {
+            if (dismissed) {
+                return;
+            }
+            if (!GitHubUpdater.isDownloading()) {
+                downloading = false;
+                dismiss();
+                return;
+            }
+            updateDownloadView();
+        };
+        GitHubUpdater.addPendingListener(downloadWatcher);
+    }
+
+    private void updateDownloadView() {
+        long done = GitHubUpdater.downloadDone(), total = GitHubUpdater.downloadTotal();
+        if (total > 0) {
+            progressView.setProgress(done / (float) total, true);
+            statusSubtitle.setText(LocaleController.formatString(R.string.OEUpdateDownloadProgress,
+                    AndroidUtilities.formatFileSize(done), AndroidUtilities.formatFileSize(total)));
+        }
+        updateAction();
     }
 
     private void check() {
@@ -484,6 +520,10 @@ public class UpdaterSheet extends BottomSheet {
     @Override
     public void dismiss() {
         dismissed = true;
+        if (downloadWatcher != null) {
+            GitHubUpdater.removePendingListener(downloadWatcher);
+            downloadWatcher = null;
+        }
         // скачивание продолжается в фоне, если окно закрыли; отмена только кнопкой «Отменить» в самом окне
         super.dismiss();
     }

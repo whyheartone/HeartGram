@@ -325,62 +325,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
     }
 
     private void showSupportInfo() {
-        if (getParentActivity() == null) {
-            return;
-        }
-        final android.content.Context context = getParentActivity();
-        final String amount = app.heartgram.badges.HeartGramBadges.supportAmountText();
-        String contact = app.heartgram.badges.HeartGramBadges.supportContact();
-        if (contact.isEmpty()) {
-            contact = "@whyheartone";
-        }
-        final String note = app.heartgram.badges.HeartGramBadges.supportNote();
-
-        String what = app.heartgram.HeartGramLabels.tr(
-                "Значок с эмодзи рядом с вашим именем: в списке чатов, в шапке, в профиле и в сообщениях у всех, кто пользуется HeartGram. Эмодзи можно выбрать любое.",
-                "A badge with an emoji next to your name: in the chat list, header, profile and messages for everyone using HeartGram. You can pick any emoji.");
-        String how = app.heartgram.HeartGramLabels.tr(
-                "Отправьте " + (amount.isEmpty() ? "любую сумму" : amount) + " любым способом из списка выше (или эквивалент в TON). "
-                        + "Затем пришлите чек, на котором видны сумма и время, на " + contact + ". Значок добавят после проверки.",
-                "Send " + (amount.isEmpty() ? "any amount" : amount) + " by any option above (or the TON equivalent). "
-                        + "Then send a receipt showing the amount and time to " + contact + ". The badge is added after a check.");
-        if (note != null && !note.trim().isEmpty()) {
-            how = how + "\n\n" + note.trim();
-        }
-
-        android.widget.LinearLayout box = new android.widget.LinearLayout(context);
-        box.setOrientation(android.widget.LinearLayout.VERTICAL);
-        box.setPadding(org.telegram.messenger.AndroidUtilities.dp(24), org.telegram.messenger.AndroidUtilities.dp(4),
-                org.telegram.messenger.AndroidUtilities.dp(24), org.telegram.messenger.AndroidUtilities.dp(8));
-
-        // у поддержавшего показываем его эмодзи, иначе сердце
-        final long mine = app.heartgram.badges.HeartGramBadges.documentFor(getUserConfig().getCurrentUser());
-        android.view.View art;
-        if (mine != 0) {
-            art = app.heartgram.badges.HeartGramBadgeSheet.createEmojiView(context, mine);
-        } else {
-            android.widget.ImageView heart = new android.widget.ImageView(context);
-            heart.setImageResource(R.drawable.exteraless_icon_menu);
-            heart.setColorFilter(new android.graphics.PorterDuffColorFilter(
-                    Theme.getColor(Theme.key_featuredStickers_addButton), android.graphics.PorterDuff.Mode.SRC_IN));
-            art = heart;
-        }
-        android.widget.LinearLayout.LayoutParams hp = new android.widget.LinearLayout.LayoutParams(
-                org.telegram.messenger.AndroidUtilities.dp(72), org.telegram.messenger.AndroidUtilities.dp(72));
-        hp.gravity = android.view.Gravity.CENTER_HORIZONTAL;
-        hp.bottomMargin = org.telegram.messenger.AndroidUtilities.dp(8);
-        box.addView(art, hp);
-
-        box.addView(supportSection(context, app.heartgram.HeartGramLabels.tr("Что получите", "What you get"), what, true));
-        box.addView(supportSection(context, app.heartgram.HeartGramLabels.tr("Как получить", "How to get it"), how, false));
-
-        android.widget.ScrollView scroll = new android.widget.ScrollView(context);
-        scroll.addView(box);
-        org.telegram.ui.ActionBar.AlertDialog.Builder builder = new org.telegram.ui.ActionBar.AlertDialog.Builder(context);
-        builder.setTitle(app.heartgram.HeartGramLabels.tr("Поддержите разработку", "Support the development"));
-        builder.setView(scroll);
-        builder.setPositiveButton("OK", null);
-        showDialog(builder.create());
+        app.heartgram.badges.HeartGramSupportSheet.show(this, false);
     }
 
     private android.view.View supportSection(android.content.Context context, String title, String body, boolean first) {
