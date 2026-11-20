@@ -420,7 +420,7 @@ public class SessionCell extends FrameLayout {
             // у нашего клиента в списке сеансов настоящая иконка приложения, а не значок на цветном круге
             Drawable appIcon = ContextCompat.getDrawable(ApplicationLoader.applicationContext, R.drawable.exteraless_icon);
             if (appIcon != null) {
-                return new HgAppIconDrawable(appIcon.mutate(), dp(sz));
+                return new CombinedDrawable(new HgAppIconDrawable(appIcon.mutate(), dp(sz)), new android.graphics.drawable.ColorDrawable(0));
             }
         }
         Drawable iconDrawable = ContextCompat.getDrawable(ApplicationLoader.applicationContext, iconId).mutate();
