@@ -96,7 +96,8 @@ public class TilesPreviewView extends View {
                     row.title = chat.title == null ? "" : chat.title;
                 }
             }
-            MessageObject message = controller.dialogMessage.get(d.id);
+            ArrayList<MessageObject> list = controller.dialogMessage.get(d.id);
+            MessageObject message = list == null || list.isEmpty() ? null : list.get(0);
             if (message != null) {
                 CharSequence text = message.messageText;
                 row.message = text == null ? "" : text.toString().replace('\n', ' ');
