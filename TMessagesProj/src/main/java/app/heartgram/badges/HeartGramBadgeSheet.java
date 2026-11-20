@@ -192,6 +192,12 @@ public final class HeartGramBadgeSheet {
         return tv;
     }
 
+    /** Анимированный эмодзи значка для других окон (например, «Поддержите разработку»). */
+    public static android.view.View createEmojiView(Context context, long documentId) {
+        return new EmojiView(context, documentId, color -> {
+        });
+    }
+
     /** Эмодзи значка крупно, анимированное. */
     private static final class EmojiView extends View {
         private final AnimatedEmojiDrawable drawable;

@@ -97,6 +97,10 @@ public final class HeartGramBadges {
         /** Способы поддержать проект: {название, подробности, ссылка или адрес}. */
         final List<String[]> support = new ArrayList<>();
         String supportNote = "";
+        /** Сумма поддержки (текстом) и в рублях, кому слать чек: из support.amount, amountRub, contact. */
+        String supportAmount = "";
+        double supportAmountRub = 0;
+        String supportContact = "";
         /** Кнопки конкретного человека или канала: {текст, ссылка}. */
         final Map<Long, List<String[]>> personButtons = new HashMap<>();
         /** Своё название проекта у человека (extras[id].project). */
@@ -124,6 +128,24 @@ public final class HeartGramBadges {
 
     public static String supportNote() {
         return snapshot.supportNote;
+    }
+
+    /** Сумма поддержки для показа: «300 ₽», или текст из админки; пусто, если не задана. */
+    public static String supportAmountText() {
+        Snapshot s = snapshot;
+        if (!TextUtils.isEmpty(s.supportAmount)) {
+            return s.supportAmount;
+        }
+        if (s.supportAmountRub > 0) {
+            double v = s.supportAmountRub;
+            return (v == Math.rint(v) ? String.valueOf((long) v) : String.valueOf(v)) + " ₽";
+        }
+        return "";
+    }
+
+    /** Кому слать чек (@имя) или пусто. */
+    public static String supportContact() {
+        return snapshot.supportContact;
     }
 
     public static void start() {
@@ -517,6 +539,9 @@ public final class HeartGramBadges {
         JSONObject support = secret.optJSONObject("support");
         if (support != null) {
             s.supportNote = support.optString("note", "");
+            s.supportAmount = support.optString("amount", "").trim();
+            s.supportAmountRub = support.optDouble("amountRub", 0);
+            s.supportContact = support.optString("contact", "").trim();
             JSONArray items = support.optJSONArray("items");
             for (int i = 0; items != null && i < items.length(); i++) {
                 JSONObject it = items.optJSONObject(i);

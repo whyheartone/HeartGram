@@ -328,28 +328,48 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         if (getParentActivity() == null) {
             return;
         }
-        String note = app.heartgram.badges.HeartGramBadges.supportNote();
-        String how = note != null && !note.trim().isEmpty() ? note.trim() : app.heartgram.HeartGramLabels.tr(
-                "Выберите любой способ выше и отправьте любую сумму. Затем напишите автору, что оплатили: значок добавят вручную.",
-                "Pick any option above and send any amount. Then message the author that you paid: the badge is added by hand.");
-        String what = app.heartgram.HeartGramLabels.tr(
-                "Уникальный значок появится рядом с вашим именем в списке чатов, профиле и сообщениях у всех, кто пользуется HeartGram. Его можно выбрать из набора анимированных эмодзи.",
-                "A unique badge appears next to your name in chats, your profile and messages for everyone using HeartGram. You pick it from a set of animated emoji.");
         final android.content.Context context = getParentActivity();
+        final String amount = app.heartgram.badges.HeartGramBadges.supportAmountText();
+        String contact = app.heartgram.badges.HeartGramBadges.supportContact();
+        if (contact.isEmpty()) {
+            contact = "@whyheartone";
+        }
+        final String note = app.heartgram.badges.HeartGramBadges.supportNote();
+
+        String what = app.heartgram.HeartGramLabels.tr(
+                "Значок с эмодзи рядом с вашим именем: в списке чатов, в шапке, в профиле и в сообщениях у всех, кто пользуется HeartGram. Эмодзи можно выбрать любое.",
+                "A badge with an emoji next to your name: in the chat list, header, profile and messages for everyone using HeartGram. You can pick any emoji.");
+        String how = app.heartgram.HeartGramLabels.tr(
+                "Отправьте " + (amount.isEmpty() ? "любую сумму" : amount) + " любым способом из списка выше (или эквивалент в TON). "
+                        + "Затем пришлите чек, на котором видны сумма и время, на " + contact + ". Значок добавят после проверки.",
+                "Send " + (amount.isEmpty() ? "any amount" : amount) + " by any option above (or the TON equivalent). "
+                        + "Then send a receipt showing the amount and time to " + contact + ". The badge is added after a check.");
+        if (note != null && !note.trim().isEmpty()) {
+            how = how + "\n\n" + note.trim();
+        }
+
         android.widget.LinearLayout box = new android.widget.LinearLayout(context);
         box.setOrientation(android.widget.LinearLayout.VERTICAL);
         box.setPadding(org.telegram.messenger.AndroidUtilities.dp(24), org.telegram.messenger.AndroidUtilities.dp(4),
                 org.telegram.messenger.AndroidUtilities.dp(24), org.telegram.messenger.AndroidUtilities.dp(8));
 
-        // сердце — значок, который получает поддержавший
-        android.widget.ImageView heart = new android.widget.ImageView(context);
-        heart.setImageResource(R.drawable.exteraless_icon_menu);
-        heart.setColorFilter(new android.graphics.PorterDuffColorFilter(0xFFF7889E, android.graphics.PorterDuff.Mode.SRC_IN));
+        // у поддержавшего показываем его эмодзи, иначе сердце
+        final long mine = app.heartgram.badges.HeartGramBadges.documentFor(getUserConfig().getCurrentUser());
+        android.view.View art;
+        if (mine != 0) {
+            art = app.heartgram.badges.HeartGramBadgeSheet.createEmojiView(context, mine);
+        } else {
+            android.widget.ImageView heart = new android.widget.ImageView(context);
+            heart.setImageResource(R.drawable.exteraless_icon_menu);
+            heart.setColorFilter(new android.graphics.PorterDuffColorFilter(
+                    Theme.getColor(Theme.key_featuredStickers_addButton), android.graphics.PorterDuff.Mode.SRC_IN));
+            art = heart;
+        }
         android.widget.LinearLayout.LayoutParams hp = new android.widget.LinearLayout.LayoutParams(
                 org.telegram.messenger.AndroidUtilities.dp(72), org.telegram.messenger.AndroidUtilities.dp(72));
         hp.gravity = android.view.Gravity.CENTER_HORIZONTAL;
         hp.bottomMargin = org.telegram.messenger.AndroidUtilities.dp(8);
-        box.addView(heart, hp);
+        box.addView(art, hp);
 
         box.addView(supportSection(context, app.heartgram.HeartGramLabels.tr("Что получите", "What you get"), what, true));
         box.addView(supportSection(context, app.heartgram.HeartGramLabels.tr("Как получить", "How to get it"), how, false));
