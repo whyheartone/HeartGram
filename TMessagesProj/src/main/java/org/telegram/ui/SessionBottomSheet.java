@@ -108,6 +108,14 @@ public class SessionBottomSheet extends BottomSheet {
         }
         nameView.setText(stringBuilder);
         setAnimation(session, imageView);
+        if (session.app_name != null && session.app_name.contains("HeartGram")) {
+            // у нашего клиента вместо анимации «Android» настоящая иконка приложения (как в списке сеансов)
+            Drawable appIcon = ContextCompat.getDrawable(context, R.drawable.exteraless_icon);
+            if (appIcon != null) {
+                imageView.setScaleType(ImageView.ScaleType.CENTER);
+                imageView.setImageDrawable(new org.telegram.ui.Cells.SessionCell.HgAppIconDrawable(appIcon.mutate(), dp(64)));
+            }
+        }
 
         ItemView applicationItemView = new ItemView(context, false);
         stringBuilder = new StringBuilder();
