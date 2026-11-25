@@ -1597,10 +1597,10 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                 menu.add(Menu.NONE, android.R.id.copy, 0, android.R.string.copy);
                 menu.add(Menu.NONE, R.id.menu_quote, 1, LocaleController.getString(R.string.Quote));
-                menu.add(Menu.NONE, TRANSLATE, 2, LlmConfig.isLLMTranslatorAvailable() ? getString(R.string.TranslateMessageLLM) : getString(R.string.TranslateMessage));
-                menu.add(Menu.NONE, android.R.id.cut, 3, android.R.string.cut);
-                menu.add(Menu.NONE, android.R.id.paste, 4, android.R.string.paste);
-                menu.add(Menu.NONE, android.R.id.selectAll, 5, android.R.string.selectAll);
+                menu.add(Menu.NONE, android.R.id.selectAll, 2, android.R.string.selectAll);
+                menu.add(Menu.NONE, TRANSLATE, 3, LlmConfig.isLLMTranslatorAvailable() ? getString(R.string.TranslateMessageLLM) : getString(R.string.TranslateMessage));
+                menu.add(Menu.NONE, android.R.id.cut, 4, android.R.string.cut);
+                menu.add(Menu.NONE, android.R.id.paste, 5, android.R.string.paste);
                 menu.add(Menu.NONE, ADD_TO_FILTER, 6, getString(R.string.AddToFilter));
                 return true;
             }
@@ -1616,16 +1616,18 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                     copyItem.setVisible(true || canCopy());
                 }
                 MenuItem selectAllItem = menu.findItem(android.R.id.selectAll);
-                if (selectAllItem != null && selectedView != null) {
-                    CharSequence charSequence = getText(selectedView, false);
-                    if (false && !canCopy()) {
-                        selectAllItem.setVisible(false);
-                    } else if (forceShowSelectAll()) {
+                if (selectAllItem != null) {
+                    if (forceShowSelectAll()) {
                         selectAllItem.setVisible(true);
-                    } else if (multiselect || selectionStart <= 0 && selectionEnd >= charSequence.length() - 1) {
-                        selectAllItem.setVisible(false);
+                    } else if (selectedView != null) {
+                        CharSequence charSequence = getText(selectedView, false);
+                        if (charSequence == null || multiselect || (selectionStart <= 0 && selectionEnd >= charSequence.length())) {
+                            selectAllItem.setVisible(false);
+                        } else {
+                            selectAllItem.setVisible(true);
+                        }
                     } else {
-                        selectAllItem.setVisible(true);
+                        selectAllItem.setVisible(false);
                     }
                     /* menu.getItem(2).setVisible(selectedView instanceof View); */
                 }
@@ -4055,6 +4057,52 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
                 return true;
             }
             return false;
+        }
+
+        private int[] getAllBlocksBounds() {
+            if (childCountByPosition.size() == 0) {
+                return null;
+            }
+            int firstPos = Integer.MAX_VALUE;
+            int lastPos = Integer.MIN_VALUE;
+            for (int i = 0; i < childCountByPosition.size(); i++) {
+                int pos = childCountByPosition.keyAt(i);
+                int count = childCountByPosition.valueAt(i);
+                if (count <= 0) continue;
+                if (pos < firstPos) firstPos = pos;
+                if (pos > lastPos) lastPos = pos;
+            }
+            if (firstPos > lastPos) {
+                return null;
+            }
+            int lastCount = childCountByPosition.get(lastPos, 1);
+            int lastChild = Math.max(0, lastCount - 1);
+            CharSequence lastText = textByPosition.get(lastPos + (lastChild << 16));
+            int lastLen = lastText == null ? 0 : lastText.length();
+            return new int[]{firstPos, lastPos, lastChild, lastLen};
+        }
+
+        @Override
+        protected boolean forceShowSelectAll() {
+            int[] bounds = getAllBlocksBounds();
+            if (bounds == null) {
+                return false;
+            }
+            return startViewPosition != bounds[0]
+                    || startViewChildPosition != 0
+                    || startViewOffset > 0
+                    || endViewPosition != bounds[1]
+                    || endViewChildPosition != bounds[2]
+                    || endViewOffset < bounds[3];
+        }
+
+        @Override
+        protected boolean onSelectAllOverride() {
+            int[] bounds = getAllBlocksBounds();
+            if (bounds == null) {
+                return false;
+            }
+            return selectAllBlocksRange(bounds[0], bounds[1], bounds[2], bounds[3]);
         }
     }
 
