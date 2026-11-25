@@ -56,7 +56,7 @@ public final class GitHubUpdater {
     // найденное обновление: показывается кнопкой «Обновить» в списке чатов, пока человек его не поставит
     private static volatile Release pending;
     private static final java.util.List<Runnable> pendingListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
-    private static final Pattern BETA = Pattern.compile("beta(\\d+)(?:\\.(\\d+))?");
+    private static final Pattern BETA = Pattern.compile("beta(\\d+(?:\\.\\d+)*)", Pattern.CASE_INSENSITIVE);
 
     public static Release pendingRelease() {
         if (pending == null) {
@@ -72,9 +72,8 @@ public final class GitHubUpdater {
                     r.apkName = o.optString("apkName");
                     r.apkSize = o.optLong("apkSize");
                     r.published = o.optLong("published");
-                    // уже установленное или устаревшее не показываем
-                    Integer remoteBeta = betaNumber(r.tag), localBeta = betaNumber(BuildConfig.BUILD_BETA_LABEL);
-                    if (remoteBeta != null && localBeta != null && remoteBeta > localBeta) {
+                    // уже установленное или устаревшее не показываем (учитывая базовую версию и дробную бету)
+                    if (Boolean.TRUE.equals(compareReleasesLocal(r))) {
                         pending = r;
                     } else {
                         prefs().edit().remove("pending_release").apply();
@@ -155,17 +154,51 @@ public final class GitHubUpdater {
         }
     }
 
-    private static Integer betaNumber(String text) {
-        if (text == null) {
+    private static int[] betaParts(String... sources) {
+        for (String text : sources) {
+            if (text == null) {
+                continue;
+            }
+            Matcher m = BETA.matcher(text);
+            if (m.find()) {
+                String[] raw = m.group(1).split("\\.");
+                int[] parts = new int[raw.length];
+                for (int i = 0; i < raw.length; i++) {
+                    parts[i] = Integer.parseInt(raw[i]);
+                }
+                return parts;
+            }
+        }
+        return null;
+    }
+
+    private static int compareBeta(int[] a, int[] b) {
+        int max = Math.max(a.length, b.length);
+        for (int i = 0; i < max; i++) {
+            int va = i < a.length ? a[i] : 0;
+            int vb = i < b.length ? b[i] : 0;
+            if (va != vb) {
+                return Integer.compare(va, vb);
+            }
+        }
+        return 0;
+    }
+
+    /** Локальное сравнение релизов по базовой версии и многокомпонентному номеру беты (beta19, beta19.1, beta19.10). */
+    private static Boolean compareReleasesLocal(Release release) {
+        if (release == null) {
             return null;
         }
-        Matcher m = BETA.matcher(text);
-        if (!m.find()) {
-            return null;
+        Integer versionOrder = compareVersion(release);
+        if (versionOrder != null && versionOrder != 0) {
+            return versionOrder > 0;
         }
-        int major = Integer.parseInt(m.group(1));
-        int minor = m.group(2) != null ? Integer.parseInt(m.group(2)) : 0;
-        return major * 1000 + minor;
+        int[] remoteBeta = betaParts(release.tag, release.name, release.apkName);
+        int[] localBeta = betaParts(BuildConfig.BUILD_BETA_LABEL);
+        if (remoteBeta != null && localBeta != null) {
+            return compareBeta(remoteBeta, localBeta) > 0;
+        }
+        return null;
     }
 
     private static volatile OkHttpClient client;
@@ -398,13 +431,9 @@ public final class GitHubUpdater {
     }
 
     private static Boolean isNewer(Release release) throws Exception {
-        // наши релизы нумеруются betaN: сравниваем номера, без запроса к GitHub
-        Integer remoteBeta = betaNumber(release.tag), localBeta = betaNumber(BuildConfig.BUILD_BETA_LABEL);
-        if (remoteBeta != null && localBeta != null) {
-            Integer order = compareVersion(release);
-            if (order == null || order == 0) {
-                return remoteBeta > localBeta;
-            }
+        Boolean localResult = compareReleasesLocal(release);
+        if (localResult != null) {
+            return localResult;
         }
         Integer versionOrder = compareVersion(release);
         if (versionOrder != null && versionOrder != 0) {
