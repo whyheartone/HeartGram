@@ -2744,10 +2744,10 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     }
                 }
             }
-            if (stopService) {
-                Intent intent = new Intent(ApplicationLoader.applicationContext, MusicPlayerService.class);
-                ApplicationLoader.applicationContext.stopService(intent);
-            }
+        }
+        if (stopService) {
+            Intent intent = new Intent(ApplicationLoader.applicationContext, MusicPlayerService.class);
+            ApplicationLoader.applicationContext.stopService(intent);
         }
         if (!playingNext && byVoiceEnd && !SharedConfig.enabledRaiseTo(true)) {
             ChatActivity chat = raiseChat;
@@ -4091,10 +4091,11 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                                 if (!playlist.isEmpty() && (playlist.size() > 1 || !messageObject.isVoice())) {
                                     playNextMessageWithoutOrder(true);
                                 } else {
-                                    if (NaConfig.INSTANCE.getDontAutoPlayNextVoice().Bool()) {
+                                if (NaConfig.INSTANCE.getDontAutoPlayNextVoice().Bool()) {
                                     MediaController.getInstance().cleanupPlayer(true, true);
+                                } else {
+                                    cleanupPlayer(true, hasNoNextVoiceOrRoundVideoMessage(), messageObject.isVoice(), false);
                                 }
-                                cleanupPlayer(true, hasNoNextVoiceOrRoundVideoMessage(), messageObject.isVoice(), false);}
                             }
                         } else if (audioPlayer != null && seekToProgressPending != 0 && (playbackState == ExoPlayer.STATE_READY || playbackState == ExoPlayer.STATE_IDLE)) {
                             int seekTo = (int) (audioPlayer.getDuration() * seekToProgressPending);

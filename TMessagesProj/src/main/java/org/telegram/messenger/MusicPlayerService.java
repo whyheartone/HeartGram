@@ -97,6 +97,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+            NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.messagePlayingDidReset);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.httpFileDidLoad);
             NotificationCenter.getInstance(a).addObserver(this, NotificationCenter.fileLoaded);
         }
@@ -247,8 +248,14 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             }
             MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
             if (messageObject == null) {
+                foregroundServiceIsStarted = false;
+                stopForeground(true);
+                NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+                if (nm != null) {
+                    nm.cancel(ID_NOTIFICATION);
+                }
                 AndroidUtilities.runOnUIThread(this::stopSelf);
-                return START_STICKY;
+                return START_NOT_STICKY;
             }
             if (supportLockScreenControls) {
                 ComponentName remoteComponentName = new ComponentName(getApplicationContext(), MusicPlayerReceiver.class.getName());
@@ -271,7 +278,8 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return START_STICKY;
+        MessageObject current = MediaController.getInstance().getPlayingMessageObject();
+        return current != null && current.isMusic() ? START_STICKY : START_NOT_STICKY;
     }
 
     private String artworkPath;
@@ -549,7 +557,9 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
 
             PlaybackStateCompat currentPlaybackState = playbackState.build();
             mediaSession.setPlaybackState(currentPlaybackState);
-            TelegramMediaSession.getInstance(this).publishPlaybackState(currentPlaybackState);
+            if (messageObject.isMusic()) {
+                TelegramMediaSession.getInstance(this).publishPlaybackState(currentPlaybackState);
+            }
             updateRepeatMode();
             updateShuffleMode();
             MediaMetadataCompat.Builder meta = new MediaMetadataCompat.Builder()
@@ -563,7 +573,9 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             }
 
             mediaSession.setMetadata(meta.build());
-            TelegramMediaSession.getInstance(this).publishMetadata(messageObject, audioInfo, fullAlbumArt);
+            if (messageObject.isMusic()) {
+                TelegramMediaSession.getInstance(this).publishMetadata(messageObject, audioInfo, fullAlbumArt);
+            }
 
             bldr.setVisibility(Notification.VISIBILITY_PUBLIC);
 
@@ -836,9 +848,14 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
     @SuppressLint("NewApi")
     @Override
     public void onDestroy() {
+        foregroundServiceIsStarted = false;
         unregisterReceiver(headsetPlugReceiver);
         super.onDestroy();
         stopForeground(true);
+        NotificationManager nm = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        if (nm != null) {
+            nm.cancel(ID_NOTIFICATION);
+        }
         if (remoteControlClient != null) {
             RemoteControlClient.MetadataEditor metadataEditor = remoteControlClient.editMetadata(true);
             metadataEditor.clear();
@@ -846,6 +863,15 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             audioManager.unregisterRemoteControlClient(remoteControlClient);
         }
         if (mediaSession != null) {
+            try {
+                mediaSession.setPlaybackState(new PlaybackStateCompat.Builder()
+                        .setState(PlaybackStateCompat.STATE_NONE, PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN, 0f)
+                        .setActions(0)
+                        .build());
+                mediaSession.setMetadata(null);
+                mediaSession.setActive(false);
+            } catch (Throwable ignore) {
+            }
             mediaSession.release();
         }
         TelegramMediaSession sessionHolder = TelegramMediaSession.peekInstance();
@@ -857,6 +883,7 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
         for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidSeek);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingPlayStateChanged);
+            NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.messagePlayingDidReset);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.httpFileDidLoad);
             NotificationCenter.getInstance(a).removeObserver(this, NotificationCenter.fileLoaded);
         }
@@ -869,6 +896,10 @@ public class MusicPlayerService extends Service implements NotificationCenter.No
             if (messageObject != null) {
                 createNotification(messageObject, false);
             } else {
+                stopSelf();
+            }
+        } else if (id == NotificationCenter.messagePlayingDidReset) {
+            if (MediaController.getInstance().getPlayingMessageObject() == null) {
                 stopSelf();
             }
         } else if (id == NotificationCenter.messagePlayingDidSeek) {
