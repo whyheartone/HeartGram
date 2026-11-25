@@ -51,6 +51,16 @@ public final class MediaGlow {
     private static final int[] cachePad = new int[CACHE];
     private static int cacheNext;
 
+    // ── плавное появление свечения (0 -> 1 за FADE_IN_MS) ──
+    private static final long FADE_IN_MS = 260;
+    private static final int FADE_SLOTS = 12;
+    private static final Object[] fadeOwner = new Object[FADE_SLOTS]; // WeakReference<Object>
+    private static final long[] fadeStartMs = new long[FADE_SLOTS];
+    private static int fadeNext;
+    private static long lastAnyDrawMs;
+    private static long lastClipStartMs, lastClipAtMs;
+    private static boolean fadeFramePosted;
+
     // ── движущаяся картинка (видео, GIF): показанный ореол плавно подтягивается к последнему кадру ──
     private static int[] dynShown, dynTarget;
     private static Bitmap dynBmp;
@@ -117,7 +127,7 @@ public final class MediaGlow {
                         clipped = true;
                     }
                 }
-                drawStill(canvas, b, reg, a, self);
+                drawStill(canvas, b, reg, a, self, null);
                 if (clipped) {
                     canvas.restore();
                 }
@@ -125,6 +135,8 @@ public final class MediaGlow {
                 android.graphics.drawable.Drawable d = self.getDrawable(); // GIF, превью видео и т.п.
                 if (d != null && self == c) {
                     drawMoving(canvas, self, d, reg, a);
+                } else {
+                    fadeAlpha(self, false, null);
                 }
             }
             if (self == c) {
@@ -146,9 +158,23 @@ public final class MediaGlow {
             if (v == null || !v.hgIsAnimatingView(view) || b == null || b.isRecycled() || r == null) {
                 return;
             }
-            drawStill(canvas, b, r, 1f, null);
+            drawStill(canvas, b, r, 1f, null, view);
+            lastClipAtMs = SystemClock.uptimeMillis();
         } catch (Throwable t) {
             android.util.Log.w("HeartGramGlow", "свечение при открытии: " + t);
+        }
+    }
+
+    /** Из PhotoViewer для первого стоп-кадра видео (videoFrameBitmap), пока ещё не рисуется Texture/Surface. */
+    public static void beforeBitmapDraw(Canvas canvas, Object owner, Bitmap b, float left, float top, float w, float h, float alpha) {
+        if (!enabled() || b == null || b.isRecycled() || w <= 0 || h <= 0) {
+            return;
+        }
+        try {
+            rect.set(left, top, left + w, top + h);
+            drawStill(canvas, b, new RectF(left, top, left + w, top + h), alpha, owner instanceof ImageReceiver ? (ImageReceiver) owner : null, null);
+        } catch (Throwable t) {
+            android.util.Log.w("HeartGramGlow", "свечение кадра видео: " + t);
         }
     }
 
@@ -168,7 +194,7 @@ public final class MediaGlow {
         try {
             Bitmap b = still(receiver);
             if (b != null) {
-                cachedGlow(b, PADS[size()], receiver);
+                cachedGlow(b, PADS[size()], receiver, null);
             }
         } catch (Throwable ignored) {
         }
@@ -182,7 +208,7 @@ public final class MediaGlow {
      * этого же приёмника (миниатюра -> полное фото), чтобы не мигало и не тормозило отрисовку.
      */
     @SuppressWarnings("unchecked")
-    private static Bitmap cachedGlow(final Bitmap b, final int pad, final ImageReceiver receiver) {
+    private static Bitmap cachedGlow(final Bitmap b, final int pad, final ImageReceiver receiver, final View invalidateView) {
         Bitmap fallback = null;
         for (int i = 0; i < CACHE; i++) {
             WeakReference<Object> k = (WeakReference<Object>) cacheKey[i];
@@ -230,27 +256,39 @@ public final class MediaGlow {
                 return fallback;
             }
         }
+        final WeakReference<View> viewRef = invalidateView != null ? new WeakReference<>(invalidateView) : null;
         ensureWorker();
         worker.execute(() -> {
-            // и уменьшение, и размытие считаются в фоне: на главном потоке (копия аппаратной картинки и масштабирование
-            // полноразмерного фото) это давало подлаг при входе в просмотр
-            final Bitmap small = shrink(b);
-            final int[] dims = new int[2];
-            final int[] px = small == null ? null : blurSmall(small, pad, dims);
-            main.post(() -> {
+            int[] dimsTmp = new int[2];
+            int[] pxTmp = null;
+            try {
+                // и уменьшение, и размытие считаются в фоне: на главном потоке (копия аппаратной картинки и масштабирование
+                // полноразмерного фото) это давало подлаг при входе в просмотр
+                final Bitmap small = shrink(b);
+                pxTmp = small == null ? null : blurSmall(small, pad, dimsTmp);
+            } catch (Throwable t) {
+                android.util.Log.w("HeartGramGlow", "фоновое свечение: " + t);
+            } finally {
                 synchronized (pending) {
                     pending.remove(b);
                 }
-                if (px == null) {
-                    return;
+            }
+            final int[] dims = dimsTmp;
+            final int[] px = pxTmp;
+            main.post(() -> {
+                if (px != null) {
+                    Bitmap g = Bitmap.createBitmap(px, dims[0], dims[1], Bitmap.Config.ARGB_8888);
+                    int i = cacheNext;
+                    cacheNext = (cacheNext + 1) % CACHE;
+                    cacheKey[i] = new WeakReference<Object>(b);
+                    cacheRecv[i] = new WeakReference<Object>(receiver);
+                    cacheGlow[i] = g;
+                    cachePad[i] = pad;
                 }
-                Bitmap g = Bitmap.createBitmap(px, dims[0], dims[1], Bitmap.Config.ARGB_8888);
-                int i = cacheNext;
-                cacheNext = (cacheNext + 1) % CACHE;
-                cacheKey[i] = new WeakReference<Object>(b);
-                cacheRecv[i] = new WeakReference<Object>(receiver);
-                cacheGlow[i] = g;
-                cachePad[i] = pad;
+                View iv = viewRef == null ? null : viewRef.get();
+                if (iv != null) {
+                    iv.invalidate();
+                }
                 PhotoViewer v = viewer();
                 if (v != null) {
                     v.hgInvalidate();
@@ -260,18 +298,95 @@ public final class MediaGlow {
         return fallback;
     }
 
-    private static void drawStill(Canvas canvas, Bitmap b, RectF r, float alpha, ImageReceiver receiver) {
+    @SuppressWarnings("unchecked")
+    private static float fadeAlpha(Object owner, boolean ready, View host) {
+        long now = SystemClock.uptimeMillis();
+        if (lastAnyDrawMs != 0 && now - lastAnyDrawMs > 300L) {
+            for (int i = 0; i < FADE_SLOTS; i++) {
+                fadeOwner[i] = null;
+                fadeStartMs[i] = 0L;
+            }
+            lastClipStartMs = 0L;
+            lastClipAtMs = 0L;
+        }
+        lastAnyDrawMs = now;
+        if (owner == null) {
+            return ready ? 1f : 0f;
+        }
+        int found = -1;
+        for (int i = 0; i < FADE_SLOTS; i++) {
+            WeakReference<Object> ref = (WeakReference<Object>) fadeOwner[i];
+            if (ref != null && ref.get() == owner) {
+                found = i;
+                break;
+            }
+        }
+        if (!ready) {
+            if (found >= 0) {
+                fadeOwner[found] = null;
+                fadeStartMs[found] = 0L;
+            }
+            return 0f;
+        }
+        long start;
+        if (found >= 0 && fadeStartMs[found] > 0L) {
+            start = fadeStartMs[found];
+        } else {
+            if (!(owner instanceof ClippingImageView) && lastClipAtMs > 0L && now - lastClipAtMs <= 160L && lastClipStartMs > 0L) {
+                start = lastClipStartMs;
+            } else {
+                start = now;
+            }
+            int slot = found >= 0 ? found : fadeNext;
+            if (found < 0) {
+                fadeNext = (fadeNext + 1) % FADE_SLOTS;
+            }
+            fadeOwner[slot] = new WeakReference<>(owner);
+            fadeStartMs[slot] = start;
+            if (owner instanceof ClippingImageView) {
+                lastClipStartMs = start;
+            }
+        }
+        float p = Math.max(0f, Math.min(1f, (now - start) / (float) FADE_IN_MS));
+        if (p < 1f) {
+            requestFadeFrame(host);
+            float inv = 1f - p;
+            return 1f - inv * inv * inv;
+        }
+        return 1f;
+    }
+
+    private static void requestFadeFrame(View host) {
+        if (host != null) {
+            host.postInvalidateOnAnimation();
+            return;
+        }
+        if (!fadeFramePosted) {
+            fadeFramePosted = true;
+            main.postDelayed(() -> {
+                fadeFramePosted = false;
+                PhotoViewer v = viewer();
+                if (v != null) {
+                    v.hgInvalidate();
+                }
+            }, 16L);
+        }
+    }
+
+    private static void drawStill(Canvas canvas, Bitmap b, RectF r, float alpha, ImageReceiver receiver, View host) {
         int pad = PADS[size()];
-        Bitmap glow = cachedGlow(b, pad, receiver);
+        Bitmap glow = cachedGlow(b, pad, receiver, host);
         if (glow == null && receiver != null) {
             // ореол полного фото считается в фоне; пока он не готов, берём ореол миниатюры (он считается сразу),
             // поэтому свечение есть с первого кадра, а не появляется с опозданием
             Bitmap thumb = receiver.getThumbBitmap();
             if (thumb != null && thumb != b && !thumb.isRecycled()) {
-                glow = cachedGlow(thumb, pad, receiver);
+                glow = cachedGlow(thumb, pad, receiver, host);
             }
         }
-        blit(canvas, glow, pad, r, alpha);
+        Object fadeKey = host != null ? host : receiver;
+        float fade = fadeAlpha(fadeKey, glow != null, host);
+        blit(canvas, glow, pad, r, alpha * fade);
     }
 
     private static android.graphics.ColorMatrixColorFilter boostFilter;
@@ -391,14 +506,32 @@ public final class MediaGlow {
         return !dynSettled;
     }
 
+    private static boolean hasVisiblePixels(int[] px) {
+        if (px == null) {
+            return false;
+        }
+        for (int i = 0; i < px.length; i += 7) {
+            if ((px[i] >>> 24) > 8) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static void drawDynamic(Canvas canvas, Object owner, RectF r, float alpha, View host) {
-        if (dynOwner.get() != owner || dynBmp == null) {
+        boolean ready = dynOwner.get() == owner && dynBmp != null;
+        float fade = fadeAlpha(owner, ready, host);
+        if (!ready) {
             return;
         }
         boolean more = step();
-        blit(canvas, dynBmp, dynPad, r, alpha);
-        if (more && host != null) {
-            host.postInvalidateDelayed(FRAME_MS);
+        blit(canvas, dynBmp, dynPad, r, alpha * fade);
+        if (more) {
+            if (host != null) {
+                host.postInvalidateDelayed(FRAME_MS);
+            } else {
+                requestFadeFrame(null);
+            }
         }
     }
 
@@ -414,7 +547,7 @@ public final class MediaGlow {
                 int pad = PADS[size()];
                 int[] dims = new int[2];
                 int[] px = blurredPixels(frame, pad, dims);
-                if (px != null) {
+                if (hasVisiblePixels(px)) {
                     accept(owner, px, dims[0], dims[1], pad);
                 }
             } else {

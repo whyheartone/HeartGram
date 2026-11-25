@@ -20918,6 +20918,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
             if (!pipAnimationInProgress && (!drawTextureView || !textureUploaded && !videoSizeSet || !videoCrossfadeStarted || videoCrossfadeAlpha != 1.0f)) {
                 if (videoFrameBitmap != null && isCurrentVideo) {
                     int w = videoFrameBitmap.getWidth(), h = videoFrameBitmap.getHeight(), l = -w / 2, t = -h / 2;
+                    app.heartgram.animations.MediaGlow.beforeBitmapDraw(canvas, centerImage, videoFrameBitmap, l, t, w, h, alpha);
                     if (alpha < 1f) {
                         canvas.saveLayerAlpha(l, t, l + w, t + h, (int) (255 * alpha), Canvas.ALL_SAVE_FLAG);
                     }
