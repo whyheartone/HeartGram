@@ -1,10 +1,18 @@
 package app.exteraless.appearance;
 
+import static org.telegram.messenger.AndroidUtilities.dp;
+
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.ImageView;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.ui.ActionBar.ActionBar;
 import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Components.BackupImageView;
 import org.telegram.ui.Components.ChatActivityTopPanelLayout;
 import org.telegram.ui.Components.ChatAvatarContainer;
+import org.telegram.ui.Components.chat.ViewPositionWatcher;
 import org.telegram.ui.Components.chat.layouts.ChatActivityFadeView;
 
 /**
@@ -126,6 +134,152 @@ public final class ChatHeaderUiHelper {
         avatarContainer.setGlassMode();
         if (isMaterial3ChatHeaderStyle()) {
             avatarContainer.setAvatarSizeInDp(getChatAvatarSizeDp());
+        }
+    }
+
+    /** Состояние перехода аватарки и заголовка между шапкой чата и профилем (вкл. MD3 46dp). */
+    public static final class ProfileTransitionState {
+        private float avatarTranslation;
+        private float avatarStartY = Float.NaN;
+        private float avatarSizeDp = 42f;
+        private float nameTranslationY = Float.NaN;
+        private float onlineTranslationY = Float.NaN;
+        private int titleWidthPx;
+        private int subtitleWidthPx;
+
+        public void reset() {
+            avatarTranslation = 0f;
+            avatarStartY = Float.NaN;
+            avatarSizeDp = getChatAvatarSizeDp();
+            nameTranslationY = Float.NaN;
+            onlineTranslationY = Float.NaN;
+            titleWidthPx = 0;
+            subtitleWidthPx = 0;
+        }
+
+        public void capture(ChatAvatarContainer sourceAvatarContainer, View sourceRoot, View profileNameView, View profileOnlineView) {
+            if (sourceAvatarContainer == null || !(sourceRoot instanceof ViewGroup)) {
+                return;
+            }
+            ViewGroup sourceParent = (ViewGroup) sourceRoot;
+            BackupImageView sourceAvatarImage = sourceAvatarContainer.avatarImageView;
+            if (sourceAvatarImage == null) {
+                return;
+            }
+            avatarTranslation = ViewPositionWatcher.computeXCoordinateInParent(sourceAvatarImage, sourceParent);
+            avatarStartY = ViewPositionWatcher.computeYCoordinateInParent(sourceAvatarImage, sourceParent);
+            int sourceAvatarWidth = sourceAvatarImage.getMeasuredWidth() != 0 ? sourceAvatarImage.getMeasuredWidth() : sourceAvatarImage.getWidth();
+            if (sourceAvatarWidth > 0) {
+                avatarSizeDp = sourceAvatarWidth / AndroidUtilities.density;
+            }
+            View sourceTitle = sourceAvatarContainer.getTitleTextView();
+            if (sourceTitle != null) {
+                int w = sourceTitle.getMeasuredWidth() != 0 ? sourceTitle.getMeasuredWidth() : sourceTitle.getWidth();
+                if (w > 0) {
+                    titleWidthPx = w;
+                }
+                if (profileNameView != null) {
+                    nameTranslationY = ViewPositionWatcher.computeYCoordinateInParent(sourceTitle, sourceParent) - getTransitionLayoutTop(profileNameView);
+                }
+            }
+            View sourceSubtitle = sourceAvatarContainer.getSubtitleTextView();
+            if (sourceSubtitle != null) {
+                int w = sourceSubtitle.getMeasuredWidth() != 0 ? sourceSubtitle.getMeasuredWidth() : sourceSubtitle.getWidth();
+                if (w > 0) {
+                    subtitleWidthPx = w;
+                }
+                if (profileOnlineView != null) {
+                    onlineTranslationY = ViewPositionWatcher.computeYCoordinateInParent(sourceSubtitle, sourceParent) - getTransitionLayoutTop(profileOnlineView) - profileOnlineView.getPaddingTop();
+                }
+            }
+        }
+
+        public float getAvatarTranslation() {
+            return avatarTranslation;
+        }
+
+        public float getAvatarStartY(ActionBar actionBar) {
+            if (!Float.isNaN(avatarStartY)) {
+                return avatarStartY;
+            }
+            return (actionBar.getOccupyStatusBar() ? AndroidUtilities.statusBarHeight : 0)
+                    + ActionBar.getCurrentActionBarHeight() / 2f
+                    - dp(avatarSizeDp / 2f)
+                    + actionBar.getTranslationY();
+        }
+
+        public float getAvatarStartScale() {
+            return avatarSizeDp / 100f;
+        }
+
+        public float getAvatarSizeDp() {
+            return avatarSizeDp;
+        }
+
+        public int getTitleWidthPx() {
+            return titleWidthPx;
+        }
+
+        public int getSubtitleWidthPx() {
+            return subtitleWidthPx;
+        }
+
+        public float getTextTranslationXFallback() {
+            float gapDp = isMaterial3ChatHeaderStyle() ? 10.66f : 6f;
+            return avatarTranslation - dp(109) + dp(avatarSizeDp + gapDp);
+        }
+
+        public float getNameTranslationY(ActionBar actionBar) {
+            if (!Float.isNaN(nameTranslationY)) {
+                return nameTranslationY;
+            }
+            float fallbackTopDp = isMaterial3ChatHeaderStyle() ? 1.66f : 1.3f;
+            return (float) Math.floor(getAvatarStartY(actionBar)) + dp(fallbackTopDp);
+        }
+
+        public float getOnlineTranslationY(ActionBar actionBar) {
+            if (!Float.isNaN(onlineTranslationY)) {
+                return onlineTranslationY;
+            }
+            float fallbackTopDp = isMaterial3ChatHeaderStyle() ? 26.66f : 24f;
+            return (float) Math.floor(getAvatarStartY(actionBar)) + dp(fallbackTopDp);
+        }
+
+        public void updateBadgePositionsFromCollapsedAvatar(View avatarContainer, float avatarScale, ImageView timeItem, ImageView communityItem, ImageView starBgItem, ImageView starFgItem) {
+            final float extra = dp(avatarSizeDp) * (avatarScale * 100f / avatarSizeDp) - dp(avatarSizeDp);
+            updateBadgePositions(avatarContainer, extra, timeItem, communityItem, starBgItem, starFgItem);
+        }
+
+        public void updateBadgePositionsFromExpandedAvatar(View avatarContainer, float avatarScale, ImageView timeItem, ImageView communityItem, ImageView starBgItem, ImageView starFgItem) {
+            final float extra = (avatarContainer.getMeasuredWidth() - dp(avatarSizeDp)) * (avatarScale * 100f / avatarSizeDp);
+            updateBadgePositions(avatarContainer, extra, timeItem, communityItem, starBgItem, starFgItem);
+        }
+
+        private void updateBadgePositions(View avatarContainer, float extra, ImageView timeItem, ImageView communityItem, ImageView starBgItem, ImageView starFgItem) {
+            if (timeItem != null) {
+                timeItem.setTranslationX(avatarContainer.getX() + dp(avatarSizeDp - 26) + extra);
+                timeItem.setTranslationY(avatarContainer.getY() + dp(-10) + extra);
+            }
+            if (communityItem != null) {
+                communityItem.setTranslationX(avatarContainer.getX() + dp(avatarSizeDp - 14) + extra);
+                communityItem.setTranslationY(avatarContainer.getY() + dp(avatarSizeDp - 15.5f) + extra);
+            }
+            if (starBgItem != null) {
+                starBgItem.setTranslationX(avatarContainer.getX() + dp(avatarSizeDp - 14) + extra);
+                starBgItem.setTranslationY(avatarContainer.getY() + dp(avatarSizeDp - 18) + extra);
+            }
+            if (starFgItem != null) {
+                starFgItem.setTranslationX(avatarContainer.getX() + dp(avatarSizeDp - 14) + extra);
+                starFgItem.setTranslationY(avatarContainer.getY() + dp(avatarSizeDp - 18) + extra);
+            }
+        }
+
+        private static int getTransitionLayoutTop(View view) {
+            ViewGroup.LayoutParams layoutParams = view.getLayoutParams();
+            if (layoutParams instanceof ViewGroup.MarginLayoutParams) {
+                return ((ViewGroup.MarginLayoutParams) layoutParams).topMargin;
+            }
+            return view.getTop();
         }
     }
 }
