@@ -123,6 +123,43 @@ public final class HeartGramBadges {
         return s.emoji.containsValue(id) || s.customEmoji.containsValue(id);
     }
 
+    /** true, если для этого человека/канала задано своё кастомное эмодзи (отличное от стандартного значка). */
+    public static boolean isCustomEmoji(TLObject object) {
+        long id = 0;
+        if (object instanceof TLRPC.User) {
+            id = ((TLRPC.User) object).id;
+        } else if (object instanceof TLRPC.Chat) {
+            id = ((TLRPC.Chat) object).id;
+        }
+        if (id == 0) {
+            return false;
+        }
+        String own = snapshot.customEmoji.get(normalize(id));
+        return own != null && !own.isEmpty();
+    }
+
+    /** true, если документ — стандартный значок уровня (сердечко по умолчанию), а не пользовательское эмодзи. */
+    public static boolean isDefaultHeartDocument(long documentId) {
+        if (documentId == 0) {
+            return true;
+        }
+        String id = String.valueOf(documentId);
+        if (DEV_EMOJI_ID.equals(id)) {
+            return true;
+        }
+        Snapshot s = snapshot;
+        if (s.emoji.containsValue(id)) {
+            return true;
+        }
+        for (String ref : s.emoji.values()) {
+            Long cached = packDocuments.get(ref);
+            if (cached != null && cached == documentId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /** Способы поддержки из API: {название, подробности, ссылка}. */
     public static List<String[]> supportItems() {
         return new ArrayList<>(snapshot.support);

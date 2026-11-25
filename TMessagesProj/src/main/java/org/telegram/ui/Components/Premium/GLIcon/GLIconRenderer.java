@@ -58,6 +58,9 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
     public int colorKey1 = Theme.key_premiumStarGradient1;
     public int colorKey2 = Theme.key_premiumStarGradient2;
 
+    public int customColor1 = 0;
+    public int customColor2 = 0;
+
     public int goldenColorKey1 = Theme.key_starsGradient1;
     public int goldenColorKey2 = Theme.key_starsGradient2;
 
@@ -180,8 +183,13 @@ public class GLIconRenderer implements GLSurfaceView.Renderer {
 
     public void updateColors() {
         night = forceNight || ColorUtils.calculateLuminance(Theme.getColor(Theme.key_dialogBackground)) < 0.5f;
-        color1 = ColorUtils.blendARGB(Theme.getColor(colorKey1), Theme.getColor(goldenColorKey1), golden);
-        color2 = ColorUtils.blendARGB(Theme.getColor(colorKey2), Theme.getColor(goldenColorKey2), golden);
+        if (customColor1 != 0 && customColor2 != 0) {
+            color1 = customColor1;
+            color2 = customColor2;
+        } else {
+            color1 = ColorUtils.blendARGB(Theme.getColor(colorKey1), Theme.getColor(goldenColorKey1), golden);
+            color2 = ColorUtils.blendARGB(Theme.getColor(colorKey2), Theme.getColor(goldenColorKey2), golden);
+        }
         isDarkBackground = style == DIALOG_STYLE && ColorUtils.calculateLuminance(Theme.getColor(Theme.key_dialogBackground)) < 0.5f;
     }
 }

@@ -39,11 +39,16 @@ public final class HeartGramSupportSheet {
     }
 
     public static void show(final BaseFragment fragment, boolean startCool) {
-        show(fragment, startCool, 0);
+        show(fragment, startCool, 0, false);
     }
 
     /** previewDocument: эмодзи того, чей значок нажали; 0 - свой значок или сердце. */
     public static void show(final BaseFragment fragment, boolean startCool, long previewDocument) {
+        show(fragment, startCool, previewDocument, false);
+    }
+
+    /** canEdit: true, когда пользователь открыл свой собственный значок из профиля и может его изменить. */
+    public static void show(final BaseFragment fragment, boolean startCool, long previewDocument, boolean canEdit) {
         Activity activity = fragment == null ? null : fragment.getParentActivity();
         if (activity == null) {
             return;
@@ -56,19 +61,16 @@ public final class HeartGramSupportSheet {
         root.setPadding(dp(20), dp(12), dp(20), dp(16));
         root.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
 
-        // сердце на тёмном круге; у поддержавшего со своим эмодзи вместо сердца его эмодзи
+        // 3D-сердце HeartGram по умолчанию; если у поддержавшего выбрано кастомное эмодзи — показываем его
         FrameLayout art = new FrameLayout(context);
         long shown = previewDocument != 0 ? previewDocument
                 : HeartGramBadges.documentFor(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser());
-        if (shown != 0) {
+        if (shown != 0 && !HeartGramBadges.isDefaultHeartDocument(shown)) {
             art.addView(HeartGramBadgeSheet.createEmojiView(context, shown), new FrameLayout.LayoutParams(dp(84), dp(84), Gravity.CENTER));
         } else {
-            ImageView heart = new ImageView(context);
-            heart.setImageResource(R.drawable.exteraless_icon_menu);
-            heart.setColorFilter(new PorterDuffColorFilter(0xFFF7889E, PorterDuff.Mode.SRC_IN));
-            art.addView(heart, new FrameLayout.LayoutParams(dp(80), dp(80), Gravity.CENTER));
+            art.addView(HeartGramBadgeSheet.createHeart3DView(context, null), new FrameLayout.LayoutParams(dp(120), dp(120), Gravity.CENTER));
         }
-        LinearLayout.LayoutParams artLp = new LinearLayout.LayoutParams(dp(96), dp(96));
+        LinearLayout.LayoutParams artLp = new LinearLayout.LayoutParams(dp(120), dp(120));
         artLp.gravity = Gravity.CENTER_HORIZONTAL;
         root.addView(art, artLp);
 
@@ -147,6 +149,19 @@ public final class HeartGramSupportSheet {
         LinearLayout.LayoutParams closeLp = new LinearLayout.LayoutParams(-1, dp(50));
         closeLp.topMargin = dp(18);
         root.addView(close, closeLp);
+
+        org.telegram.tgnet.TLRPC.User selfUser = UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser();
+        HeartGramBadges.Info selfInfo = HeartGramBadges.infoFor(selfUser);
+        if ((canEdit || previewDocument == 0) && selfInfo != null && !"client".equals(selfInfo.kind)) {
+            TextView edit = text(context, org.telegram.messenger.LocaleController.getString(R.string.HGBadgeEdit), 15, true,
+                    Theme.getColor(Theme.key_featuredStickers_addButton), Gravity.CENTER);
+            edit.setPadding(dp(12), dp(12), dp(12), dp(4));
+            edit.setOnClickListener(v -> {
+                sheet.dismiss();
+                HeartGramEditor.open(fragment);
+            });
+            root.addView(edit, new LinearLayout.LayoutParams(-1, -2));
+        }
 
         android.widget.ScrollView scroll = new android.widget.ScrollView(context);
         scroll.addView(root);

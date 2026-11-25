@@ -4,6 +4,7 @@ import static org.telegram.messenger.AndroidUtilities.dp;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -16,6 +17,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import androidx.core.graphics.ColorUtils;
+
 import org.telegram.messenger.LocaleController;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
@@ -26,6 +29,10 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.AnimatedEmojiDrawable;
+import org.telegram.ui.Components.Premium.GLIcon.GLIconRenderer;
+import org.telegram.ui.Components.Premium.GLIcon.GLIconTextureView;
+import org.telegram.ui.Components.Premium.GLIcon.Icon3D;
+import org.telegram.ui.Components.Premium.StarParticlesView;
 
 import java.util.Random;
 
@@ -47,9 +54,10 @@ public final class HeartGramBadgeSheet {
         if (activity == null || info == null || document == 0) {
             return false;
         }
+        boolean isSelf = peer instanceof TLRPC.User && ((TLRPC.User) peer).id == UserConfig.getInstance(UserConfig.selectedAccount).getClientUserId();
         // поддержавший без своего текста: то же окно, что «Поддержать HeartGram» (как на ПК)
         if ("supporter".equals(info.kind) && TextUtils.isEmpty(info.text)) {
-            HeartGramSupportSheet.show(fragment, false, document);
+            HeartGramSupportSheet.show(fragment, false, document, isSelf);
             return true;
         }
         final Context context = activity;
@@ -61,19 +69,26 @@ public final class HeartGramBadgeSheet {
         root.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
 
         FrameLayout art = new FrameLayout(context);
-        // два слоя: звёзды Telegram внизу (в цвет эмодзи), само эмодзи сверху
+        // два слоя: звёзды Telegram внизу (в цвет эмодзи/сердца), сверху 3D-сердце по умолчанию или кастомное эмодзи
         final StarsView stars = new StarsView(context);
-        // звёзды появляются, когда цвет эмодзи уже известен (иначе они сначала в цвете темы, потом перекрашиваются)
-        stars.setAlpha(0f);
-        final Integer knownColor = EmojiColor.cachedFor(document);
-        if (knownColor != null) {
-            // цвет этого эмодзи уже считали (в списке чатов, профиле): звёзды сразу нужного цвета и без задержки
-            stars.setColor(knownColor);
+        if (!HeartGramBadges.isCustomEmoji(peer)) {
+            stars.setColor(0xFFF7889E);
+            art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            GLIconTextureView heart3d = createHeart3DView(context, stars);
+            art.addView(heart3d, new FrameLayout.LayoutParams(dp(168), dp(168), Gravity.CENTER));
         } else {
-            stars.postDelayed(stars::showNow, 900);
+            // звёзды появляются, когда цвет эмодзи уже известен (иначе они сначала в цвете темы, потом перекрашиваются)
+            stars.setAlpha(0f);
+            final Integer knownColor = EmojiColor.cachedFor(document);
+            if (knownColor != null) {
+                // цвет этого эмодзи уже считали (в списке чатов, профиле): звёзды сразу нужного цвета и без задержки
+                stars.setColor(knownColor);
+            } else {
+                stars.postDelayed(stars::showNow, 900);
+            }
+            art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
+            art.addView(new EmojiView(context, document, stars::setColor), new FrameLayout.LayoutParams(dp(112), dp(112), Gravity.CENTER));
         }
-        art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-        art.addView(new EmojiView(context, document, stars::setColor), new FrameLayout.LayoutParams(dp(112), dp(112), Gravity.CENTER));
         root.addView(art, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(200)));
 
         if (info.number > 0) {
@@ -223,6 +238,35 @@ public final class HeartGramBadgeSheet {
     public static android.view.View createEmojiView(Context context, long documentId) {
         return new EmojiView(context, documentId, color -> {
         });
+    }
+
+    /** Интерактивная 3D-модель сердца HeartGram (как 3D-стрелка у exteraGram). */
+    public static GLIconTextureView createHeart3DView(Context context, StarParticlesView stars) {
+        GLIconTextureView view = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE, Icon3D.TYPE_HEART) {
+            @Override
+            protected void onAttachedToWindow() {
+                super.onAttachedToWindow();
+                setPaused(false);
+            }
+
+            @Override
+            protected void onDetachedFromWindow() {
+                super.onDetachedFromWindow();
+                setPaused(true);
+            }
+        };
+        Bitmap bg = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bg);
+        canvas.drawColor(ColorUtils.blendARGB(0xFFF7889E, Theme.getColor(Theme.key_dialogBackground), 0.5f));
+        view.setBackgroundBitmap(bg);
+        view.mRenderer.customColor1 = 0xFFFF86A6;
+        view.mRenderer.customColor2 = 0xFFE23E71;
+        view.mRenderer.updateColors();
+        if (stars != null) {
+            view.setStarParticlesView(stars);
+        }
+        view.startEnterAnimation(0, 120);
+        return view;
     }
 
     /** Эмодзи значка крупно, анимированное. */
