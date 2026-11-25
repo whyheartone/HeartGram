@@ -56,7 +56,7 @@ public final class GitHubUpdater {
     // найденное обновление: показывается кнопкой «Обновить» в списке чатов, пока человек его не поставит
     private static volatile Release pending;
     private static final java.util.List<Runnable> pendingListeners = new java.util.concurrent.CopyOnWriteArrayList<>();
-    private static final Pattern BETA = Pattern.compile("beta(\\d+)");
+    private static final Pattern BETA = Pattern.compile("beta(\\d+)(?:\\.(\\d+))?");
 
     public static Release pendingRelease() {
         if (pending == null) {
@@ -160,7 +160,12 @@ public final class GitHubUpdater {
             return null;
         }
         Matcher m = BETA.matcher(text);
-        return m.find() ? Integer.valueOf(Integer.parseInt(m.group(1))) : null;
+        if (!m.find()) {
+            return null;
+        }
+        int major = Integer.parseInt(m.group(1));
+        int minor = m.group(2) != null ? Integer.parseInt(m.group(2)) : 0;
+        return major * 1000 + minor;
     }
 
     private static volatile OkHttpClient client;

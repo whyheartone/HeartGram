@@ -13,6 +13,10 @@ on:
         description: 'Описание изменений'
         required: false
         default: ''
+      beta:
+        description: 'Номер беты (например 19.1; пусто = номер запуска)'
+        required: false
+        default: ''
   push:
     tags:
       - 'v*'
@@ -43,7 +47,7 @@ jobs:
       NATIVE_TARGET: ${{ matrix.target }}
       HG_LIST_URL: ${{ secrets.HG_LIST_URL }}
       HG_SEAL_KEY: ${{ secrets.HG_SEAL_KEY }}
-      HG_BETA: ${{ github.run_number }}
+      HG_BETA: ${{ github.event.inputs.beta || github.run_number }}
       TELEGRAM_APP_ID: ${{ secrets.TELEGRAM_APP_ID }}
       TELEGRAM_APP_HASH: ${{ secrets.TELEGRAM_APP_HASH }}
     steps:
@@ -148,12 +152,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           NOTES_INPUT: ${{ github.event.inputs.notes }}
           PRERELEASE: ${{ github.event.inputs.prerelease || 'false' }}
+          BETA_INPUT: ${{ github.event.inputs.beta }}
         run: |
           VERSION=$(grep '^APP_VERSION_NAME=' gradle.properties | cut -d= -f2)
           if [ "${GITHUB_REF_TYPE}" = "tag" ]; then
             TAG="${GITHUB_REF_NAME}"
           else
-            TAG="v${VERSION}-beta${GITHUB_RUN_NUMBER}"
+            TAG="v${VERSION}-beta${BETA_INPUT:-${GITHUB_RUN_NUMBER}}"
           fi
           NOTES="${NOTES_INPUT:-HeartGram ${TAG}}"
           FLAGS=""

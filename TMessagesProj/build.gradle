@@ -31,7 +31,8 @@ def verName = "${APP_VERSION_NAME}${betaLabel ? "-${betaLabel}" : (shortCommit ?
 // versionCode для Android растёт сам (минуты с 1 января 2026): новая сборка всегда выше прежней, установка поверх работает
 def verCode = 1261 + (int) ((System.currentTimeMillis() / 60000L) - 29453760L)
 // число в скобках, которое видит человек: небольшое, растёт с каждым запуском сборки
-def buildNumber = 1261 + (System.getenv('HG_BETA') ? System.getenv('HG_BETA').toInteger() : 0)
+def hgBeta = System.getenv('HG_BETA')
+def buildNumber = 1261 + (hgBeta ? hgBeta.tokenize('.')[0].toInteger() : 0)
 
 def officialVer = APP_VERSION_NAME
 def officialCode = APP_VERSION_CODE
