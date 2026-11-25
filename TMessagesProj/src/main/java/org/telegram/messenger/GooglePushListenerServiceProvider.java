@@ -57,9 +57,14 @@ public class GooglePushListenerServiceProvider implements PushListenerController
                             if (!TextUtils.isEmpty(token)) {
                                 PushListenerController.sendRegistrationToServer(getPushType(), token);
                             }
+                            ApplicationLoader.startPushService();
                         });
             } catch (Throwable e) {
+                lastError = e.getClass().getSimpleName() + ": " + e.getMessage();
                 FileLog.e(e);
+                SharedConfig.pushStringStatus = "__FIREBASE_FAILED__";
+                PushListenerController.sendRegistrationToServer(getPushType(), null);
+                ApplicationLoader.startPushService();
             }
         });
     }

@@ -373,13 +373,12 @@ object NaConfig {
             ConfigItem.configTypeInt,
             1
         )
-    // HeartGram: FCM вместе с фоновой службой (надёжнее на Xiaomi: пуши при заблокированном экране).
-    // По умолчанию выключено: служба держит соединение и тратит больше батареи, включается вручную.
+    // HeartGram: FCM вместе с фоновой службой (надёжнее на Xiaomi: пуши при заблокированном экране и на стороннем Firebase).
     val hybridPush =
         addConfig(
             "HybridPush",
             ConfigItem.configTypeBool,
-            false
+            true
         )
     val pushServiceTypeInAppDialog =
         addConfig(

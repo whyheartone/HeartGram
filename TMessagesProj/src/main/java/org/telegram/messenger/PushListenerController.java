@@ -1550,7 +1550,7 @@ public class PushListenerController {
             });
         });
         try {
-            countDownLatch.await();
+            countDownLatch.await(15, java.util.concurrent.TimeUnit.SECONDS);
         } catch (Throwable ignore) {
 
         }

@@ -467,7 +467,11 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
             editor.putBoolean("pushService", true);
             editor.putBoolean("pushConnection", true);
             editor.apply();
-            ConnectionsManager.getInstance(UserConfig.selectedAccount).setPushConnectionEnabled(true);
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (UserConfig.getInstance(a).isClientActivated()) {
+                    ConnectionsManager.getInstance(a).setPushConnectionEnabled(true);
+                }
+            }
         } else if (remotePush) {
             enabled = false;
         } else if (preferences.contains("pushService")) {
@@ -482,35 +486,52 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
             editor.putBoolean("pushService", enabled);
             editor.putBoolean("pushConnection", enabled);
             editor.apply();
-            ConnectionsManager.getInstance(UserConfig.selectedAccount).setPushConnectionEnabled(enabled);
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (UserConfig.getInstance(a).isClientActivated()) {
+                    ConnectionsManager.getInstance(a).setPushConnectionEnabled(enabled);
+                }
+            }
         }
         if (enabled) {
             AndroidUtilities.runOnUIThread(() -> {
                 try {
                     Log.d("TFOSS", "Starting push service...");
-                    applicationContext.startForegroundService(new Intent(applicationContext, NotificationsService.class));
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                        applicationContext.startForegroundService(new Intent(applicationContext, NotificationsService.class));
+                    } else {
+                        applicationContext.startService(new Intent(applicationContext, NotificationsService.class));
+                    }
 
                     Log.d("TFOSS", "Trying to start push service every 10 minutes");
                     // Telegram-FOSS: unconditionally enable push service
                     AlarmManager am = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
-                    Intent i = new Intent(applicationContext, NotificationsService.class);
-                    pendingIntent = PendingIntent.getForegroundService(applicationContext, 0, i, PendingIntent.FLAG_IMMUTABLE);
+                    if (am != null) {
+                        Intent i = new Intent("org.telegram.start");
+                        i.setPackage(applicationContext.getPackageName());
+                        int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
+                        pendingIntent = PendingIntent.getBroadcast(applicationContext, 0, i, flags);
 
-                    am.cancel(pendingIntent);
-                    am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 10 * 60 * 1000, pendingIntent);
+                        am.cancel(pendingIntent);
+                        am.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis(), 10 * 60 * 1000, pendingIntent);
+                    }
                 } catch (Throwable e) {
-                    Log.e("TFOSS", "Failed to start push service");
+                    Log.e("TFOSS", "Failed to start push service", e);
                 }
             });
 
         } else AndroidUtilities.runOnUIThread(() -> {
             applicationContext.stopService(new Intent(applicationContext, NotificationsService.class));
 
-            PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), PendingIntent.FLAG_MUTABLE);
-            AlarmManager alarm = (AlarmManager)applicationContext.getSystemService(Context.ALARM_SERVICE);
-            alarm.cancel(pintent);
-            if (pendingIntent != null) {
-                alarm.cancel(pendingIntent);
+            int flags = PendingIntent.FLAG_NO_CREATE | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0);
+            PendingIntent pintent = PendingIntent.getService(applicationContext, 0, new Intent(applicationContext, NotificationsService.class), flags);
+            AlarmManager alarm = (AlarmManager) applicationContext.getSystemService(Context.ALARM_SERVICE);
+            if (alarm != null) {
+                if (pintent != null) {
+                    alarm.cancel(pintent);
+                }
+                if (pendingIntent != null) {
+                    alarm.cancel(pendingIntent);
+                }
             }
         });
     }
@@ -530,6 +551,9 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
 
     private static void initPushServices() {
         AndroidUtilities.runOnUIThread(() -> {
+            if (NaConfig.INSTANCE.getPushServiceType().Int() == 0 || NaConfig.INSTANCE.getHybridPush().Bool()) {
+                startPushService();
+            }
             if (getPushProvider().hasServices()) {
                 getPushProvider().onRequestPushToken();
                 AndroidUtilities.runOnUIThread(ApplicationLoader::checkPushTokenTimeout, PUSH_TOKEN_TIMEOUT_MS);

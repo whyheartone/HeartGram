@@ -22,6 +22,8 @@ import android.util.Log;
 
 import androidx.core.app.NotificationCompat;
 
+import org.telegram.tgnet.ConnectionsManager;
+
 import xyz.nextalone.nagram.NaConfig;
 
 public class NotificationsService extends Service {
@@ -36,6 +38,19 @@ public class NotificationsService extends Service {
         super.onCreate();
         ApplicationLoader.postInitApplication();
         goForeground();
+        keepConnectionsAlive();
+    }
+
+    private void keepConnectionsAlive() {
+        Utilities.stageQueue.postRunnable(() -> {
+            for (int a = 0; a < UserConfig.MAX_ACCOUNT_COUNT; a++) {
+                if (UserConfig.getInstance(a).isClientActivated()) {
+                    ConnectionsManager cm = ConnectionsManager.getInstance(a);
+                    cm.setPushConnectionEnabled(true);
+                    cm.resumeNetworkMaybe();
+                }
+            }
+        });
     }
 
     private void goForeground() {
@@ -69,6 +84,7 @@ public class NotificationsService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         goForeground();
+        keepConnectionsAlive();
         return START_STICKY;
     }
 

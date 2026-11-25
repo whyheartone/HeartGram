@@ -325,6 +325,9 @@ public class ConnectionsManager extends BaseController {
         if (preferences.contains("pushConnection")) {
             return preferences.getBoolean("pushConnection", true);
         }
+        if (xyz.nextalone.nagram.NaConfig.INSTANCE.getHybridPush().Bool() || xyz.nextalone.nagram.NaConfig.INSTANCE.getPushServiceType().Int() == 0) {
+            return true;
+        }
         return MessagesController.getMainSettings(UserConfig.selectedAccount).getBoolean("backgroundConnection", false);
     }
 
