@@ -15415,7 +15415,7 @@ public class ChatActivity extends BaseFragment implements
                 }
                 ArrayList<MediaController.PhotoEntry> entries = new ArrayList<>();
                 entries.add(entry);
-                AlertsCreator.ensurePaidMessageConfirmation(currentAccount, getDialogId(), 1, stars -> sendPhotosGroup(entries, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, stars));
+                sendPhotosGroup(entries, notify, scheduleDate, forceDocument);
             }
         });
         if (quickTilesMenu == null) {
@@ -15455,7 +15455,7 @@ public class ChatActivity extends BaseFragment implements
         if (getParentActivity() == null) {
             return;
         }
-        if (!SharedConfig.inAppCamera || !CameraView.isCameraAllowed()) {
+        if (!SharedConfig.inappCamera || tw.nekomimi.nekogram.NekoConfig.disableInstantCamera.Bool() || !CameraView.isCameraAllowed()) {
             processSelectedAttach(attach_photo);
         } else if (getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
             openQuickCameraOnGrant = true;
