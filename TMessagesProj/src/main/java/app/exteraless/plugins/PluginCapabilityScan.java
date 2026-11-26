@@ -30,12 +30,79 @@ import java.util.Map;
 public final class PluginCapabilityScan {
 
     private static final String PREFIX = "plugin_scan_";
+    private static final String ANALYZER_VERSION_KEY = "plugin_analyzer_version";
+    private static final String BUNDLED_ANALYZER_VERSION = "1.1.0";
+    private static final String ANALYZER_UPDATE_URL = "https://raw.githubusercontent.com/whyheartone/HeartGram/main/TMessagesProj/src/main/python/extera_utils/capability_scan.py";
 
     /** Ключ разбора, который не является разрешением: код плагина нечитаем. */
     public static final String KEY_OBFUSCATION = "obfuscation";
     public static final String KEY_DEX = "dex";
 
     private PluginCapabilityScan() {
+    }
+
+    public static String getAnalyzerVersionLabel() {
+        SharedPreferences prefs = PluginsController.getInstance().getPreferences();
+        String custom = prefs != null ? prefs.getString(ANALYZER_VERSION_KEY, null) : null;
+        return TextUtils.isEmpty(custom) ? BUNDLED_ANALYZER_VERSION : custom;
+    }
+
+    public static File getExternalAnalyzerFile() {
+        if (org.telegram.messenger.ApplicationLoader.applicationContext == null) {
+            return null;
+        }
+        return new File(new File(org.telegram.messenger.ApplicationLoader.applicationContext.getFilesDir(), "plugins_analyzer"), "capability_scan.py");
+    }
+
+    /** Downloads latest capability_scan.py independently from app releases. */
+    public static void checkAnalyzerUpdateAsync(org.telegram.messenger.Utilities.Callback<Boolean> callback) {
+        org.telegram.messenger.Utilities.globalQueue.postRunnable(() -> {
+            boolean updated = false;
+            try {
+                File target = getExternalAnalyzerFile();
+                if (target != null) {
+                    okhttp3.Request req = new okhttp3.Request.Builder().url(ANALYZER_UPDATE_URL).build();
+                    try (okhttp3.Response resp = com.exteragram.messenger.utils.network.ExteraHttpClient.INSTANCE.getClient().newCall(req).execute()) {
+                        if (resp.isSuccessful() && resp.body() != null) {
+                            String body = resp.body().string();
+                            if (body.contains("def scan_json(") && body.contains("_MARKERS")) {
+                                File parent = target.getParentFile();
+                                if (parent != null && !parent.exists()) {
+                                    parent.mkdirs();
+                                }
+                                String old = target.isFile() ? readText(target) : null;
+                                if (!body.equals(old)) {
+                                    try (java.io.FileOutputStream out = new java.io.FileOutputStream(target)) {
+                                        out.write(body.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                                    }
+                                    updated = true;
+                                }
+                                SharedPreferences prefs = PluginsController.getInstance().getPreferences();
+                                if (prefs != null) {
+                                    prefs.edit().putString(ANALYZER_VERSION_KEY, BUNDLED_ANALYZER_VERSION + "+ota").apply();
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable t) {
+                FileLog.e("PluginCapabilityScan: analyzer update failed", t);
+            }
+            final boolean result = updated;
+            if (callback != null) {
+                org.telegram.messenger.AndroidUtilities.runOnUIThread(() -> callback.run(result));
+            }
+        });
+    }
+
+    private static String readText(File file) {
+        try (java.io.FileInputStream in = new java.io.FileInputStream(file)) {
+            byte[] buf = new byte[(int) Math.min(file.length(), 1024 * 1024)];
+            int read = in.read(buf);
+            return read > 0 ? new String(buf, 0, read, java.nio.charset.StandardCharsets.UTF_8) : "";
+        } catch (Throwable ignore) {
+            return "";
+        }
     }
 
     /** Статический разбор исходника; пустая карта, если движок молчит. */

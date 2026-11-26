@@ -125,6 +125,7 @@ public class PillRegistry {
                 R.drawable.pillstack_ping,
                 IconBackgroundColors.GREEN.top, IconBackgroundColors.GREEN.bottom,
                 DcPingPill::new));
+        com.exteragram.messenger.pillstack.custom.CustomPillStore.registerAll();
     }
 
     // ---- Пакетная регистрация ----

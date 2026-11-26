@@ -96,6 +96,7 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
     private int formatTimeWithSecondsRow;
     private int inAppVibrationRow;
     private int filterZalgoRow;
+    private int blockAdsRow;
     private int generalDividerRow;
 
     private int speedHeaderRow;
@@ -178,6 +179,7 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
         formatTimeWithSecondsRow = addRow("formatTimeWithSeconds");
         inAppVibrationRow = addRow("inAppVibration");
         filterZalgoRow = addRow("filterZalgo");
+        blockAdsRow = addRow("blockAds", "BlockAds");
         generalDividerRow = addRow();
 
         speedHeaderRow = addRow("speedHeader");
@@ -410,6 +412,15 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
 
         if (position == defaultProfileTabRow) {
             showDefaultProfileTabSelector();
+            return;
+        }
+
+        if (position == blockAdsRow) {
+            boolean enabled = !com.exteragram.messenger.ExteraConfig.getEnableAdBlock();
+            com.exteragram.messenger.adblock.backend.AdBlockManager.setEnabled(enabled, null);
+            if (view instanceof TextCheckCell) {
+                ((TextCheckCell) view).setChecked(enabled);
+            }
             return;
         }
 
@@ -1125,6 +1136,9 @@ public class OpenExteraGeneralActivity extends BaseNekoSettingsActivity {
                     } else if (position == notificationBubblesRow) {
                         cell.setTextAndCheck(getString(R.string.disableNotificationBubbles),
                                 NekoConfig.disableNotificationBubbles.Bool(), true);
+                    } else if (position == blockAdsRow) {
+                        cell.setTextAndCheck(getString(R.string.BlockAds),
+                                com.exteragram.messenger.ExteraConfig.getEnableAdBlock(), false);
                     }
                     break;
                 }

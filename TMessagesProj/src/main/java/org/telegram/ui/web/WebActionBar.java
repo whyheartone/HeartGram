@@ -58,6 +58,9 @@ import org.telegram.ui.Components.EditTextBoldCursor;
 import org.telegram.ui.Components.ItemOptions;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.LineProgressView;
+
+import com.exteragram.messenger.adblock.WebAdBlocker;
+import com.exteragram.messenger.adblock.ui.AdBlockMenuItem;
 import org.telegram.ui.GradientClip;
 
 import tw.nekomimi.nekogram.NekoConfig;
@@ -228,6 +231,7 @@ public class WebActionBar extends FrameLayout {
                 o.add(R.drawable.msg_settings_old, getString(R.string.Settings), click.run(settings_item));
             } else if (menuType == ArticleViewer.PageLayout.TYPE_WEB) {
                 if (!isTonsite) {
+                    AdBlockMenuItem.addTo(o, getAdBlocker());
                     o.add(R.drawable.msg_openin, getString(R.string.OpenInExternalApp), click.run(open_item));
                     o.addGap();
                 }
@@ -441,6 +445,10 @@ public class WebActionBar extends FrameLayout {
         setBackgroundColor(1, c);
 
         invalidate();
+    }
+
+    protected WebAdBlocker getAdBlocker() {
+        return null;
     }
 
     private Utilities.Callback<Integer> menuListener;

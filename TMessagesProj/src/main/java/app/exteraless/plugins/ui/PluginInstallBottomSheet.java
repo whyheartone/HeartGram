@@ -74,6 +74,7 @@ public class PluginInstallBottomSheet extends com.exteragram.messenger.plugins.u
     private final Delegate delegate;
     private final Plugin plugin;
     private final PlayerColors colors;
+    private final boolean needsUnverifiedConfirm;
     private ScrollView scroll;
 
     public PluginInstallBottomSheet(Activity activity, File file,
@@ -174,6 +175,7 @@ public class PluginInstallBottomSheet extends com.exteragram.messenger.plugins.u
         }
         // проверенным источник считается, только если у плагина есть id, а отправитель в списке доверенных
         final boolean verified = params != null && params.getTrusted() && plugin != null && !TextUtils.isEmpty(plugin.id);
+        this.needsUnverifiedConfirm = !verified || obfuscated || capabilities == null || capabilities.isEmpty();
         if (params != null && verified) {
             content.addView(createVerifiedBox(context, getString(R.string.HGPluginVerifiedSource),
                     getString(R.string.HGPluginVerifiedSourceInfo)),
@@ -284,6 +286,21 @@ public class PluginInstallBottomSheet extends com.exteragram.messenger.plugins.u
     }
 
     private static final int BAR_HEIGHT = 84;
+
+    @Override
+    public void onInstallClick() {
+        if (needsUnverifiedConfirm && getContext() != null) {
+            new org.telegram.ui.ActionBar.AlertDialog.Builder(getContext(), resourcesProvider)
+                    .setTitle(getString(R.string.PluginsUnverifiedConfirmTitle))
+                    .setMessage(getString(R.string.PluginsUnverifiedConfirmMessage))
+                    .setPositiveButton(getString(R.string.PluginsUnverifiedInstallAnyway), (dialog, which) -> performInstall())
+                    .setNegativeButton(getString(R.string.Cancel), null)
+                    .makeRed(org.telegram.ui.ActionBar.AlertDialog.BUTTON_POSITIVE)
+                    .show();
+            return;
+        }
+        performInstall();
+    }
 
     @Override
     protected void performInstall() {

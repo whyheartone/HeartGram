@@ -52,6 +52,7 @@ public class PluginsInfoActivity extends BaseFragment {
     private static final int ID_TRUSTED = 8;
     private static final int ID_UNSAFE_MODE = 9;
     private static final int ID_RETRY_HOOKS = 10;
+    private static final int ID_ANALYZER_UPDATE = 11;
 
     private static final String DOCS_URL = "https://plugins.exteragram.app";
     private static final String TRUSTED_URL = "https://t.me/addlist/pPhOtEq00KhjYTc6";
@@ -129,6 +130,9 @@ public class PluginsInfoActivity extends BaseFragment {
         items.add(UItem.asHeader("Python SDK"));
         items.add(UItem.asButton(ID_SDK_VERSION, getString(R.string.PluginsPythonSdk))
                 .setValue("v" + PluginsConstants.SDK_VERSION));
+        items.add(UItem.asButton(ID_ANALYZER_UPDATE, getString(R.string.PluginAnalyzerComponent))
+                .setValue("v" + app.exteraless.plugins.PluginCapabilityScan.getAnalyzerVersionLabel())
+                .setIcon(R.drawable.msg_retry));
         items.add(UItem.asButton(ID_INSTALL_FROM_FILE, getString(R.string.PluginsInstallFromFile))
                 .accent()
                 .setIcon(R.drawable.msg_add));
@@ -175,6 +179,19 @@ public class PluginsInfoActivity extends BaseFragment {
             BulletinFactory.of(this)
                     .createSimpleBulletin(R.raw.contact_check, getString(R.string.RestartRequired))
                     .show();
+        } else if (item.id == ID_ANALYZER_UPDATE) {
+            BulletinFactory.of(this)
+                    .createSimpleBulletin(R.raw.chats_infotip, getString(R.string.PluginAnalyzerUpdating))
+                    .show();
+            app.exteraless.plugins.PluginCapabilityScan.checkAnalyzerUpdateAsync(updated -> {
+                if (listView != null && listView.adapter != null) {
+                    listView.adapter.update(true);
+                }
+                BulletinFactory.of(this)
+                        .createSimpleBulletin(R.raw.contact_check, getString(updated ? R.string.PluginAnalyzerUpdated : R.string.PluginAnalyzerUpToDate))
+                        .show();
+            });
+            return;
         } else if (item.id == ID_INSTALL_FROM_FILE) {
             PluginsActivity.openPluginPicker(this);
             return;

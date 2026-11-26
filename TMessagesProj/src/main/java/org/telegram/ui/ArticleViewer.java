@@ -123,6 +123,8 @@ import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.BotGuardHelper;
 import org.telegram.messenger.ChatObject;
+
+import com.exteragram.messenger.adblock.WebAdBlocker;
 import org.telegram.utils.code.highlight.CodeHighlighting;
 import org.telegram.utils.code.highlight.PrismaTokenStyles;
 import org.telegram.messenger.DownloadController;
@@ -4453,6 +4455,12 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
             @Override
             protected WebInstantView.Loader getInstantViewLoader() {
                 return pages[0].loadInstant();
+            }
+
+            @Override
+            protected WebAdBlocker getAdBlocker() {
+                final BotWebViewContainer.MyWebView webView = pages[0].isWeb() ? pages[0].getWebView() : null;
+                return webView != null ? webView.adBlocker : null;
             }
         };
         actionBar.occupyStatusBar(sheet != null && !BOTTOM_ACTION_BAR);
@@ -15384,6 +15392,9 @@ public class ArticleViewer extends IArticleViewer implements NotificationCenter.
                 errorContainer.buttonView.setOnClickListener(v -> {
                     BotWebViewContainer.MyWebView webView = webViewContainer.getWebView();
                     if (webView != null) {
+                        if (webView.adBlocker != null) {
+                            webView.adBlocker.allowBlockedPage();
+                        }
                         webView.reload();
                     }
                 });

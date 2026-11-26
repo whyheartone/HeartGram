@@ -4542,6 +4542,7 @@ public class SendMessagesHelper extends BaseController implements NotificationCe
         TLRPC.TL_messageMediaToDo todo = sendMessageParams.todo;
         TLRPC.TL_messageMediaInvoice invoice = sendMessageParams.invoice;
         long peer = sendMessageParams.peer;
+        app.exteraless.plugins.PluginInstallHelper.markDialogWritten(currentAccount, peer);
         String path = sendMessageParams.path;
         MessageObject replyToMsg = sendMessageParams.replyToMsg;
         MessageObject replyToTopMsg = sendMessageParams.replyToTopMsg;

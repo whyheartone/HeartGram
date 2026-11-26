@@ -3722,6 +3722,20 @@ def get_custom_setting_view(plugin_id: str, view_id: str, context=None):
 def scan_capabilities_json(path: str) -> str:
     """Что плагин может делать — по исходнику, без запуска (для диалога установки)."""
     try:
+        external_dir = os.path.join(
+            os.path.dirname(os.path.dirname(_SRC_DIR)),
+            "plugins_analyzer",
+        )
+        # Check external updated capability_scan.py override if present next to app files
+        if client_utils and hasattr(client_utils, "ApplicationLoader") and client_utils.ApplicationLoader.applicationContext is not None:
+            app_files = str(client_utils.ApplicationLoader.applicationContext.getFilesDir().getAbsolutePath())
+            ext_file = os.path.join(app_files, "plugins_analyzer", "capability_scan.py")
+            if os.path.isfile(ext_file):
+                spec = importlib.util.spec_from_file_location("_external_capability_scan", ext_file)
+                if spec and spec.loader:
+                    mod = importlib.util.module_from_spec(spec)
+                    spec.loader.exec_module(mod)
+                    return mod.scan_json(path)
         from . import capability_scan
         return capability_scan.scan_json(path)
     except Exception as e:

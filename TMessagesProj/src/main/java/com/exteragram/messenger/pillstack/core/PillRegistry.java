@@ -1,41 +1,72 @@
 package com.exteragram.messenger.pillstack.core;
 
 import android.content.Context;
-import org.telegram.ui.ActionBar.Theme;
+
+import androidx.annotation.Keep;
+
 import com.exteragram.messenger.pillstack.ui.pills.BasePill;
+
+import org.telegram.ui.ActionBar.Theme;
 
 public final class PillRegistry {
     private PillRegistry() {
     }
 
+    public interface PillCreator {
+        BasePill create(Context context, Theme.ResourcesProvider resourcesProvider);
+    }
+
+    public record PillInfo(int id, CharSequence name, int iconRes, int iconColorTop,
+                           int iconColorBottom, PillCreator creator) {
+    }
+
+    @Keep
+    public static void beginTransaction() {
+        app.exteraless.pillstack.PillRegistry.beginTransaction();
+    }
+
+    @Keep
+    public static void endTransaction() {
+        app.exteraless.pillstack.PillRegistry.endTransaction();
+    }
+
+    public static boolean isRegistered(int id) {
+        return app.exteraless.pillstack.PillRegistry.isRegistered(id);
+    }
+
+    public static void register(PillInfo info) {
+        if (info == null || info.creator == null) {
+            return;
+        }
+        app.exteraless.pillstack.PillRegistry.register(new app.exteraless.pillstack.PillRegistry.PillInfo(
+                info.id, info.name, info.iconRes, info.iconColorTop, info.iconColorBottom,
+                (ctx, res) -> info.creator.create(ctx, res)
+        ));
+    }
+
+    @Keep
+    public static void unregister(int id) {
+        app.exteraless.pillstack.PillRegistry.unregister(id);
+    }
+
+    @Keep
+    public static void activatePill(int id) {
+        app.exteraless.pillstack.PillRegistry.activatePill(id);
+    }
+
     public static PillInfo getPillInfo(int id) {
-        return app.exteraless.pillstack.PillRegistry.isRegistered(id) ? new PillInfo(id) : null;
-    }
-
-    public static final class PillInfo {
-        private final int id;
-
-        private PillInfo(int id) {
-            this.id = id;
+        app.exteraless.pillstack.PillRegistry.PillInfo info = app.exteraless.pillstack.PillRegistry.getPillInfo(id);
+        if (info == null) {
+            return null;
         }
-
-        public PillCreator creator() {
-            return new PillCreator(id);
-        }
-    }
-
-    public static final class PillCreator {
-        private final int id;
-
-        private PillCreator(int id) {
-            this.id = id;
-        }
-
-        public BasePill create(Context context, Theme.ResourcesProvider resourcesProvider) {
-            app.exteraless.pillstack.pills.BasePill pill =
-                    app.exteraless.pillstack.PillRegistry.createPill(id, context, resourcesProvider);
-            return pill == null ? null : new WrappedPill(pill, resourcesProvider);
-        }
+        return new PillInfo(info.id, info.name, info.iconRes, info.iconColorTop, info.iconColorBottom,
+                (ctx, res) -> {
+                    app.exteraless.pillstack.pills.BasePill pill = info.creator.create(ctx, res);
+                    if (pill instanceof BasePill) {
+                        return (BasePill) pill;
+                    }
+                    return pill == null ? null : new WrappedPill(pill, res);
+                });
     }
 
     private static final class WrappedPill extends BasePill {

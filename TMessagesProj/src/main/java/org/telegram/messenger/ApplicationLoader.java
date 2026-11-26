@@ -307,6 +307,7 @@ public class ApplicationLoader extends Application implements CameraXConfig.Prov
             org.telegram.ui.ActionBar.Theme.reloadMonetThemes();
         }
         app.exteraless.plugins.PluginsController.getInstance().init(applicationContext);
+        com.exteragram.messenger.adblock.backend.AdBlockManager.preload();
         if (BuildConfig.DEBUG_TOOLS) {
             app.exteraless.debug.EnergyProfiler.resumeIfEnabled(applicationContext);
         }

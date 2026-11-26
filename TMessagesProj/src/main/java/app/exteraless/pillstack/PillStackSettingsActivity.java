@@ -53,6 +53,7 @@ public class PillStackSettingsActivity extends BaseNekoSettingsActivity {
     private int hiddenEndRow;
     private int hiddenEmptyRow;
     private int addRateRow;
+    private int addCustomRow;
     private int hiddenInfoRow;
 
     private int weatherRow;
@@ -127,6 +128,7 @@ public class PillStackSettingsActivity extends BaseNekoSettingsActivity {
             hiddenEndRow = rowCount;
         }
         addRateRow = RateInstances.canAddMore() ? addRow("addRate") : -1;
+        addCustomRow = addRow("addCustom");
         hiddenInfoRow = addRow();
 
         if (activePills.contains(PillType.WEATHER.id)) {
@@ -185,6 +187,21 @@ public class PillStackSettingsActivity extends BaseNekoSettingsActivity {
             PillStackEvents.notifyLayoutChanged();
             return;
         }
+        if (addCustomRow != -1 && position == addCustomRow) {
+            if (!com.exteragram.messenger.pillstack.custom.CustomPillStore.canCreate()) {
+                BulletinFactory.of(this).createErrorBulletin(
+                        LocaleController.formatString(R.string.CustomPillLimitReached,
+                                com.exteragram.messenger.pillstack.custom.CustomPillStore.MAX_PILLS)).show();
+                return;
+            }
+            showDialog(new com.exteragram.messenger.pillstack.custom.ui.PillTemplatesSheet(
+                    this,
+                    template -> presentFragment(new com.exteragram.messenger.pillstack.custom.ui.CustomPillEditorActivity(
+                            com.exteragram.messenger.pillstack.custom.CustomPillTemplates.create(template.id()))),
+                    spec -> com.exteragram.messenger.pillstack.custom.CustomPillIO.showImport(this, spec)
+            ));
+            return;
+        }
         if (position == resetRow) {
             PillStackConfig.resetLayout();
             updateRowsAndNotify();
@@ -217,7 +234,37 @@ public class PillStackSettingsActivity extends BaseNekoSettingsActivity {
         } else if (hiddenStartRow != -1 && position >= hiddenStartRow && position < hiddenEndRow) {
             id = hiddenPills.get(position - hiddenStartRow);
         }
-        if (id == -1 || !RateInstances.isRateInstance(id) || getParentActivity() == null) {
+        if (id == -1 || getParentActivity() == null) {
+            return false;
+        }
+        com.exteragram.messenger.pillstack.custom.CustomPillSpec customSpec = com.exteragram.messenger.pillstack.custom.CustomPillStore.get(id);
+        if (customSpec != null) {
+            CharSequence[] items = {
+                    getString(R.string.Edit),
+                    getString(R.string.ShareFile),
+                    getString(R.string.Copy),
+                    getString(R.string.Delete)
+            };
+            new AlertDialog.Builder(getParentActivity(), resourcesProvider)
+                    .setTitle(customSpec.name)
+                    .setItems(items, (dialog, which) -> {
+                        if (which == 0) {
+                            presentFragment(new com.exteragram.messenger.pillstack.custom.ui.CustomPillEditorActivity(customSpec.id));
+                        } else if (which == 1) {
+                            com.exteragram.messenger.pillstack.custom.CustomPillIO.share(this, customSpec);
+                        } else if (which == 2) {
+                            com.exteragram.messenger.pillstack.custom.CustomPillIO.copy(this, customSpec);
+                        } else if (which == 3) {
+                            com.exteragram.messenger.pillstack.custom.CustomPillStore.delete(customSpec.id);
+                            updateRowsAndNotify();
+                            PillStackEvents.notifyLayoutChanged();
+                        }
+                    })
+                    .setNegativeButton(getString(R.string.Cancel), null)
+                    .show();
+            return true;
+        }
+        if (!RateInstances.isRateInstance(id)) {
             return false;
         }
         final int pillId = id;
@@ -410,7 +457,13 @@ public class PillStackSettingsActivity extends BaseNekoSettingsActivity {
                     }
                     if (addRateRow != -1 && position == addRateRow) {
                         cell.reset();
-                        cell.setTextAndValueAndIcon(getString(R.string.PillStackAddRate), null, R.drawable.msg_add, false);
+                        cell.setTextAndValueAndIcon(getString(R.string.PillStackAddRate), null, R.drawable.msg_add, addCustomRow != -1);
+                        cell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueText);
+                        break;
+                    }
+                    if (addCustomRow != -1 && position == addCustomRow) {
+                        cell.reset();
+                        cell.setTextAndValueAndIcon(getString(R.string.CustomPillCreate), null, R.drawable.msg_add, false);
                         cell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueText);
                         break;
                     }

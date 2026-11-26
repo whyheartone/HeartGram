@@ -409,6 +409,7 @@ public class NotificationCenter {
     public static final int feedNeedReload = totalEvents++;
     public static final int feedTabVisibleToggled = totalEvents++;
     public static final int pillStackLayoutChanged = totalEvents++;
+    public static final int pillStackSettingsChanged = totalEvents++;
     public static final int audioInfoLoaded = totalEvents++;
     public static final int playerColorsChanged = totalEvents++;
     public static final int exportStateChanged = totalEvents++;

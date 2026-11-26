@@ -330,6 +330,7 @@ object PillStackConfig {
             configLoaded = true
         }
         RateInstances.registerAll()
+        com.exteragram.messenger.pillstack.custom.CustomPillStore.registerAll()
         sanitizePills()
     }
 

@@ -99,6 +99,59 @@ public final class PluginInstallHelper {
      */
     /** Источник последнего открытого файла проверен; сбрасывается при показе листа установки. */
     private static volatile boolean sourceTrusted;
+    private static final String WRITTEN_DIALOGS_KEY = "plugins_written_dialogs";
+    private static final java.util.Set<String> writtenDialogs = java.util.Collections.synchronizedSet(new java.util.HashSet<>());
+
+    public static void markDialogWritten(int account, long dialogId) {
+        if (dialogId == 0) {
+            return;
+        }
+        String key = account + ":" + dialogId;
+        if (!writtenDialogs.add(key)) {
+            return;
+        }
+        android.content.SharedPreferences prefs = PluginsController.getInstance().getPreferences();
+        if (prefs != null) {
+            java.util.Set<String> stored = new java.util.HashSet<>(prefs.getStringSet(WRITTEN_DIALOGS_KEY, java.util.Collections.emptySet()));
+            stored.add(key);
+            prefs.edit().putStringSet(WRITTEN_DIALOGS_KEY, stored).apply();
+        }
+    }
+
+    private static boolean isDialogWrittenOrExempt(int account, MessageObject message) {
+        if (message == null || message.isOutOwner()) {
+            return true;
+        }
+        if (app.heartgram.badges.HeartGramBadges.isTrustedMessage(message)) {
+            return true;
+        }
+        long dialogId = message.getDialogId();
+        if (dialogId == 0 || dialogId == UserConfig.getInstance(account).getClientUserId()) {
+            return true;
+        }
+        org.telegram.messenger.MessagesController mc = org.telegram.messenger.MessagesController.getInstance(account);
+        if (dialogId < 0) {
+            org.telegram.tgnet.TLRPC.Chat chat = mc.getChat(-dialogId);
+            if (chat != null && org.telegram.messenger.ChatObject.isChannel(chat) && !chat.megagroup
+                    && !org.telegram.messenger.ChatObject.canSendMessages(chat)) {
+                return true;
+            }
+        }
+        String key = account + ":" + dialogId;
+        if (writtenDialogs.contains(key)) {
+            return true;
+        }
+        android.content.SharedPreferences prefs = PluginsController.getInstance().getPreferences();
+        if (prefs != null) {
+            java.util.Set<String> stored = prefs.getStringSet(WRITTEN_DIALOGS_KEY, null);
+            if (stored != null && stored.contains(key)) {
+                writtenDialogs.addAll(stored);
+                return true;
+            }
+        }
+        org.telegram.tgnet.TLRPC.Dialog dialog = mc.getDialog(dialogId);
+        return dialog != null && dialog.read_outbox_max_id > 0;
+    }
 
     public static boolean handleMessageTap(Activity activity, MessageObject message) {
         if (activity == null || message == null) {
@@ -124,6 +177,19 @@ public final class PluginInstallHelper {
         if (file == null || !file.exists() || file.length() == 0) {
             // Ещё не скачан — пусть отработает штатная загрузка.
             return false;
+        }
+        final int account = UserConfig.selectedAccount;
+        if (!isDialogWrittenOrExempt(account, message)) {
+            AndroidUtilities.runOnUIThread(() -> {
+                if (!activity.isFinishing()) {
+                    new AlertDialog.Builder(activity)
+                            .setTitle(LocaleController.getString(R.string.PluginsReplyRequiredTitle))
+                            .setMessage(LocaleController.getString(R.string.PluginsReplyRequiredMessage))
+                            .setPositiveButton(LocaleController.getString(R.string.OK), null)
+                            .show();
+                }
+            });
+            return true;
         }
         // кто прислал файл: от этого зависит предупреждение «неизвестный источник» в листе установки
         sourceTrusted = app.heartgram.badges.HeartGramBadges.isTrustedMessage(message);

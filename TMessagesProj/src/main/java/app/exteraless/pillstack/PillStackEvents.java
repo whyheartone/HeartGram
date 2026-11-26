@@ -64,10 +64,20 @@ public class PillStackEvents {
         }
         final int[] ids = pillIds == null ? new int[0] : pillIds;
         AndroidUtilities.runOnUIThread(() -> {
+            org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(
+                    org.telegram.messenger.NotificationCenter.pillStackSettingsChanged, boxIds(ids));
             for (Listener listener : new ArrayList<>(listeners)) {
                 listener.onPillStackSettingsChanged(ids);
             }
         });
+    }
+
+    private static Object[] boxIds(int[] ids) {
+        Object[] out = new Object[ids.length];
+        for (int i = 0; i < ids.length; i++) {
+            out[i] = ids[i];
+        }
+        return out;
     }
 
     /** Помечена ли пилюля как требующая перезагрузки данных (и снимает пометку). */
