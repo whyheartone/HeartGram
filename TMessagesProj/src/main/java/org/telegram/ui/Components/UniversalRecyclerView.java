@@ -245,6 +245,12 @@ public class UniversalRecyclerView extends RecyclerListView {
         adapter.listenReorder(onReordered);
     }
 
+    public void startDrag(ViewHolder viewHolder) {
+        if (itemTouchHelper != null && viewHolder != null) {
+            itemTouchHelper.startDrag(viewHolder);
+        }
+    }
+
     protected void swappedElements() {
 
     }

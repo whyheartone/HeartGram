@@ -180,6 +180,9 @@
     <string name="CustomPillText">Текст виджета</string>
     <string name="CustomPillTextHint">Текст и {значения}</string>
     <string name="CustomPillTextInfo">Значения в фигурных скобках обновляются вместе с виджетом. Нажмите на значение ниже, чтобы настроить формат.</string>
+    <string name="CustomPillCreate">Создать виджет</string>
+    <string name="CustomPillUpdatedAt">Обновлено в %1$s</string>
+    <string name="CustomPillUpdatedDate">Обновлено %1$s</string>
     <string name="CustomPillUrlHint">https://api.example.com/data</string>
     <string name="IconPickerAllIcons">Все иконки</string>
     <string name="PillStackFromPlugin">Из плагина</string>

@@ -13,6 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.text.Editable;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.transition.ChangeBounds;
 import android.transition.Transition;
@@ -32,6 +33,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
@@ -77,6 +79,10 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     private final ImageView closeIcon;
     private final LinearLayout additionalIconsLayout;
     private boolean closeButtonForcedVisible;
+    @Nullable
+    private View pillHost;
+    @Nullable
+    private CharSequence pillMeasuredHint;
     public final EditTextBoldCursor editText;
     private BlurredBackgroundDrawable blurredBackgroundDrawable;
 
@@ -251,7 +257,26 @@ public class FragmentSearchField extends FrameLayout implements FactorAnimator.T
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        CharSequence hint = editText.getHint();
+        pillMeasuredHint = hint;
+        int hintWidth = TextUtils.isEmpty(hint) ? 0 : (int) Math.ceil(editText.getPaint().measureText(hint.toString()));
+        int reserved = Math.max((int) animatorSearchFiltersWidth.getFactor() + dp(6), dp(48)) + hintWidth + dp(8);
+        measurePillChild(pillHost, reserved);
         checkUi_editTextPaddings();
+    }
+
+    private void measurePillChild(@Nullable View child, int reserved) {
+        if (child == null || child.getVisibility() == GONE || child.getParent() != this) {
+            return;
+        }
+        MarginLayoutParams lp = (MarginLayoutParams) child.getLayoutParams();
+        int available = Math.max(0, getMeasuredWidth() - getPaddingLeft() - getPaddingRight() - lp.leftMargin - lp.rightMargin - reserved);
+        child.measure(MeasureSpec.makeMeasureSpec(available, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(child.getMeasuredHeight(), MeasureSpec.EXACTLY));
+    }
+
+    public void setPillHost(@Nullable View pillHost) {
+        this.pillHost = pillHost;
+        requestLayout();
     }
 
     private void checkUi_editTextPaddings() {

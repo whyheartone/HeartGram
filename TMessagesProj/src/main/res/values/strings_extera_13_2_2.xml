@@ -180,6 +180,9 @@
     <string name="CustomPillText">Pill Text</string>
     <string name="CustomPillTextHint">Text and {values}</string>
     <string name="CustomPillTextInfo">Values in braces update with every refresh. Tap a value below to change how it is formatted.</string>
+    <string name="CustomPillCreate">Create Pill</string>
+    <string name="CustomPillUpdatedAt">Updated at %1$s</string>
+    <string name="CustomPillUpdatedDate">Updated %1$s</string>
     <string name="CustomPillUrlHint">https://api.example.com/data</string>
     <string name="IconPickerAllIcons">All Icons</string>
     <string name="PillStackFromPlugin">From a plugin</string>

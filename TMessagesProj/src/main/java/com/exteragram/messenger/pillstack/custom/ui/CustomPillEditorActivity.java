@@ -594,7 +594,7 @@ public class CustomPillEditorActivity extends BasePreferencesActivity {
     }
 
     @Override
-    protected void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
+    public void fillItems(ArrayList<UItem> items, UniversalAdapter adapter) {
         items.add(UItem.asHeader(LocaleController.getString(R.string.CustomPillAppearance)));
         items.add(UItem.asCustom(nameCell));
         items.add(UItem.asCustom(colorGrid));
@@ -836,7 +836,7 @@ public class CustomPillEditorActivity extends BasePreferencesActivity {
     }
 
     @Override
-    protected void onClick(UItem item, View view, int position, float x, float y) {
+    public void onClick(UItem item, View view, int position, float x, float y) {
         int id = item.id;
         if (item.object instanceof CustomPillCells.TokenRow row) {
             openFormatSheet(row.index());

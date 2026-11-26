@@ -545,4 +545,14 @@ public class Weather {
         });
     }
 
+    public static boolean isLocationPermissionGranted() {
+        Context ctx = ApplicationLoader.applicationContext;
+        if (ctx == null) {
+            return false;
+        }
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.M
+                || ctx.checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED
+                || ctx.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+    }
+
 }

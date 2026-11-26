@@ -1568,6 +1568,15 @@ public class SettingsActivity extends BaseFragment implements NotificationCenter
                 paint.setShader(gradient);
             }
 
+            public void setColor(int topColor, int bottomColor, boolean applyMonet) {
+                if (applyMonet) {
+                    setMonetColor(Theme.getColor(Theme.key_chats_actionBackground));
+                } else {
+                    setColor(topColor, bottomColor);
+                }
+                invalidateSelf();
+            }
+
             private boolean monet;
             public void setMonetColor(int color) {
                 monet = true;

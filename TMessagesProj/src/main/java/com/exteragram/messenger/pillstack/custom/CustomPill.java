@@ -515,7 +515,7 @@ public class CustomPill extends BasePill implements NotificationCenter.Notificat
     }
 
     @Override
-    protected void updateLoadingColors() {
+    public void updateLoadingColors() {
         if (loadingDrawable == null) {
             return;
         }
