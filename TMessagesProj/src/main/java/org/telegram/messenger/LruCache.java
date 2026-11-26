@@ -65,7 +65,7 @@ public class LruCache<T> {
         return null;
     }
 
-    public ArrayList<String> getFilterKeys(String key) {
+    public synchronized ArrayList<String> getFilterKeys(String key) {
         ArrayList<String> arr = mapFilters.get(key);
         if (arr != null) {
             return new ArrayList<>(arr);

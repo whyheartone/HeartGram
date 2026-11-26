@@ -198,4 +198,7 @@
     <string name="PluginAnalyzerUpdating">Проверка обновления анализатора…</string>
     <string name="PluginAnalyzerUpdated">Анализатор плагинов обновлён.</string>
     <string name="PluginAnalyzerUpToDate">Установлена последняя версия анализатора.</string>
+    <string name="CreateGroupWith">Создать группу с %1$s</string>
+    <string name="ReplyDialogChannelDirect">Написать каналу</string>
+    <string name="ReplyDialogChannelDirectHint">Отправить личное сообщение каналу</string>
 </resources>

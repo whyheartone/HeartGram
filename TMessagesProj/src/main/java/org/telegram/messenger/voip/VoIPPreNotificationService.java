@@ -48,6 +48,17 @@ import java.util.ArrayList;
 
 public class VoIPPreNotificationService { // } extends Service implements AudioManager.OnAudioFocusChangeListener {
 
+    static boolean canUseFullScreenIntent(NotificationManager notificationManager) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            return true;
+        }
+        return notificationManager.canUseFullScreenIntent();
+    }
+
+    static boolean canUseCallStyle(NotificationManager notificationManager) {
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && canUseFullScreenIntent(notificationManager);
+    }
+
     public static final class State implements VoIPServiceState {
 
         private final int currentAccount;
@@ -238,11 +249,14 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             builder.setShowWhen(false);
         }
+        boolean canUseFullScreenIntent = canUseFullScreenIntent(nm);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             builder.setColor(0xff2ca5e0);
             builder.setVibrate(new long[0]);
             builder.setCategory(Notification.CATEGORY_CALL);
-            builder.setFullScreenIntent(PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE), true);
+            if (canUseFullScreenIntent) {
+                builder.setFullScreenIntent(PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE), true);
+            }
             if (user != null && !TextUtils.isEmpty(user.phone)) {
                 builder.addPerson("tel:" + user.phone);
             }
@@ -259,18 +273,25 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             );
         builder.setDeleteIntent(hidePendingIntent);
 
-        Bitmap avatar = VoIPService.getRoundAvatarBitmap(context, account, user);
         String personName = ContactsController.formatName(user);
         if (TextUtils.isEmpty(personName)) {
             //java.lang.IllegalArgumentException: person must have a non-empty a name
             personName = "___";
         }
-        Person person = new Person.Builder()
-                .setName(personName)
-                .setIcon(Icon.createWithAdaptiveBitmap(avatar)).build();
-        Notification.CallStyle notificationStyle = Notification.CallStyle.forIncomingCall(person, endPendingIntent, answerPendingIntent);
-
-        builder.setStyle(notificationStyle);
+        Bitmap avatar = VoIPService.getRoundAvatarBitmap(context, account, user);
+        if (canUseCallStyle(nm)) {
+            Person person = new Person.Builder()
+                    .setName(personName)
+                    .setIcon(Icon.createWithAdaptiveBitmap(avatar)).build();
+            Notification.CallStyle notificationStyle = Notification.CallStyle.forIncomingCall(person, endPendingIntent, answerPendingIntent);
+            builder.setStyle(notificationStyle);
+        } else {
+            builder
+                .setContentText(personName)
+                .setLargeIcon(avatar)
+                .addAction(R.drawable.ic_call_end_white_24dp, endTitle, endPendingIntent)
+                .addAction(R.drawable.ic_call, answerTitle, answerPendingIntent);
+        }
         return builder.build();
     }
 
@@ -427,6 +448,9 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             final NotificationManager nm = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
             nm.notify(VoIPService.ID_INCOMING_CALL_PRENOTIFICATION, makeNotification(context, account, user_id, call.id, video));
             startRinging(context, account, user_id);
+            if (intent.getBooleanExtra("notifications_disabled", false) && LaunchActivity.instance != null && !ApplicationLoader.mainInterfacePaused) {
+                VoIPFragment.show(LaunchActivity.instance, account);
+            }
         });
     }
 
@@ -437,6 +461,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
             }
             pendingVoIP = null;
             pendingCall = null;
+            releaseCall(call);
             if (currentState != null) {
                 currentState.destroy();
             }
@@ -449,6 +474,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
                 }
                 pendingVoIP = null;
                 pendingCall = null;
+                releaseCall(call);
                 if (currentState != null) {
                     currentState.destroy();
                 }
@@ -469,6 +495,7 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
                 }
                 pendingVoIP = null;
                 pendingCall = null;
+                releaseCall(call);
                 if (currentState != null) {
                     currentState.destroy();
                 }
@@ -583,8 +610,17 @@ public class VoIPPreNotificationService { // } extends Service implements AudioM
         dismiss(context, false);
     }
 
+    private static void releaseCall(TL_phone.PhoneCall call) {
+        if (call != null && VoIPService.callIShouldHavePutIntoIntent != null && VoIPService.callIShouldHavePutIntoIntent.id == call.id) {
+            VoIPService.callIShouldHavePutIntoIntent = null;
+        }
+    }
+
     public static void dismiss(Context context, boolean answered) {
         FileLog.d("VoIPPreNotification.dismiss()");
+        if (!answered) {
+            releaseCall(pendingCall);
+        }
         pendingVoIP = null;
         pendingCall = null;
         if (currentState != null) {

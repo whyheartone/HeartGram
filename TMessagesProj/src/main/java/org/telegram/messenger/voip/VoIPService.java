@@ -298,6 +298,12 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	private int[] mySource = new int[2];
 	private NativeInstance convertingVoip;
 	private NativeInstance[] tgVoip = new NativeInstance[2];
+
+	private final Object signalingLock = new Object();
+	private NativeInstance signalingTarget;
+	private long signalingTargetCallId;
+	private final ArrayList<TL_update.TL_updatePhoneCallSignalingData> pendingSignalingData = new ArrayList<>();
+	private static final int MAX_PENDING_SIGNALING_DATA = 256;
 	private long[] captureDevice = new long[2];
 	private boolean[] destroyCaptureDevice = {true, true};
 	private int[] videoState = {Instance.VIDEO_STATE_INACTIVE, Instance.VIDEO_STATE_INACTIVE};
@@ -1631,10 +1637,44 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 	}
 
 	public void onSignalingData(TL_update.TL_updatePhoneCallSignalingData data) {
-		if (user == null || tgVoip[CAPTURE_DEVICE_CAMERA] == null || tgVoip[CAPTURE_DEVICE_CAMERA].isGroup() || getCallID() != data.phone_call_id) {
-			return;
+		synchronized (signalingLock) {
+			if (signalingTarget != null) {
+				if (signalingTargetCallId == data.phone_call_id) {
+					signalingTarget.onSignalingDataReceive(data.data);
+				}
+				return;
+			}
+			if (pendingSignalingData.size() < MAX_PENDING_SIGNALING_DATA) {
+				pendingSignalingData.add(data);
+			}
 		}
-		tgVoip[CAPTURE_DEVICE_CAMERA].onSignalingDataReceive(data.data);
+	}
+
+	private void attachSignalingTarget(NativeInstance instance, long callId) {
+		synchronized (signalingLock) {
+			signalingTarget = instance;
+			signalingTargetCallId = callId;
+			int delivered = 0;
+			for (int a = 0, size = pendingSignalingData.size(); a < size; a++) {
+				TL_update.TL_updatePhoneCallSignalingData data = pendingSignalingData.get(a);
+				if (data.phone_call_id == callId) {
+					instance.onSignalingDataReceive(data.data);
+					delivered++;
+				}
+			}
+			if (BuildVars.LOGS_ENABLED && !pendingSignalingData.isEmpty()) {
+				FileLog.d("delivered " + delivered + " of " + pendingSignalingData.size() + " signaling packets received before the call instance existed");
+			}
+			pendingSignalingData.clear();
+		}
+	}
+
+	private void detachSignalingTarget() {
+		synchronized (signalingLock) {
+			signalingTarget = null;
+			signalingTargetCallId = 0;
+			pendingSignalingData.clear();
+		}
 	}
 
 	public long getSelfId() {
@@ -1812,6 +1852,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				joinConference.slug = reason.slug;
 
 				stopRinging();
+				detachSignalingTarget();
 				if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
 					prevTrafficStats = null;
 					convertingVoip = tgVoip[CAPTURE_DEVICE_CAMERA];
@@ -2205,6 +2246,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		inviteUsersToConferenceVideo = video;
 		inviteUsersToConference = inviteUserIds;
 		stopRinging();
+		detachSignalingTarget();
 		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
 			prevTrafficStats = null;
 			convertingVoip = tgVoip[CAPTURE_DEVICE_CAMERA];
@@ -3600,6 +3642,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 				}
 			}));
 			tgVoip[CAPTURE_DEVICE_CAMERA].setMuteMicrophone(micMute);
+			attachSignalingTarget(tgVoip[CAPTURE_DEVICE_CAMERA], privateCall.id);
 
 			if (newAvailable != isVideoAvailable) {
 				isVideoAvailable = newAvailable;
@@ -4274,6 +4317,7 @@ public class VoIPService extends Service implements SensorEventListener, AudioMa
 		Arrays.fill(mySource, 0);
 		cancelGroupCheckShortPoll();
 		AndroidUtilities.runOnUIThread(() -> NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.didEndCall));
+		detachSignalingTarget();
 		if (tgVoip[CAPTURE_DEVICE_CAMERA] != null) {
 			StatsController.getInstance(currentAccount).incrementTotalCallsTime(getStatsNetworkType(), (int) (getCallDuration() / 1000) % 5);
 			onTgVoipPreStop();

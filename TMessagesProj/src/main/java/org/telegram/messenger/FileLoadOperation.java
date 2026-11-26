@@ -794,6 +794,8 @@ public class FileLoadOperation {
             }
             if (state == stateFinished) {
                 result[1] = 1;
+            } else if (state == stateCanceled) {
+                result[1] = -1;
             }
             countDownLatch.countDown();
         });

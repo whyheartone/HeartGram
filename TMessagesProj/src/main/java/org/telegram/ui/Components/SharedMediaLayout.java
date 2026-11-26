@@ -135,6 +135,7 @@ import org.telegram.ui.Cells.ContextLinkCell;
 import org.telegram.ui.Cells.DialogCell;
 import org.telegram.ui.Cells.GraySectionCell;
 import org.telegram.ui.Cells.LoadingCell;
+import org.telegram.ui.Cells.ManageChatTextCell;
 import org.telegram.ui.Cells.ManageChatUserCell;
 import org.telegram.ui.Cells.ProfileSearchCell;
 import org.telegram.ui.Cells.SharedAudioCell;
@@ -3010,6 +3011,31 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                         args.putLong("user_id", user_id);
                         profileActivity.presentFragment(new ProfileActivity(args));
                     }
+                } else if (mediaPage.selectedType == TAB_COMMON_GROUPS && view instanceof ManageChatTextCell) {
+                    Bundle args = new Bundle();
+                    args.putLongArray("result", new long[]{commonGroupsAdapter.getUserId()});
+                    GroupCreateFinalActivity fragment = new GroupCreateFinalActivity(args);
+                    fragment.setDelegate(new GroupCreateFinalActivity.GroupCreateFinalActivityDelegate() {
+                        @Override
+                        public void didStartChatCreation() {
+
+                        }
+
+                        @Override
+                        public void didFinishChatCreation(GroupCreateFinalActivity fragment, long chatId) {
+                            Bundle args2 = new Bundle();
+                            args2.putLong("chat_id", chatId);
+                            args2.putBoolean("just_created_chat", true);
+                            fragment.presentFragment(new ChatActivity(args2), true);
+                            commonGroupsAdapter.reload();
+                        }
+
+                        @Override
+                        public void didFailChatCreation() {
+
+                        }
+                    });
+                    profileActivity.presentFragment(fragment);
                 } else if (mediaPage.selectedType == TAB_COMMON_GROUPS && view instanceof ProfileSearchCell) {
                     TLRPC.Chat chat = ((ProfileSearchCell) view).getChat();
                     Bundle args = new Bundle();
@@ -8319,6 +8345,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
     public static final int VIEW_TYPE_SEARCH_GROUPUSER = 22;
     public static final int VIEW_TYPE_SEARCH_SAVED_DIALOG = 23;
     public static final int VIEW_TYPE_SEARCH_DOCUMENT = 24;
+    public static final int VIEW_TYPE_GROUP_CREATE = 25;
 
     private class SharedPhotoVideoAdapter extends RecyclerListView.FastScrollAdapter {
 
@@ -10239,6 +10266,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
         private boolean loading;
         private boolean firstLoaded;
         private boolean endReached;
+        private int reqId;
 
         public CommonGroupsAdapter(Context context) {
             mContext = context;
@@ -10249,14 +10277,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                 return;
             }
             TLRPC.TL_messages_getCommonChats req = new TLRPC.TL_messages_getCommonChats();
-            long uid;
-            if (DialogObject.isEncryptedDialog(dialog_id)) {
-                TLRPC.EncryptedChat encryptedChat = profileActivity.getMessagesController().getEncryptedChat(DialogObject.getEncryptedChatId(dialog_id));
-                uid = encryptedChat.user_id;
-            } else {
-                uid = dialog_id;
-            }
-            req.user_id = profileActivity.getMessagesController().getInputUser(uid);
+            req.user_id = profileActivity.getMessagesController().getInputUser(getUserId());
             if (req.user_id instanceof TLRPC.TL_inputUserEmpty) {
                 return;
             }
@@ -10264,7 +10285,8 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             req.max_id = max_id;
             loading = true;
             notifyDataSetChanged();
-            int reqId = profileActivity.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+            reqId = profileActivity.getConnectionsManager().sendRequest(req, (response, error) -> AndroidUtilities.runOnUIThread(() -> {
+                reqId = 0;
                 int oldCount = getItemCount();
                 if (error == null) {
                     TLRPC.messages_Chats res = (TLRPC.messages_Chats) response;
@@ -10292,9 +10314,41 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             profileActivity.getConnectionsManager().bindRequestToGuid(reqId, profileActivity.getClassGuid());
         }
 
+        private void reload() {
+            if (reqId != 0) {
+                profileActivity.getConnectionsManager().cancelRequest(reqId, true);
+                reqId = 0;
+            }
+            chats.clear();
+            loading = false;
+            endReached = false;
+            getChats(0, 100);
+            TLRPC.User user = profileActivity.getMessagesController().getUser(getUserId());
+            if (user != null) {
+                profileActivity.getMessagesController().loadFullUser(user, profileActivity.getClassGuid(), true);
+            }
+        }
+
+        private long getUserId() {
+            if (DialogObject.isEncryptedDialog(dialog_id)) {
+                TLRPC.EncryptedChat encryptedChat = profileActivity.getMessagesController().getEncryptedChat(DialogObject.getEncryptedChatId(dialog_id));
+                return encryptedChat.user_id;
+            }
+            return dialog_id;
+        }
+
+        private boolean hasCreateRow() {
+            if (chats.isEmpty()) {
+                return false;
+            }
+            TLRPC.User user = profileActivity.getMessagesController().getUser(getUserId());
+            return user != null && !user.bot && !user.self && !UserObject.isDeleted(user);
+        }
+
         @Override
         public boolean isEnabled(RecyclerView.ViewHolder holder) {
-            return holder.getAdapterPosition() != chats.size();
+            int viewType = holder.getItemViewType();
+            return viewType == VIEW_TYPE_GROUP || viewType == VIEW_TYPE_GROUP_CREATE;
         }
 
         @Override
@@ -10304,6 +10358,9 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             }
             int count = chats.size();
             if (!chats.isEmpty()) {
+                if (hasCreateRow()) {
+                    count++;
+                }
                 if (!endReached) {
                     count++;
                 }
@@ -10317,6 +10374,11 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             switch (viewType) {
                 case VIEW_TYPE_GROUP:
                     view = new ProfileSearchCell(mContext, resourcesProvider);
+                    break;
+                case VIEW_TYPE_GROUP_CREATE:
+                    ManageChatTextCell createCell = new ManageChatTextCell(mContext);
+                    createCell.setColors(Theme.key_windowBackgroundWhiteBlueIcon, Theme.key_windowBackgroundWhiteBlueButton);
+                    view = createCell;
                     break;
                 case VIEW_TYPE_GROUP_EMPTY:
                     View emptyStubView = createEmptyStubView(mContext, 6, dialog_id, resourcesProvider);
@@ -10340,9 +10402,17 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             if (holder.getItemViewType() == VIEW_TYPE_GROUP) {
                 if (!(holder.itemView instanceof ProfileSearchCell)) return;
                 ProfileSearchCell cell = (ProfileSearchCell) holder.itemView;
+                if (hasCreateRow()) {
+                    position--;
+                }
                 TLRPC.Chat chat = chats.get(position);
                 cell.setData(chat, null, null, null, false, false);
                 cell.useSeparator = position != chats.size() - 1 || !endReached;
+            } else if (holder.getItemViewType() == VIEW_TYPE_GROUP_CREATE) {
+                if (!(holder.itemView instanceof ManageChatTextCell)) return;
+                ManageChatTextCell cell = (ManageChatTextCell) holder.itemView;
+                TLRPC.User user = profileActivity.getMessagesController().getUser(getUserId());
+                cell.setText(LocaleController.formatString(R.string.CreateGroupWith, UserObject.getFirstName(user)), null, R.drawable.msg_groups_create, true);
             }
         }
 
@@ -10350,6 +10420,12 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
         public int getItemViewType(int i) {
             if (chats.isEmpty() && !loading) {
                 return VIEW_TYPE_GROUP_EMPTY;
+            }
+            if (hasCreateRow()) {
+                if (i == 0) {
+                    return VIEW_TYPE_GROUP_CREATE;
+                }
+                i--;
             }
             if (i < chats.size()) {
                 return VIEW_TYPE_GROUP;

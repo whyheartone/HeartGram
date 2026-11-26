@@ -74,12 +74,11 @@ public class DownloadController extends BaseController implements NotificationCe
     private HashMap<String, DownloadObject> downloadQueueKeys = new HashMap<>();
     private HashMap<Pair<Long, Integer>, DownloadObject> downloadQueuePairs = new HashMap<>();
 
-    private HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<>();
-    private HashMap<String, ArrayList<MessageObject>> loadingFileMessagesObservers = new HashMap<>();
-    private ConcurrentHashMap<Integer, String> observersByTag = new ConcurrentHashMap<>();
+    private final HashMap<String, ArrayList<WeakReference<FileDownloadProgressListener>>> loadingFileObservers = new HashMap<>();
+    private final HashMap<String, ArrayList<WeakReference<MessageObject>>> loadingFileMessagesObservers = new HashMap<>();
+    private final ConcurrentHashMap<Integer, String> observersByTag = new ConcurrentHashMap<>();
     private boolean listenerInProgress = false;
-    private HashMap<String, FileDownloadProgressListener> addLaterArray = new HashMap<>();
-    private ArrayList<FileDownloadProgressListener> deleteLaterArray = new ArrayList<>();
+    private final ArrayList<Runnable> deferredObserverOperations = new ArrayList<>();
     private int lastTag = 0;
 
     private boolean loadingAutoDownloadConfig;
@@ -1268,7 +1267,7 @@ public class DownloadController extends BaseController implements NotificationCe
             return;
         }
         if (listenerInProgress) {
-            addLaterArray.put(fileName, observer);
+            deferredObserverOperations.add(() -> addLoadingFileObserver(fileName, messageObject, observer));
             return;
         }
         removeLoadingFileObserver(observer);
@@ -1280,12 +1279,12 @@ public class DownloadController extends BaseController implements NotificationCe
         }
         arrayList.add(new WeakReference<>(observer));
         if (messageObject != null) {
-            ArrayList<MessageObject> messageObjects = loadingFileMessagesObservers.get(fileName);
+            ArrayList<WeakReference<MessageObject>> messageObjects = loadingFileMessagesObservers.get(fileName);
             if (messageObjects == null) {
                 messageObjects = new ArrayList<>();
                 loadingFileMessagesObservers.put(fileName, messageObjects);
             }
-            messageObjects.add(messageObject);
+            messageObjects.add(new WeakReference<>(messageObject));
         }
 
         observersByTag.put(observer.getObserverTag(), fileName);
@@ -1293,7 +1292,7 @@ public class DownloadController extends BaseController implements NotificationCe
 
     public void removeLoadingFileObserver(FileDownloadProgressListener observer) {
         if (listenerInProgress) {
-            deleteLaterArray.add(observer);
+            deferredObserverOperations.add(() -> removeLoadingFileObserver(observer));
             return;
         }
         String fileName = observersByTag.get(observer.getObserverTag());
@@ -1315,15 +1314,11 @@ public class DownloadController extends BaseController implements NotificationCe
         }
     }
 
-    private void processLaterArrays() {
-        for (HashMap.Entry<String, FileDownloadProgressListener> listener : addLaterArray.entrySet()) {
-            addLoadingFileObserver(listener.getKey(), listener.getValue());
+    private void processDeferredObserverOperations() {
+        for (Runnable operation : deferredObserverOperations) {
+            operation.run();
         }
-        addLaterArray.clear();
-        for (FileDownloadProgressListener listener : deleteLaterArray) {
-            removeLoadingFileObserver(listener);
-        }
-        deleteLaterArray.clear();
+        deferredObserverOperations.clear();
     }
 
     @Override
@@ -1348,16 +1343,18 @@ public class DownloadController extends BaseController implements NotificationCe
                 }
             }
             listenerInProgress = false;
-            processLaterArrays();
+            processDeferredObserverOperations();
             checkDownloadFinished(fileName, canceled);
         } else if (id == NotificationCenter.fileLoaded || id == NotificationCenter.httpFileDidLoad) {
             listenerInProgress = true;
             String fileName = (String) args[0];
-            ArrayList<MessageObject> messageObjects = loadingFileMessagesObservers.get(fileName);
+            ArrayList<WeakReference<MessageObject>> messageObjects = loadingFileMessagesObservers.get(fileName);
             if (messageObjects != null) {
                 for (int a = 0, size = messageObjects.size(); a < size; a++) {
-                    MessageObject messageObject = messageObjects.get(a);
-                    messageObject.mediaExists = true;
+                    MessageObject messageObject = messageObjects.get(a).get();
+                    if (messageObject != null) {
+                        messageObject.mediaExists = true;
+                    }
                 }
                 loadingFileMessagesObservers.remove(fileName);
             }
@@ -1373,7 +1370,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 loadingFileObservers.remove(fileName);
             }
             listenerInProgress = false;
-            processLaterArrays();
+            processDeferredObserverOperations();
             checkDownloadFinished(fileName, 0);
         } else if (id == NotificationCenter.fileLoadProgressChanged) {
             listenerInProgress = true;
@@ -1575,13 +1572,16 @@ public class DownloadController extends BaseController implements NotificationCe
         if (parentObject == null) {
             return;
         }
+        TLRPC.Document parentDocument = parentObject.getDocument();
+        if (parentDocument == null) {
+            return;
+        }
 
         AndroidUtilities.runOnUIThread(() -> {
             boolean removed = false;
-            TLRPC.Document parentDocument = parentObject.getDocument();
             for (int i = 0; i < downloadingFiles.size(); i++) {
                 TLRPC.Document downloadingDocument = downloadingFiles.get(i).getDocument();
-                if (downloadingDocument == null || parentDocument != null && downloadingDocument.id == parentDocument.id) {
+                if (downloadingDocument == null || downloadingDocument.id == parentDocument.id) {
                     downloadingFiles.remove(i);
                     removed = true;
                     break;
@@ -1600,8 +1600,8 @@ public class DownloadController extends BaseController implements NotificationCe
         getMessagesStorage().getStorageQueue().postRunnable(() -> {
             try {
                 SQLitePreparedStatement state = getMessagesStorage().getDatabase().executeFast("DELETE FROM downloading_documents WHERE hash = ? AND id = ?");
-                state.bindInteger(1, parentObject.getDocument().dc_id);
-                state.bindLong(2, parentObject.getDocument().id);
+                state.bindInteger(1, parentDocument.dc_id);
+                state.bindLong(2, parentDocument.id);
                 state.step();
                 state.dispose();
             } catch (Exception e) {

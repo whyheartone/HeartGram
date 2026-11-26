@@ -3986,6 +3986,7 @@ public class MessagesStorage extends BaseController {
     }
 
     public void loadUnreadMessages() {
+        int unreadSnapshot = getNotificationsController().queueUnreadSnapshot();
         storageQueue.postRunnable(() -> {
             SQLiteCursor cursor = null;
             int magic = 0;
@@ -4217,7 +4218,7 @@ public class MessagesStorage extends BaseController {
                     getChatsInternal(TextUtils.join(",", chatsToLoad), chats);
                 }
 
-                AndroidUtilities.runOnUIThread(() -> getNotificationsController().processLoadedUnreadMessages(pushDialogs, messages, pushMessages, users, chats, encryptedChats, storyPushes.values()));
+                AndroidUtilities.runOnUIThread(() -> getNotificationsController().processLoadedUnreadMessages(pushDialogs, messages, pushMessages, users, chats, encryptedChats, storyPushes.values(), unreadSnapshot));
             } catch (Exception e) {
                 checkSQLException(e);
             } finally {

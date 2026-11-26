@@ -7,6 +7,7 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.text.TextUtils;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -18,6 +19,7 @@ import com.android.billingclient.api.BillingClientStateListener;
 import com.android.billingclient.api.BillingFlowParams;
 import com.android.billingclient.api.BillingResult;
 import com.android.billingclient.api.ConsumeParams;
+import com.android.billingclient.api.PendingPurchasesParams;
 import com.android.billingclient.api.ProductDetails;
 import com.android.billingclient.api.ProductDetailsResponseListener;
 import com.android.billingclient.api.Purchase;
@@ -26,6 +28,8 @@ import com.android.billingclient.api.PurchasesUpdatedListener;
 import com.android.billingclient.api.QueryProductDetailsParams;
 import com.android.billingclient.api.QueryPurchasesParams;
 
+import org.telegram.PhoneFormat.CallingCodeInfo;
+import org.telegram.PhoneFormat.PhoneFormat;
 import org.telegram.messenger.utils.BillingUtilities;
 import org.telegram.tgnet.ConnectionsManager;
 import org.telegram.tgnet.TLRPC;
@@ -42,6 +46,7 @@ import java.util.Collections;
 import java.util.Currency;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -79,7 +84,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
 
     private BillingController(Context ctx) {
         billingClient = BillingClient.newBuilder(ctx)
-                .enablePendingPurchases()
+                .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
                 .setListener(this)
                 .build();
     }
@@ -116,21 +121,25 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
         if ("XTR".equalsIgnoreCase(currency)) {
             return "XTR " + LocaleController.formatNumber(amount, ',');
         }
-        Currency cur = Currency.getInstance(currency);
-        if (cur != null) {
-            if (currencyInstance == null) {
-                currencyInstance = NumberFormat.getCurrencyInstance();
+        try {
+            Currency cur = Currency.getInstance(currency);
+            if (cur != null) {
+                if (currencyInstance == null) {
+                    currencyInstance = NumberFormat.getCurrencyInstance();
+                }
+                currencyInstance.setCurrency(cur);
+                if (rounded) {
+                    currencyInstance.setMaximumFractionDigits(0);
+                    currencyInstance.setMinimumFractionDigits(0);
+                    return currencyInstance.format(Math.round(amount / Math.pow(10, exp)));
+                }
+                final int defaultFractionDigits = cur.getDefaultFractionDigits();
+                currencyInstance.setMinimumFractionDigits(defaultFractionDigits);
+                currencyInstance.setMaximumFractionDigits(defaultFractionDigits);
+                return currencyInstance.format(amount / Math.pow(10, exp));
             }
-            currencyInstance.setCurrency(cur);
-            if (rounded) {
-                currencyInstance.setMaximumFractionDigits(0);
-                currencyInstance.setMinimumFractionDigits(0);
-                return currencyInstance.format(Math.round(amount / Math.pow(10, exp)));
-            }
-            final int defaultFractionDigits = cur.getDefaultFractionDigits();
-            currencyInstance.setMinimumFractionDigits(defaultFractionDigits);
-            currencyInstance.setMaximumFractionDigits(defaultFractionDigits);
-            return currencyInstance.format(amount / Math.pow(10, exp));
+        } catch (Exception e) {
+            FileLog.e(e);
         }
         return amount + " " + currency;
     }
@@ -139,6 +148,48 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
     public int getCurrencyExp(String currency) {
         BillingUtilities.extractCurrencyExp(currencyExpMap);
         return currencyExpMap.getOrDefault(currency, 0);
+    }
+
+    public String getTargetCurrency(int account, boolean forceUsd) {
+        if (forceUsd) {
+            return "USD";
+        }
+        String phone = UserConfig.getInstance(account).getClientPhone();
+        return getCurrencyByPhone(phone);
+    }
+
+    private String getCurrencyByPhone(String phone) {
+        if (TextUtils.isEmpty(phone)) {
+            return null;
+        }
+        String digits = PhoneFormat.stripExceptNumbers(phone);
+        if (TextUtils.isEmpty(digits)) {
+            return null;
+        }
+        CallingCodeInfo info = PhoneFormat.getInstance().findCallingCodeInfo(digits);
+        if (info == null || info.countries == null || info.countries.isEmpty()) {
+            return null;
+        }
+        String country = info.countries.get(0);
+        String localeCountry = Locale.getDefault().getCountry();
+        if (!TextUtils.isEmpty(localeCountry)) {
+            for (String candidate : info.countries) {
+                if (localeCountry.equalsIgnoreCase(candidate)) {
+                    country = candidate;
+                    break;
+                }
+            }
+        }
+        if (TextUtils.isEmpty(country) || country.charAt(0) == '_') {
+            return null;
+        }
+        try {
+            Currency currency = Currency.getInstance(new Locale("", country.toUpperCase(Locale.ROOT)));
+            return currency != null ? currency.getCurrencyCode() : null;
+        } catch (Exception e) {
+            FileLog.e(e);
+            return null;
+        }
     }
 
     public void startConnection() {
@@ -160,7 +211,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             return;
         }
         billingClientEmpty = true;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated);
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingProductDetailsUpdated);
     }
 
     private void switchBackFromInvoice() {
@@ -168,7 +219,7 @@ public class BillingController implements PurchasesUpdatedListener, BillingClien
             return;
         }
         billingClientEmpty = false;
-        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.billingProductDetailsUpdated);
+        NotificationCenter.getGlobalInstance().postNotificationNameOnUIThread(NotificationCenter.billingProductDetailsUpdated);
     }
 
     public boolean isReady() {

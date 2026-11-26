@@ -59,6 +59,8 @@ public class UnconfirmedAuthController {
                             }
                         } catch (Exception e) {
                             FileLog.e(e);
+                        } finally {
+                            data.reuse();
                         }
                     }
                 }
@@ -189,10 +191,17 @@ public class UnconfirmedAuthController {
                 state = database.executeFast("REPLACE INTO unconfirmed_auth VALUES(?)");
                 for (UnconfirmedAuth auth : auths) {
                     state.requery();
-                    NativeByteBuffer buffer = new NativeByteBuffer(auth.getObjectSize());
-                    auth.serializeToStream(buffer);
-                    state.bindByteBuffer(1, buffer);
-                    state.step();
+                    NativeByteBuffer buffer = null;
+                    try {
+                        buffer = new NativeByteBuffer(auth.getObjectSize());
+                        auth.serializeToStream(buffer);
+                        state.bindByteBuffer(1, buffer);
+                        state.step();
+                    } finally {
+                        if (buffer != null) {
+                            buffer.reuse();
+                        }
+                    }
                 }
             } catch (Exception e) {
                 FileLog.e(e);

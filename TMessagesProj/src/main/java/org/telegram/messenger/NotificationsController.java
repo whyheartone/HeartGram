@@ -101,6 +101,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import tw.nekomimi.nekogram.NekoConfig;
@@ -119,6 +120,9 @@ public class NotificationsController extends BaseController implements Notificat
     private final ArrayList<MessageObject> delayedPushMessages = new ArrayList<>();
     private final LongSparseArray<SparseArray<MessageObject>> pushMessagesDict = new LongSparseArray<>();
     private final LongSparseArray<MessageObject> fcmRandomMessagesDict = new LongSparseArray<>();
+    private final AtomicInteger queuedUnreadSnapshot = new AtomicInteger();
+    private int appliedUnreadSnapshot;
+    private final ArrayList<MessageObject> fcmPushesMissingFromUnreadSnapshot = new ArrayList<>();
     private final LongSparseArray<Point> smartNotificationsDialogs = new LongSparseArray<>();
     private static NotificationManagerCompat notificationManager = null;
     private static NotificationManager systemNotificationManager = null;
@@ -1342,6 +1346,9 @@ public class NotificationsController extends BaseController implements Notificat
                 }
                 if (isFcm && !messageObject.isOauthPush) {
                     getMessagesStorage().putPushMessage(messageObject);
+                    if (queuedUnreadSnapshot.get() != appliedUnreadSnapshot) {
+                        fcmPushesMissingFromUnreadSnapshot.add(messageObject);
+                    }
                 }
 
                 long originalDialogId = dialogId;
@@ -1672,12 +1679,36 @@ public class NotificationsController extends BaseController implements Notificat
         });
     }
 
+    public int queueUnreadSnapshot() {
+        return queuedUnreadSnapshot.incrementAndGet();
+    }
+
+    private static boolean isSamePushMessage(MessageObject a, MessageObject b) {
+        return a.getDialogId() == b.getDialogId() && (a.getId() != 0 ? a.getId() == b.getId() : a.messageOwner.random_id == b.messageOwner.random_id);
+    }
+
     public void processLoadedUnreadMessages(LongSparseArray<Integer> dialogs, ArrayList<TLRPC.Message> messages, ArrayList<MessageObject> push, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<TLRPC.EncryptedChat> encryptedChats, Collection<StoryNotification> storyPushes) {
+        processLoadedUnreadMessages(dialogs, messages, push, users, chats, encryptedChats, storyPushes, 0);
+    }
+
+    public void processLoadedUnreadMessages(LongSparseArray<Integer> dialogs, ArrayList<TLRPC.Message> messages, ArrayList<MessageObject> push, ArrayList<TLRPC.User> users, ArrayList<TLRPC.Chat> chats, ArrayList<TLRPC.EncryptedChat> encryptedChats, Collection<StoryNotification> storyPushes, int unreadSnapshot) {
         getMessagesController().putUsers(users, true);
         getMessagesController().putChats(chats, true);
         getMessagesController().putEncryptedChats(encryptedChats, true);
 
         notificationsQueue.postRunnable(() -> {
+            ArrayList<MessageObject> missingPushes = new ArrayList<>();
+            for (int a = 0; a < fcmPushesMissingFromUnreadSnapshot.size(); a++) {
+                MessageObject messageObject = fcmPushesMissingFromUnreadSnapshot.get(a);
+                if (pushMessages.contains(messageObject)) {
+                    missingPushes.add(messageObject);
+                }
+            }
+            appliedUnreadSnapshot = Math.max(appliedUnreadSnapshot, unreadSnapshot);
+            if (appliedUnreadSnapshot == queuedUnreadSnapshot.get()) {
+                fcmPushesMissingFromUnreadSnapshot.clear();
+            }
+
             pushDialogs.clear();
             pushMessages.clear();
             pushMessagesDict.clear();
@@ -1777,9 +1808,24 @@ public class NotificationsController extends BaseController implements Notificat
                 }
             }
 
-            if (push != null) {
-                for (int a = 0; a < push.size(); a++) {
-                    MessageObject messageObject = push.get(a);
+            ArrayList<MessageObject> pushes = push != null ? new ArrayList<>(push) : new ArrayList<>();
+            for (int a = 0; a < missingPushes.size(); a++) {
+                MessageObject missing = missingPushes.get(a);
+                boolean loaded = false;
+                for (int b = 0; b < pushes.size() && !loaded; b++) {
+                    loaded = isSamePushMessage(missing, pushes.get(b));
+                }
+                for (int b = 0; b < pushMessages.size() && !loaded; b++) {
+                    loaded = isSamePushMessage(missing, pushMessages.get(b));
+                }
+                if (!loaded) {
+                    pushes.add(missing);
+                }
+            }
+
+            if (!pushes.isEmpty()) {
+                for (int a = 0; a < pushes.size(); a++) {
+                    MessageObject messageObject = pushes.get(a);
                     int mid = messageObject.getId();
                     if (pushMessagesDict.indexOfKey(mid) >= 0) {
                         continue;

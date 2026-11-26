@@ -21,6 +21,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -229,7 +230,7 @@ public class FileLoader extends BaseController {
     private FileLoaderDelegate delegate = null;
 
     private int lastReferenceId;
-    private final ConcurrentHashMap<Integer, Object> parentObjectReferences = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Integer, WeakReference<Object>> parentObjectReferences = new ConcurrentHashMap<>();
 
     private static final FileLoader[] Instance = new FileLoader[UserConfig.MAX_ACCOUNT_COUNT];
 
@@ -283,12 +284,13 @@ public class FileLoader extends BaseController {
 
     public int getFileReference(Object parentObject) {
         int reference = lastReferenceId++;
-        parentObjectReferences.put(reference, parentObject);
+        parentObjectReferences.put(reference, new WeakReference<>(parentObject));
         return reference;
     }
 
     public Object getParentObject(int reference) {
-        return parentObjectReferences.get(reference);
+        WeakReference<Object> ref = parentObjectReferences.get(reference);
+        return ref == null ? null : ref.get();
     }
 
     public void setLoadingVideoInternal(TLRPC.Document document, boolean player) {
@@ -821,6 +823,36 @@ public class FileLoader extends BaseController {
         loadFile(null, null, document, null, null, null, null, 0, priority, cacheType);
     }
 
+    private static boolean isOwnMediaDocument(MessageObject messageObject, TLRPC.Document document) {
+        if (messageObject == null || document == null) {
+            return false;
+        }
+        TLRPC.Document ownDocument = messageObject.getDocumentFast();
+        if (ownDocument != null && ownDocument.id == document.id) {
+            return true;
+        }
+        TLRPC.MessageMedia media = MessageObject.getMedia(messageObject.messageOwner);
+        if (media == null) {
+            return false;
+        }
+        for (int a = 0, N = media.alt_documents.size(); a < N; a++) {
+            TLRPC.Document altDocument = media.alt_documents.get(a);
+            if (altDocument != null && altDocument.id == document.id) {
+                return isVideoQualityDocument(altDocument);
+            }
+        }
+        return false;
+    }
+
+    private static boolean isVideoQualityDocument(TLRPC.Document document) {
+        for (int a = 0, N = document.attributes.size(); a < N; a++) {
+            if (document.attributes.get(a) instanceof TLRPC.TL_documentAttributeVideo) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     private FileLoadOperation loadFileInternal(final TLRPC.Document document, final SecureDocument secureDocument, final WebFile webDocument, TLRPC.TL_fileLocationToBeDeprecated location, final ImageLocation imageLocation, Object parentObject, final String locationExt, final long locationSize, int priority, FileLoadOperationStream stream, final long streamOffset, boolean streamPriority, final int cacheType) {
         String fileName;
@@ -1015,7 +1047,7 @@ public class FileLoader extends BaseController {
                 }
                 if (parentObject instanceof MessageObject) {
                     MessageObject messageObject = (MessageObject) parentObject;
-                    if (document != null && messageObject.putInDownloadsStore) {
+                    if (document != null && messageObject.putInDownloadsStore && !messageObject.isAnyKindOfSticker() && isOwnMediaDocument(messageObject, document)) {
                         getDownloadController().onDownloadComplete(messageObject);
                     }
                 }
@@ -1038,8 +1070,10 @@ public class FileLoader extends BaseController {
                     delegate.fileDidFailedLoad(fileName, reason);
                 }
 
-                if (document != null && parentObject instanceof MessageObject && reason == 0) {
-                    getDownloadController().onDownloadFail((MessageObject) parentObject, reason);
+                if (document != null && parentObject instanceof MessageObject messageObject && reason == 0) {
+                    if (messageObject.putInDownloadsStore && !messageObject.isAnyKindOfSticker() && isOwnMediaDocument(messageObject, document)) {
+                        getDownloadController().onDownloadFail(messageObject, reason);
+                    }
                 } else if (reason == -1) {
                     LaunchActivity.checkFreeDiscSpaceStatic(2);
                 }

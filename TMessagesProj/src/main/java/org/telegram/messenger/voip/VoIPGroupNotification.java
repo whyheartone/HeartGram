@@ -278,11 +278,14 @@ public class VoIPGroupNotification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             builder.setShowWhen(false);
         }
+        boolean canUseFullScreenIntent = VoIPPreNotificationService.canUseFullScreenIntent(nm);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             builder.setColor(0xff2ca5e0);
             builder.setVibrate(new long[0]);
             builder.setCategory(Notification.CATEGORY_CALL);
-            builder.setFullScreenIntent(PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE), true);
+            if (canUseFullScreenIntent) {
+                builder.setFullScreenIntent(PendingIntent.getActivity(context, 0, intent, PendingIntent.FLAG_MUTABLE), true);
+            }
         }
 
         final Intent hideIntent = new Intent(ApplicationLoader.applicationContext, VoIPActionsReceiver.class);
@@ -305,12 +308,18 @@ public class VoIPGroupNotification {
             //java.lang.IllegalArgumentException: person must have a non-empty a name
             personName = "___";
         }
-        if (android.os.Build.VERSION.SDK_INT >= 31) {
+        if (VoIPPreNotificationService.canUseCallStyle(nm)) {
             Person person = new Person.Builder()
                 .setName(personName)
                 .setIcon(Icon.createWithAdaptiveBitmap(avatar)).build();
             Notification.CallStyle notificationStyle = Notification.CallStyle.forIncomingCall(person, endPendingIntent, answerPendingIntent);
             builder.setStyle(notificationStyle);
+        } else {
+            builder
+                .setContentText(personName)
+                .setLargeIcon(avatar)
+                .addAction(R.drawable.ic_call_end_white_24dp, endTitle, endPendingIntent)
+                .addAction(R.drawable.ic_call, answerTitle, answerPendingIntent);
         }
 
         Notification notification = builder.build();

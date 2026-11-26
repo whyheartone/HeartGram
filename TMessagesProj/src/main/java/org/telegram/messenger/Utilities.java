@@ -157,29 +157,57 @@ public class Utilities {
         aesCbcEncryptionByteArray(buffer, key, iv.clone(), offset, length, n, encrypt);
     }
 
-    public static Integer parseInt(CharSequence value) {
+    public static int parseInt(CharSequence value) {
         if (value == null) {
             return 0;
         }
-        int val = 0;
-        try {
-            int start = -1, end;
-            for (end = 0; end < value.length(); ++end) {
-                char character = value.charAt(end);
-                boolean allowedChar = character == '-' || character >= '0' && character <= '9';
-                if (allowedChar && start < 0) {
-                    start = end;
-                } else if (!allowedChar && start >= 0) {
+
+        final int length = value.length();
+        int i = 0;
+        boolean negative = false;
+
+        while (i < length) {
+            char c = value.charAt(i);
+            if (c >= '0' && c <= '9') {
+                break;
+            }
+            if (c == '-' && i + 1 < length) {
+                char next = value.charAt(i + 1);
+                if (next >= '0' && next <= '9') {
+                    negative = true;
+                    i++;
                     break;
                 }
             }
-            if (start >= 0 && (end - start > 1 || value.charAt(start) != '-')) {
-                String str = value.subSequence(start, end).toString();
-//                val = parseInt(str);
-                val = Integer.parseInt(str);
+            i++;
+        }
+
+        if (i >= length) {
+            return 0;
+        }
+
+        final int limit = negative ? Integer.MIN_VALUE : -Integer.MAX_VALUE;
+        final int multmin = limit / 10;
+        int result = 0;
+
+        for (; i < length; i++) {
+            char c = value.charAt(i);
+            if (c < '0' || c > '9') {
+                break;
             }
-        } catch (Exception ignore) {}
-        return val;
+            int digit = c - '0';
+
+            if (result < multmin) {
+                return negative ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            }
+            result *= 10;
+            if (result < limit + digit) {
+                return negative ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+            }
+            result -= digit;
+        }
+
+        return negative ? result : -result;
     }
 
     private static int parseInt(final String s) {

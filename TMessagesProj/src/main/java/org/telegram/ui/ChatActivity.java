@@ -5869,10 +5869,7 @@ public class ChatActivity extends BaseFragment implements
                             args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                             args.putBoolean("quote", true);
                             args.putBoolean("reply_to", true);
-                            final long author = DialogObject.getPeerDialogId(message.getFromPeer());
-                            if (author != 0 && author != getDialogId() && author != getUserConfig().getClientUserId() && author > 0) {
-                                args.putLong("reply_to_author", author);
-                            }
+                            putReplyToArgs(args, message);
                             args.putInt("messagesCount", 1);
                             args.putBoolean("canSelectTopics", true);
                             final DialogsActivity fragment = new DialogsActivity(args);
@@ -12519,6 +12516,19 @@ public class ChatActivity extends BaseFragment implements
         }
     }
 
+    private void putReplyToArgs(Bundle args, MessageObject message) {
+        if (currentChat != null && ChatObject.isChannel(currentChat) && !currentChat.megagroup && !ChatObject.isMonoForum(currentChat) && currentChat.broadcast_messages_allowed && currentChat.linked_monoforum_id != 0 &&
+                getMessagesController().getChat(currentChat.linked_monoforum_id) != null && !ChatObject.canManageMonoForum(currentAccount, -currentChat.linked_monoforum_id)) {
+            getMessagesController().putMonoForumLinkedChat(currentChat.id, currentChat.linked_monoforum_id);
+            args.putLong("reply_to_channel_direct", -currentChat.linked_monoforum_id);
+            return;
+        }
+        final long author = DialogObject.getPeerDialogId(message.getFromPeer());
+        if (author != 0 && author != getDialogId() && author != getUserConfig().getClientUserId() && author > 0) {
+            args.putLong("reply_to_author", author);
+        }
+    }
+
     private boolean keyboardWasVisible;
     private void openForwardingPreview(int startTab) {
         if (messagePreviewParams == null || forwardingPreviewView != null) {
@@ -12678,10 +12688,7 @@ public class ChatActivity extends BaseFragment implements
                     final boolean reply = !forward && messagePreviewParams.replyMessage != null && !messagePreviewParams.replyMessage.messages.isEmpty() && messagePreviewParams.quote == null;
                     args.putBoolean("reply_to", reply);
                     if (reply) {
-                        final long author = DialogObject.getPeerDialogId(messagePreviewParams.replyMessage.messages.get(0).getFromPeer());
-                        if (author != 0 && author != getDialogId() && author != getUserConfig().getClientUserId() && author > 0) {
-                            args.putLong("reply_to_author", author);
-                        }
+                        putReplyToArgs(args, messagePreviewParams.replyMessage.messages.get(0));
                     }
                     args.putInt("hasPoll", hasPoll);
                     args.putBoolean("hasInvoice", hasInvoice);
@@ -37159,10 +37166,7 @@ public class ChatActivity extends BaseFragment implements
                     args.putInt("dialogsType", DialogsActivity.DIALOGS_TYPE_FORWARD);
                     args.putBoolean("quote", true);
                     args.putBoolean("reply_to", true);
-                    final long author = DialogObject.getPeerDialogId(selectedObject.getFromPeer());
-                    if (author != 0 && author != getDialogId() && author != getUserConfig().getClientUserId() && author > 0) {
-                        args.putLong("reply_to_author", author);
-                    }
+                    putReplyToArgs(args, selectedObject);
                     args.putInt("messagesCount", 1);
                     args.putBoolean("canSelectTopics", true);
                     DialogsActivity fragment = new DialogsActivity(args);

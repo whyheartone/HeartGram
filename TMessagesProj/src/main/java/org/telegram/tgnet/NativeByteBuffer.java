@@ -650,10 +650,16 @@ public class NativeByteBuffer extends AbstractSerializedData {
     }
 
     public void reuse() {
+        reuse(false);
+    }
+
+    public void reuse(boolean fromFinalzie) {
         if (address != 0) {
-            LinkedList<NativeByteBuffer> queue = addressWrappers.get();
-            if (queue.size() < MAX_POOLED_WRAPPERS) {
-                queue.add(this);
+            if (!fromFinalzie) {
+                LinkedList<NativeByteBuffer> queue = addressWrappers.get();
+                if (queue.size() < MAX_POOLED_WRAPPERS) {
+                    queue.add(this);
+                }
             }
             reused = true;
             native_reuse(address);
@@ -667,9 +673,8 @@ public class NativeByteBuffer extends AbstractSerializedData {
 
     @Override
     protected void finalize() throws Throwable {
-        if (!reused && address != 0) {
-            reused = true;
-            native_reuse(address);
+        if (!reused) {
+            reuse(true);
         }
         super.finalize();
     }

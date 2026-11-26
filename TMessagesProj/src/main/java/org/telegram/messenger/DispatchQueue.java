@@ -138,7 +138,12 @@ public class DispatchQueue extends Thread {
         if (threadPriority != THREAD_PRIORITY_DEFAULT) {
             Process.setThreadPriority(threadPriority);
         }
+        onLooperPrepared();
         Looper.loop();
+    }
+
+    protected void onLooperPrepared() {
+
     }
 
     public boolean isReady() {
