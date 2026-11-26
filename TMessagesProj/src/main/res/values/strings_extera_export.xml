@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="MessageExport">To Image</string>
     <string name="ExportData">Export Data</string>
     <string name="ExportChatHistory">Export Chat History</string>
     <string name="ExportTopicHistory">Export Topic History</string>

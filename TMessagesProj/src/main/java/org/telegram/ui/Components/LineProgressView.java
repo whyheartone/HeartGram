@@ -25,6 +25,9 @@ import org.telegram.ui.Components.voip.CellFlickerDrawable;
 
 public class LineProgressView extends FrameLayout {
 
+    public static final int TYPE_FLAT = 0;
+    public static final int TYPE_WAVE = 1;
+
     private long lastUpdateTime;
     private float currentProgress;
     private float animationProgressStart;
@@ -202,6 +205,25 @@ public class LineProgressView extends FrameLayout {
         this.type = type;
         applyM3Config();
         invalidate();
+    }
+
+    public void setTrackThickness(int thickness) {
+        if (m3Indicator != null) {
+            m3Indicator.setTrackThickness(thickness);
+            m3Indicator.setTrackCornerRadius(thickness / 2);
+        }
+    }
+
+    public void setTrackStopIndicatorSize(int size) {
+        if (m3Indicator != null) {
+            m3Indicator.setTrackStopIndicatorSize(size);
+        }
+    }
+
+    public void setIndicatorTrackGapSize(int gapSize) {
+        if (m3Indicator != null) {
+            m3Indicator.setIndicatorTrackGapSize(gapSize);
+        }
     }
 
     @Override

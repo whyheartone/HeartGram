@@ -1666,6 +1666,10 @@ public class ChatActivity extends BaseFragment implements
         return chatMode == MODE_SAVED ? threadMessageId : 0L;
     }
 
+    public boolean isMessagePinned(int messageId) {
+        return chatMode == 0 && pinnedMessageObjects.containsKey(messageId);
+    }
+
     public boolean isForumInViewAsMessagesMode() {
         return ChatObject.isForum(currentChat) && !isTopic || ChatObject.isMonoForum(currentChat) && getTopicId() == 0L && !isSubscriberSuggestions;
     }
@@ -11242,6 +11246,10 @@ public class ChatActivity extends BaseFragment implements
             topicsPanel.setMenuAvailable(headerItem != null);
         }
         return topicsPanel;
+    }
+
+    public boolean isTopicsPanelOpen() {
+        return topicsPanel != null && topicsPanel.isOpen();
     }
 
     private void openTopicsPanel() {

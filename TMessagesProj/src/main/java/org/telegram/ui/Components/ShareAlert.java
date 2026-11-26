@@ -178,6 +178,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     private ShareSearchAdapter searchAdapter;
     protected ArrayList<MessageObject> sendingMessageObjects;
     private String[] sendingText = new String[2];
+    private String sendingFile;
     private int hasPoll;
     private StickerEmptyView searchEmptyView;
     private Drawable shadowDrawable;
@@ -396,6 +397,10 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
     }
 
     public ShareAlert(final Context context, ChatActivity fragment, ArrayList<MessageObject> messages, final String text, final String text2, boolean channel, final String copyLink, final String copyLink2, boolean fullScreen, boolean forCall, boolean includeStory, Integer video_timestamp, Theme.ResourcesProvider theme) {
+        this(context, fragment, messages, null, text, text2, channel, copyLink, copyLink2, fullScreen, forCall, includeStory, video_timestamp, theme);
+    }
+
+    public ShareAlert(final Context context, ChatActivity fragment, ArrayList<MessageObject> messages, final String filePath, final String text, final String text2, boolean channel, final String copyLink, final String copyLink2, boolean fullScreen, boolean forCall, boolean includeStory, Integer video_timestamp, Theme.ResourcesProvider theme) {
         super(context, true, theme);
         AndroidUtilities.enableEdgeToEdge(getWindow());
 
@@ -481,6 +486,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
         isChannel = channel;
         sendingText[0] = text;
         sendingText[1] = text2;
+        sendingFile = filePath;
         useSmoothKeyboard = true;
 
         super.setDelegate(new BottomSheetDelegate() {
@@ -1593,7 +1599,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
 
         AndroidUtilities.setLightNavigationBar(container, themedLightNavigationBar = AndroidUtilities.computePerceivedBrightness(getThemedColor(Theme.key_dialogBackground)) > .721f);
 
-        commentTextView = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG, true, resourcesProvider) {
+        commentTextView = new EditTextEmoji(context, sizeNotifierFrameLayout, null, EditTextEmoji.STYLE_DIALOG, sendingFile == null || sendFileWithCaption(), resourcesProvider) {
 
             @Override
             protected void bottomPanelTranslationY(float translation) {
@@ -2651,6 +2657,38 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                             params2.monoForumPeer = monoForumPeerId;SendMessagesHelper.getInstance(currentAccount).sendMessage(params2);
                         }
                     }
+                } else if (sendingFile != null) {
+                    for (int a = 0; a < selectedDialogs.size(); a++) {
+                        long key = selectedDialogs.keyAt(a);
+                        TLRPC.TL_forumTopic topic = selectedDialogTopics.get(selectedDialogs.get(key));
+                        boolean isMonoForum = MessagesController.getInstance(currentAccount).isMonoForum(key);
+                        MessageObject replyTopMsg = topic != null && !isMonoForum ? new MessageObject(currentAccount, topic.topicStartMessage, false, false) : null;
+                        long monoForumPeerId = topic != null && isMonoForum ? DialogObject.getPeerDialogId(topic.from_id) : 0;
+                        final Long price = prices == null ? (Long) 0L : prices.get(key);
+                        long payStars = price == null ? 0 : price;
+                        String caption = null;
+                        if (frameLayout2.getTag() != null && commentTextView.length() > 0 && text[0] != null && sendFileCommentSeparately()) {
+                            SendMessagesHelper.SendMessageParams params = SendMessagesHelper.SendMessageParams.of(text[0].toString(), key, replyTopMsg, replyTopMsg, null, true, entities, null, null, withSound, 0, 0, null, false);
+                            params.payStars = payStars;
+                            params.monoForumPeer = monoForumPeerId;
+                            SendMessagesHelper.getInstance(currentAccount).sendMessage(params);
+                        } else if (frameLayout2.getTag() != null && commentTextView.length() > 0 && text[0] != null && sendFileWithCaption()) {
+                            caption = text[0].toString();
+                        }
+                        ArrayList<String> paths = new ArrayList<>(List.of(sendingFile));
+                        if (sendFileAsPhoto()) {
+                            SendMessagesHelper.SendingMediaInfo info = new SendMessagesHelper.SendingMediaInfo();
+                            info.path = sendingFile;
+                            info.caption = caption;
+                            info.entities = caption == null ? null : entities;
+                            info.highQuality = sendFileAsHighQualityPhoto();
+                            ArrayList<SendMessagesHelper.SendingMediaInfo> infos = new ArrayList<>();
+                            infos.add(info);
+                            SendMessagesHelper.prepareSendingMedia(AccountInstance.getInstance(currentAccount), infos, key, replyTopMsg, replyTopMsg, null, null, false, false, null, withSound, 0, 0, 0, false, null, null, 0, false, payStars, monoForumPeerId, null);
+                        } else {
+                            SendMessagesHelper.prepareSendingDocuments(AccountInstance.getInstance(currentAccount), paths, paths, null, caption, caption == null ? null : entities, null, key, replyTopMsg, replyTopMsg, null, null, null, withSound, 0, 0, null, (SendMessagesHelper.SendMessageChatArguments) null, 0, false, payStars, monoForumPeerId, null);
+                        }
+                    }
                 }
 
                 onSend(selectedDialogs, 1, selectedDialogTopics.get(selectedDialogs.valueAt(0)), !hadPaid);
@@ -2660,6 +2698,22 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
             }
             dismiss();
         });
+    }
+
+    protected boolean sendFileWithCaption() {
+        return false;
+    }
+
+    protected boolean sendFileCommentSeparately() {
+        return false;
+    }
+
+    protected boolean sendFileAsHighQualityPhoto() {
+        return false;
+    }
+
+    protected boolean sendFileAsPhoto() {
+        return false;
     }
 
     protected void onSend(LongSparseArray<TLRPC.Dialog> dids, int count, TLRPC.TL_forumTopic topic, boolean showToast) {

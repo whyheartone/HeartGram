@@ -336,6 +336,16 @@ public class ItemOptions {
         return this;
     }
 
+    public ItemOptions setSwipebackCenterHorizontal(boolean center) {
+        overridenSwipebackGravity = true;
+        lastLayout.swipeBackGravityRight = false;
+        lastLayout.swipeBackGravityCenterHorizontal = center;
+        if (lastLayout.getSwipeBack() != null) {
+            lastLayout.getSwipeBack().setStickToCenterHorizontal(center);
+        }
+        return this;
+    }
+
     private boolean scaleOut;
     public ItemOptions setScaleOut(boolean scaleOut) {
         this.scaleOut = scaleOut;

@@ -107,6 +107,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         public boolean updateAnimation;
         public boolean clipChildren;
         public boolean swipeBackGravityRight;
+        public boolean swipeBackGravityCenterHorizontal;
         public boolean swipeBackGravityBottom;
 
         private OnDispatchKeyEventListener mOnDispatchKeyEventListener;
@@ -529,6 +530,15 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         Path path;
 
+        private int getSwipeBackScaledLeft(int scaledWidth) {
+            if (swipeBackLayout != null && swipeBackLayout.stickToRight) {
+                return getMeasuredWidth() - scaledWidth;
+            } else if (swipeBackLayout != null && swipeBackLayout.stickToCenterHorizontal) {
+                return (getMeasuredWidth() - scaledWidth) / 2;
+            }
+            return 0;
+        }
+
         @Override
         protected void dispatchDraw(Canvas canvas) {
             if (swipeBackGravityRight) {
@@ -575,16 +585,16 @@ public class ActionBarPopupWindow extends PopupWindow {
                     backgroundDrawable.setAlpha(applyAlpha ? backAlpha : 255);
                     if (shownFromBottom) {
                         final int height = getMeasuredHeight();
-                        AndroidUtilities.rectTmp2.set(0, (int) (height * (1.0f - backScaleY)), (int) (getMeasuredWidth() * backScaleX), height);
+                        int scaledWidth = (int) (getMeasuredWidth() * backScaleX);
+                        int left = getSwipeBackScaledLeft(scaledWidth);
+                        AndroidUtilities.rectTmp2.set(left, (int) (height * (1.0f - backScaleY)), left + scaledWidth, height);
                     } else {
                         if (start > -dp(16)) {
                             int h = (int) (getMeasuredHeight() * backScaleY);
                             if (a == 0) {
-                                if (swipeBackLayout != null && swipeBackLayout.stickToRight) {
-                                    AndroidUtilities.rectTmp2.set(getMeasuredWidth() - (int) (getMeasuredWidth() * backScaleX), (scrollView == null ? 0 : -scrollView.getScrollY()) + (gapStartY != -1000000 ? dp(1) : 0), getMeasuredWidth(), (gapStartY != -1000000 ? Math.min(h, start + dp(16)) : h) - subtractBackgroundHeight);
-                                } else {
-                                    AndroidUtilities.rectTmp2.set(0, (scrollView == null ? 0 : -scrollView.getScrollY()) + (gapStartY != -1000000 ? dp(1) : 0), (int) (getMeasuredWidth() * backScaleX), (gapStartY != -1000000 ? Math.min(h, start + dp(16)) : h) - subtractBackgroundHeight);
-                                }
+                                int scaledWidth = (int) (getMeasuredWidth() * backScaleX);
+                                int left = getSwipeBackScaledLeft(scaledWidth);
+                                AndroidUtilities.rectTmp2.set(left, (scrollView == null ? 0 : -scrollView.getScrollY()) + (gapStartY != -1000000 ? dp(1) : 0), left + scaledWidth, (gapStartY != -1000000 ? Math.min(h, start + dp(16)) : h) - subtractBackgroundHeight);
                             } else {
                                 if (h < end) {
                                     if (gapStartY != -1000000) {
@@ -592,18 +602,14 @@ public class ActionBarPopupWindow extends PopupWindow {
                                     }
                                     continue;
                                 }
-                                if (swipeBackLayout != null && swipeBackLayout.stickToRight) {
-                                    AndroidUtilities.rectTmp2.set(getMeasuredWidth() - (int) (getMeasuredWidth() * backScaleX), end, getMeasuredWidth(), h - subtractBackgroundHeight);
-                                } else {
-                                    AndroidUtilities.rectTmp2.set(0, end, (int) (getMeasuredWidth() * backScaleX), h - subtractBackgroundHeight);
-                                }
+                                int scaledWidth = (int) (getMeasuredWidth() * backScaleX);
+                                int left = getSwipeBackScaledLeft(scaledWidth);
+                                AndroidUtilities.rectTmp2.set(left, end, left + scaledWidth, h - subtractBackgroundHeight);
                             }
                         } else {
-                            if (swipeBackLayout != null && swipeBackLayout.stickToRight) {
-                                AndroidUtilities.rectTmp2.set(getMeasuredWidth() - (int) (getMeasuredWidth() * backScaleX), (gapStartY < 0 ? 0 : -dp(16)), getMeasuredWidth(), (int) (getMeasuredHeight() * backScaleY) - subtractBackgroundHeight);
-                            } else {
-                                AndroidUtilities.rectTmp2.set(0, (gapStartY < 0 ? 0 : -dp(16)), (int) (getMeasuredWidth() * backScaleX), (int) (getMeasuredHeight() * backScaleY) - subtractBackgroundHeight);
-                            }
+                            int scaledWidth = (int) (getMeasuredWidth() * backScaleX);
+                            int left = getSwipeBackScaledLeft(scaledWidth);
+                            AndroidUtilities.rectTmp2.set(left, (gapStartY < 0 ? 0 : -dp(16)), left + scaledWidth, (int) (getMeasuredHeight() * backScaleY) - subtractBackgroundHeight);
                         }
                     }
                     if (reactionsEnterProgress != 1f) {

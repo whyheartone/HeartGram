@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="MessageExport">В изображение</string>
     <string name="ExportData">Экспорт данных</string>
     <string name="ExportChatHistory">Экспорт истории чата</string>
     <string name="ExportTopicHistory">Экспорт истории темы</string>

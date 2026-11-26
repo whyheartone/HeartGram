@@ -1047,4 +1047,13 @@ public class TranscribeButton {
         MessagesController mc = MessagesController.getInstance(messageObject.currentAccount);
         return mc.transcribeAudioTrialCooldownUntil != 0 && cc.getCurrentTime() <= mc.transcribeAudioTrialCooldownUntil && mc.transcribeAudioTrialCurrentNumber <= 0;
     }
+
+    public boolean isIconReady() {
+        RLottieDrawable icon = isOpen ? inIconDrawable : outIconDrawable;
+        if (icon == null || icon.hasBitmap()) {
+            return true;
+        }
+        icon.setAllowDecodeSingleFrame(true);
+        return false;
+    }
 }

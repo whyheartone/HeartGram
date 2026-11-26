@@ -694,6 +694,10 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
         return false;
     }
 
+    protected CharSequence getQuoteActionTitle() {
+        return LocaleController.getString(R.string.Quote);
+    }
+
     protected void onQuoteClick(MessageObject messageObject, int start, int end, CharSequence text) {
 
     }
@@ -1596,7 +1600,7 @@ public abstract class TextSelectionHelper<Cell extends TextSelectionHelper.Selec
             @Override
             public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                 menu.add(Menu.NONE, android.R.id.copy, 0, android.R.string.copy);
-                menu.add(Menu.NONE, R.id.menu_quote, 1, LocaleController.getString(R.string.Quote));
+                menu.add(Menu.NONE, R.id.menu_quote, 1, getQuoteActionTitle());
                 menu.add(Menu.NONE, android.R.id.selectAll, 2, android.R.string.selectAll);
                 menu.add(Menu.NONE, TRANSLATE, 3, LlmConfig.isLLMTranslatorAvailable() ? getString(R.string.TranslateMessageLLM) : getString(R.string.TranslateMessage));
                 menu.add(Menu.NONE, android.R.id.cut, 4, android.R.string.cut);

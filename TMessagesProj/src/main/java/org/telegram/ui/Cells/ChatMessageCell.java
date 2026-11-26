@@ -1912,6 +1912,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
     ChatMessageSharedResources sharedResources;
 
     public List<SpoilerEffect> replySpoilers = new ArrayList<>();
+    public SpoilerEffect replyNameSpoiler;
     private final Stack<SpoilerEffect> replySpoilersPool = new Stack<>();
     private final Path sPath = new Path();
     public boolean isBlurred;
@@ -5789,11 +5790,15 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
         return null;
     }
 
+    protected int getAnimatedEmojiCacheType() {
+        return currentMessageObject.wasJustSent ? AnimatedEmojiDrawable.getCacheTypeForEnterView() : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
+    }
+
     public void updateAnimatedEmojis() {
         if (!imageReceiversAttachState || currentMessageObject == null) {
             return;
         }
-        int cache = currentMessageObject.wasJustSent ? AnimatedEmojiDrawable.getCacheTypeForEnterView() : AnimatedEmojiDrawable.CACHE_TYPE_MESSAGES;
+        int cache = getAnimatedEmojiCacheType();
         if (captionLayout != null && captionLayout.textLayoutBlocks != null) {
             animatedEmojiStack = AnimatedEmojiSpan.update(cache, this, false, animatedEmojiStack, captionLayout.textLayoutBlocks);
         } else {
@@ -20912,7 +20917,13 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                 if (replyNameLayout != null) {
                     canvas.save();
                     canvas.translate(replyStartX + offsetX - replyNameOffset + offset + (needReplyImage ? replyImageSz + dp(3) : 0), replyStartY + offsetY);
-                    replyNameLayout.draw(canvas);
+                    if (replyNameSpoiler != null && replyNameLayout.getLineCount() > 0) {
+                        replyNameSpoiler.setColor(replyNameLayout.getPaint().getColor());
+                        replyNameSpoiler.setBounds((int) replyNameLayout.getLineLeft(0), replyNameLayout.getLineTop(0), (int) Math.ceil(replyNameLayout.getLineRight(0)), replyNameLayout.getLineBottom(0));
+                        replyNameSpoiler.draw(canvas);
+                    } else {
+                        replyNameLayout.draw(canvas);
+                    }
                     canvas.restore();
                 }
                 int spoilersColor;
@@ -24604,6 +24615,17 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
             return parentWidth;
         }
         return AndroidUtilities.displaySize.x;
+    }
+
+    protected int getBotButtonsParentWidth() {
+        return getParentWidth();
+    }
+
+    public boolean isTranscribeIconReady() {
+        if (!useTranscribeButton || documentAttachType == DOCUMENT_ATTACH_TYPE_ROUND && hasLinkPreview) {
+            return true;
+        }
+        return transcribeButton == null || transcribeButton.isIconReady();
     }
 
     public int getThemedColor(int key) {
