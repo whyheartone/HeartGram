@@ -8846,6 +8846,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
 
         backwardInitialValues[12] = nameTextView.getTranslationX();
         backwardInitialValues[13] = onlineTextView.getTranslationX();
+        nameTextView.resetScrolling();
     }
 
     private void backwardAnimationLayout() {
@@ -9361,8 +9362,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 }
                 final float avatarBottom = (float) Math.floor(endNameY) + (avatarContainer.getHeight() * avatarContainer.getScaleY() + dpf2(8)) * (openAnimationInProgress ? avatarAnimationProgress : diff);
                 if (openAnimationInProgress) {
-                    nameY = lerp(previousChatAvatarTransition.getNameTranslationY(actionBar), avatarBottom + dp(1.3f) + dp(7), diff);
-                    onlineY = lerp(previousChatAvatarTransition.getOnlineTranslationY(actionBar), avatarBottom + dp(24) + (float) Math.floor(11 * AndroidUtilities.density), diff);
+                    final float openEndAvatarBottom = (float) Math.floor(endNameY) + dp(96) + dpf2(8);
+                    nameY = lerp(previousChatAvatarTransition.getNameTranslationY(actionBar), openEndAvatarBottom + dp(1.3f) + dp(7), diff);
+                    onlineY = lerp(previousChatAvatarTransition.getOnlineTranslationY(actionBar), openEndAvatarBottom + dp(24) + (float) Math.floor(11 * AndroidUtilities.density), diff);
                 } else {
                     nameY = avatarBottom + dp(1.3f) + dp(7) * diff + titleAnimationsYDiff * (1f - avatarAnimationProgress);
                     onlineY = avatarBottom + dp(24) + (float) Math.floor(11 * AndroidUtilities.density) * diff;
@@ -9380,7 +9382,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 onlineTextView.setScaleX(onlineScale);
                 onlineTextView.setScaleY(onlineScale);
                 textMeasured = true;
-                needLayoutText(diff, 0, openAnimationInProgress);
+                needLayoutText(diff, 0, false);
 
                 final FrameLayout.LayoutParams params1 = (FrameLayout.LayoutParams) nameTextView.getLayoutParams();
                 float nameX = viewportWidth / 2f - (params1.leftMargin + Math.min(nameTextView.getExactWidth(), params1.width) * nameScale * 0.5f);
@@ -10586,7 +10588,8 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         if (!ViewPositionWatcher.computeRectInParent((View) view.getParent(), fragmentView, previousAvatarRect)) {
             return fallback;
         }
-        return previousX + previousView.getPaddingLeft() - (previousAvatarRect.left + view.getLeft() + view.getPaddingLeft());
+        final int viewLeft = view.getWidth() > 0 ? view.getLeft() : (view.getLayoutParams() instanceof ViewGroup.MarginLayoutParams ? ((ViewGroup.MarginLayoutParams) view.getLayoutParams()).leftMargin : view.getLeft());
+        return previousX + previousView.getPaddingLeft() - (previousAvatarRect.left + viewLeft + view.getPaddingLeft());
     }
 
     private float getPreviousHeaderTextScale(int which) {
@@ -10688,6 +10691,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                 nameTextView.setLayoutParams(layoutParams);
             }
             fragmentView.setBackgroundColor(0);
+            openAnimationInProgress = true;
             setAvatarAnimationProgress(0);
             ArrayList<Animator> animators = new ArrayList<>();
             animators.add(ObjectAnimator.ofFloat(this, "avatarAnimationProgress", 0.0f, 1.0f));

@@ -2557,6 +2557,33 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         animatorAvatarContainerHasAvatar.setValue(hasAvatar, animated);
     }
 
+    public int getGlassAvatarMaxWidth() {
+        if (!glassMode || getMeasuredWidth() <= 0) {
+            return 0;
+        }
+        final int p = dp(6);
+        final int s = dp(46);
+        final boolean hasBackButton = backButtonImageView != null && backButtonImageView.getVisibility() == View.VISIBLE;
+        final int leftDefault = hasBackButton ? s + p : 0;
+        int menuW = menu != null && menu.getVisibility() == View.VISIBLE ? Math.max(0, (int) menu.getItemsWidth() - dp(2)) : 0;
+        if (menuW == 0 && menu != null && menu.getVisibility() == View.VISIBLE) {
+            for (int i = 0; i < menu.getChildCount(); i++) {
+                final View child = menu.getChildAt(i);
+                if (child instanceof ActionBarMenuItem && child.getVisibility() == View.VISIBLE) {
+                    final ActionBarMenuItem item = (ActionBarMenuItem) child;
+                    if (!(item.isSearchField() && item.isSearchFieldVisible())) {
+                        menuW += item.getMeasuredWidth() > 0 ? item.getMeasuredWidth() : dp(48);
+                    }
+                }
+            }
+        }
+        final int menuWidthWithPadding = menuW > 0 ? menuW + p : 0;
+        final boolean hasAvatar = chatAvatarContainer != null && chatAvatarContainer.hasVisibleAvatar() && !chatAvatarContainer.isAvatarCentered();
+        final int rightOffset = hasAvatar ? menuWidthWithPadding : Math.max(menuWidthWithPadding, p + s);
+        final int widthDefault = getMeasuredWidth() - rightOffset - leftDefault;
+        return Math.max(0, widthDefault - p * 2 - Math.round(glassAvatarGap) + dp(8));
+    }
+
     private final FactorAnimator animatorAvatarContainerWidth = new FactorAnimator(0, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380);
     private final BoolAnimator animatorAvatarContainerHasAvatar = new BoolAnimator(0, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380);
 

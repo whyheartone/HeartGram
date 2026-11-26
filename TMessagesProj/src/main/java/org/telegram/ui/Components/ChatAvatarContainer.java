@@ -900,7 +900,13 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int padding = isCentered() ? dp(isPreviewMode() ? 35 : 10) : 0;
-        final int width = MeasureSpec.getSize(widthMeasureSpec);
+        int width = MeasureSpec.getSize(widthMeasureSpec);
+        if (glassMode && !isCentered() && getParent() instanceof ActionBar) {
+            final int maxGlassWidth = ((ActionBar) getParent()).getGlassAvatarMaxWidth();
+            if (maxGlassWidth > 0) {
+                width = Math.min(width, maxGlassWidth);
+            }
+        }
         // Ширина под текст считается от размера аватарки,
         // сама аватарка меряется с отступом ChatHeaderUiHelper.getAvatarInsetPx (при 42dp — как было)
         final int availableWidth = width - dp(((avatarImageView.getVisibility() == VISIBLE || isCentered()) ? avatarSizeInDp + 12 : 0) + 16);
@@ -2157,7 +2163,7 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
             width = Math.max(width, subtitleTextView.getExactWidthIncludeDrawables());
         }
         if (hasVisibleAvatar() && !isCentered()) {
-            width += dp(52 + 18);
+            width += dp(avatarSizeInDp + (ChatHeaderUiHelper.isMaterial3ChatHeaderStyle() ? 27 : 28));
         } else {
             width += dp(34);
         }
