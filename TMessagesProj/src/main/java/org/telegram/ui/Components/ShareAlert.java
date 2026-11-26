@@ -2686,7 +2686,7 @@ public class ShareAlert extends BottomSheet implements NotificationCenter.Notifi
                             infos.add(info);
                             SendMessagesHelper.prepareSendingMedia(AccountInstance.getInstance(currentAccount), infos, key, replyTopMsg, replyTopMsg, null, null, false, false, null, withSound, 0, 0, 0, false, null, null, 0, false, payStars, monoForumPeerId, null);
                         } else {
-                            SendMessagesHelper.prepareSendingDocuments(AccountInstance.getInstance(currentAccount), paths, paths, null, caption, caption == null ? null : entities, null, key, replyTopMsg, replyTopMsg, null, null, null, withSound, 0, 0, null, (SendMessagesHelper.SendMessageChatArguments) null, 0, false, payStars, monoForumPeerId, null);
+                            SendMessagesHelper.prepareSendingDocuments(AccountInstance.getInstance(currentAccount), paths, paths, null, caption, caption == null ? null : entities, null, key, replyTopMsg, replyTopMsg, null, null, null, withSound, 0, 0, null, (org.telegram.messenger.SendMessageChatArguments) null, 0, false, payStars, monoForumPeerId, null);
                         }
                     }
                 }
