@@ -1,20 +1,28 @@
 package app.exteraless.utils;
 
-import android.animation.AnimatorSet;
+import android.animation.StateListAnimator;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
-import android.animation.ObjectAnimator;
-import android.animation.StateListAnimator;
 import android.view.View;
-import android.view.animation.OvershootInterpolator;
 
 import androidx.annotation.ColorInt;
 import androidx.core.graphics.ColorUtils;
+
+import org.telegram.messenger.AndroidUtilities;
+import org.telegram.ui.ActionBar.Theme;
+import org.telegram.ui.Cells.BaseCell;
+import org.telegram.ui.Components.ScaleStateListAnimator;
+
+import java.util.WeakHashMap;
+import java.util.function.Consumer;
 
 /**
  * UI-утилиты, перенесённые из exteraGram
  */
 public final class UIUtil {
+
+    private static final float RIPPLE_PRESS_GAP = 4f;
+    private static final WeakHashMap<View, View.OnLayoutChangeListener> scaleAnimatorRelayoutListeners = new WeakHashMap<>();
 
     private UIUtil() {
     }
@@ -30,42 +38,67 @@ public final class UIUtil {
         );
     }
 
-    /**
-     * «Вдавливание» вью при нажатии: 80 мс до {@code 1 - scale}, отпускание — 350 мс
-     * с {@link OvershootInterpolator}.
-     *
-     * exteraGram дополнительно поджимает маску ripple ({@code Theme.RippleRadMaskDrawable}
-     * с padding'ом), но у нас {@code RippleRadMaskDrawable} не умеет padding, а
-     * {@code Theme.java} правит другой агент — поэтому здесь только масштаб.
-     * Визуально основную часть эффекта даёт именно он.
-     */
     public static void applyScaleStateListAnimator(View view, float scale, float tension) {
+        applyScaleStateListAnimator(view, 12f, false, false, 3, scale, tension);
+    }
+
+    public static void applyScaleStateListAnimator(View view, float selectorRad, boolean top, boolean bottom, int basePadding, float scale, float tension) {
         if (view == null) {
             return;
         }
+        final View.OnLayoutChangeListener previous = scaleAnimatorRelayoutListeners.remove(view);
+        if (previous != null) {
+            view.removeOnLayoutChangeListener(previous);
+        }
+        final StateListAnimator currentAnimator = view.getStateListAnimator();
+        if (currentAnimator != null) {
+            currentAnimator.jumpToCurrentState();
+        }
 
-        final float pressedScale = 1f - scale;
+        final int appliedWidth = view.getWidth();
+        final int appliedHeight = view.getHeight();
+        final View.OnLayoutChangeListener relayout = (v, left, t, right, b, oldLeft, oldTop, oldRight, oldBottom) -> {
+            if (v.getWidth() != appliedWidth || v.getHeight() != appliedHeight) {
+                applyScaleStateListAnimator(v, selectorRad, top, bottom, basePadding, scale, tension);
+            }
+        };
+        view.addOnLayoutChangeListener(relayout);
+        scaleAnimatorRelayoutListeners.put(view, relayout);
 
-        final AnimatorSet pressed = new AnimatorSet();
-        pressed.playTogether(
-                ObjectAnimator.ofFloat(view, View.SCALE_X, pressedScale),
-                ObjectAnimator.ofFloat(view, View.SCALE_Y, pressedScale)
-        );
-        pressed.setDuration(80);
+        final float appliedLargestDp = Math.max(appliedWidth, appliedHeight) / AndroidUtilities.density;
+        final float effectiveScale = appliedLargestDp > 0f
+                ? Math.min(scale, 2f * RIPPLE_PRESS_GAP / appliedLargestDp)
+                : scale;
 
-        final AnimatorSet released = new AnimatorSet();
-        released.playTogether(
-                ObjectAnimator.ofFloat(view, View.SCALE_X, 1f),
-                ObjectAnimator.ofFloat(view, View.SCALE_Y, 1f)
-        );
-        released.setInterpolator(new OvershootInterpolator(tension));
-        released.setDuration(350);
+        final Consumer<Float> updateRipple = aFloat -> {
+            final Drawable bg = view.getBackground();
+            if (bg instanceof BaseCell.RippleDrawableSafe) {
+                final Drawable mask = ((BaseCell.RippleDrawableSafe) bg).mask;
+                if (mask instanceof Theme.RippleRadMaskDrawable) {
+                    final Theme.RippleRadMaskDrawable m = (Theme.RippleRadMaskDrawable) mask;
+                    final float widthDp = view.getWidth() / AndroidUtilities.density;
+                    final float heightDp = view.getHeight() / AndroidUtilities.density;
 
-        final StateListAnimator animator = new StateListAnimator();
-        animator.addState(new int[]{android.R.attr.state_pressed}, pressed);
-        animator.addState(new int[0], released);
+                    final float shrink = 1f - effectiveScale * aFloat;
+                    final float padH = Math.max(0f, (RIPPLE_PRESS_GAP - widthDp * effectiveScale / 2f) * aFloat / shrink);
+                    final float padV = Math.max(0f, (RIPPLE_PRESS_GAP - heightDp * effectiveScale / 2f) * aFloat / shrink);
+                    m.setPadding(padH, padV, padH, padV);
 
-        view.setStateListAnimator(animator);
+                    final float outerRadius = (selectorRad - basePadding * aFloat) / shrink;
+                    final float innerRadius = (selectorRad - basePadding) * aFloat / shrink;
+                    m.setRadius(
+                            top ? outerRadius : innerRadius,
+                            bottom ? outerRadius : innerRadius
+                    );
+                }
+            }
+        };
+        ScaleStateListAnimator.apply(view, effectiveScale, tension, updateRipple, updateRipple);
+        final StateListAnimator applied = view.getStateListAnimator();
+        if (applied != null) {
+            applied.jumpToCurrentState();
+        }
+        updateRipple.accept(view.isPressed() ? 1f : 0f);
     }
 
     /**

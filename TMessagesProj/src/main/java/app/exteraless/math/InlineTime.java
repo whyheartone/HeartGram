@@ -26,6 +26,13 @@ final class InlineTime {
     private static final Pattern TIME = Pattern.compile("^(\\d{1,2})(?:[:.](\\d{2}))?(am|pm|a\\.m\\.|p\\.m\\.)?$");
     private static final Pattern OFFSET = Pattern.compile("^(utc|gmt|msk|мск) ?([+-]) ?(\\d{1,2})(?::?(\\d{2}))?$");
     private static final Map<String, String> ZONES = new HashMap<>();
+    private static final String[][] CASE_ENDINGS = {
+            {"ии", "ия"},
+            {"ах", "ы", "и"},
+            {"ях", "и"},
+            {"е", "", "а", "я", "ь", "й"},
+            {"и", "ь"}
+    };
 
     private static void add(String zone, String... names) {
         for (String name : names) {
@@ -103,22 +110,47 @@ final class InlineTime {
     private InlineTime() {
     }
 
-    private static String normalize(String name) {
+    static String normalize(String name) {
         return name.toLowerCase(Locale.ROOT).replace('ё', 'е').replace('-', ' ');
+    }
+
+    private static List<String> forms(String name) {
+        for (String[] rule : CASE_ENDINGS) {
+            final String ending = rule[0];
+            if (name.endsWith(ending) && name.length() > ending.length() + 2) {
+                final String stem = name.substring(0, name.length() - ending.length());
+                final List<String> result = new ArrayList<>(rule.length);
+                result.add(name);
+                for (int i = 1; i < rule.length; i++) {
+                    result.add(stem + rule[i]);
+                }
+                return result;
+            }
+        }
+        return java.util.Collections.singletonList(name);
     }
 
     private static ZoneId zoneFor(List<String> words, int from, int to) {
         String joined = String.join(" ", words.subList(from, to));
-        String id = ZONES.get(normalize(joined));
-        if (id != null) {
-            try {
-                return ZoneId.of(id);
-            } catch (DateTimeException e) {
-                // older tzdata calls Kyiv Kiev
-                if (id.equals("Europe/Kyiv")) {
-                    return ZoneId.of("Europe/Kiev");
+        for (String candidate : forms(normalize(joined))) {
+            String id = ZONES.get(candidate);
+            if (id == null) {
+                id = InlineZonePlaces.lookup(candidate);
+            }
+            if (id != null) {
+                try {
+                    return ZoneId.of(id);
+                } catch (DateTimeException e) {
+                    // older tzdata calls Kyiv Kiev
+                    if (id.equals("Europe/Kyiv")) {
+                        try {
+                            return ZoneId.of("Europe/Kiev");
+                        } catch (DateTimeException ignored) {
+                            return null;
+                        }
+                    }
+                    return null;
                 }
-                return null;
             }
         }
         Matcher matcher = OFFSET.matcher(joined);

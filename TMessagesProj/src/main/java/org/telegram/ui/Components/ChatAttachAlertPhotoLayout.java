@@ -207,6 +207,7 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     private AnimatorSet zoomControlAnimation;
     private Runnable zoomControlHideRunnable;
     private Runnable afterCameraInitRunnable;
+    private boolean openCameraOnShow;
     private Boolean isCameraFrontfaceBeforeEnteringEditMode = null;
     private TextView counterTextView;
     private TextView tooltipTextView;
@@ -2743,6 +2744,8 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     }
 
     public void hideCamera(boolean async) {
+        openCameraOnShow = false;
+        afterCameraInitRunnable = null;
         if (!deviceHasGoodCamera || cameraView == null) {
             return;
         }
@@ -4157,6 +4160,28 @@ public class ChatAttachAlertPhotoLayout extends ChatAttachAlert.AttachAlertLayou
     @Override
     public void onOpenAnimationEnd() {
         checkCamera(parentAlert != null && parentAlert.baseFragment instanceof ChatActivity && !NekoConfig.disableInstantCamera.Bool());
+        if (openCameraOnShow) {
+            openCameraOnShow = false;
+            openCameraWhenReady();
+        }
+    }
+
+    public void openCameraOnShow() {
+        openCameraOnShow = true;
+    }
+
+    private void openCameraWhenReady() {
+        openCamera(true);
+        if (cameraOpened) {
+            return;
+        }
+        afterCameraInitRunnable = () -> {
+            afterCameraInitRunnable = null;
+            if (cameraInitAnimation != null) {
+                cameraInitAnimation.end();
+            }
+            openCamera(true);
+        };
     }
 
     @Override

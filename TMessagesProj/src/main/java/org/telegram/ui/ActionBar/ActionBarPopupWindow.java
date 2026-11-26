@@ -45,19 +45,24 @@ import androidx.annotation.Keep;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.exteragram.messenger.ExteraConfig;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.AnimationNotificationsLocker;
 import org.telegram.messenger.FileLog;
 import org.telegram.messenger.R;
 import org.telegram.messenger.UserConfig;
 import org.telegram.messenger.utils.ViewOutlineProviderImpl;
+import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.PopupSwipeBackLayout;
+import org.telegram.ui.Components.blur3.BlurredBackgroundDrawableViewFactory;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.IntStream;
 
 public class ActionBarPopupWindow extends PopupWindow {
 
@@ -118,6 +123,7 @@ public class ActionBarPopupWindow extends PopupWindow {
         private int lastStartedChild = 0;
         public boolean shownFromBottom;
         private boolean animationEnabled = true;
+        private boolean cascadeEnabled = false;
         private ArrayList<AnimatorSet> itemAnimators;
         private HashMap<View, Integer> positions = new HashMap<>();
         private int gapStartY = -1000000;
@@ -133,6 +139,7 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         private int backgroundColor = Color.WHITE;
         protected Drawable backgroundDrawable;
+        private BlurredBackgroundDrawableViewFactory glassBackgroundFactory;
 
         private boolean fitItems;
         private final Theme.ResourcesProvider resourcesProvider;
@@ -334,6 +341,32 @@ public class ActionBarPopupWindow extends PopupWindow {
                     }
                     return super.drawChild(canvas, child, drawingTime);
                 }
+
+                @Override
+                public void addView(View child, int index, ViewGroup.LayoutParams params) {
+                    child.setAlpha(0f);
+                    child.setTranslationY(dp(shownFromBottom ? 12 : -12));
+
+                    super.addView(child, index, params);
+                    applyItemsOverrides(child);
+
+                    if (cascadeEnabled && child instanceof ActionBarMenuSubItem && ExteraConfig.getGroupMessageMenu()) {
+                        int itemIndex = (int) IntStream.range(0, getChildCount())
+                                .mapToObj(this::getChildAt)
+                                .filter(childAt -> childAt instanceof ActionBarMenuSubItem && childAt.getVisibility() == View.VISIBLE)
+                                .count();
+                        child.post(() -> child.animate()
+                                .alpha(child.isEnabled() ? 1f : 0.5f)
+                                .translationY(0)
+                                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                                .setStartDelay(10L + itemIndex * 35L)
+                                .setDuration(400L)
+                                .start());
+                    } else {
+                        child.setAlpha(child.isEnabled() ? 1f : 0.5f);
+                        child.setTranslationY(0);
+                    }
+                }
             };
             linearLayout.setOrientation(LinearLayout.VERTICAL);
             if (scrollView != null) {
@@ -352,7 +385,21 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         public int addViewToSwipeBack(View v) {
             swipeBackLayout.addView(v, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, shownFromBottom ? Gravity.BOTTOM : Gravity.TOP));
+            applyItemsOverrides(v);
             return swipeBackLayout.getChildCount() - 1;
+        }
+
+        public void setGlassBackgroundFactory(@Nullable BlurredBackgroundDrawableViewFactory factory) {
+            glassBackgroundFactory = factory;
+        }
+
+        @Nullable
+        public BlurredBackgroundDrawableViewFactory getGlassBackgroundFactory() {
+            return glassBackgroundFactory;
+        }
+
+        public void setCascadeEnabled(boolean value) {
+            cascadeEnabled = value;
         }
 
         public void setFitItems(boolean value) {
@@ -697,6 +744,55 @@ public class ActionBarPopupWindow extends PopupWindow {
             for (int a = 0; a < count; a++) {
                 View child = linearLayout.getChildAt(a);
                 child.setBackground(Theme.createRadSelectorDrawable(color, a == 0 ? 6 : 0, a == count - 1 ? 6 : 0));
+            }
+        }
+
+        private int itemsSelectorRadOverride = -1, itemsSelectorPaddingOverride = -1, itemsExtraHeightOverride;
+
+        public void setItemsSelectorOverride(int selectorRad, int basePadding, int extraHeight) {
+            itemsSelectorRadOverride = selectorRad;
+            itemsSelectorPaddingOverride = basePadding;
+            itemsExtraHeightOverride = extraHeight;
+            applyItemsSelectorOverride(this);
+        }
+
+        private Integer gapColorOverride;
+
+        public void setGapColorOverride(Integer color) {
+            gapColorOverride = color;
+            if (color != null) {
+                applyGapColorOverride(this);
+            }
+        }
+
+        private void applyItemsOverrides(View view) {
+            if (itemsSelectorRadOverride >= 0) {
+                applyItemsSelectorOverride(view);
+            }
+            if (gapColorOverride != null) {
+                applyGapColorOverride(view);
+            }
+        }
+
+        private void applyGapColorOverride(View view) {
+            if (view instanceof GapView) {
+                ((GapView) view).setColor(gapColorOverride);
+            } else if (view instanceof ViewGroup && !(view instanceof ActionBarMenuSubItem)) {
+                final ViewGroup group = (ViewGroup) view;
+                for (int a = 0, count = group.getChildCount(); a < count; a++) {
+                    applyGapColorOverride(group.getChildAt(a));
+                }
+            }
+        }
+
+        private void applyItemsSelectorOverride(View view) {
+            if (view instanceof ActionBarMenuSubItem) {
+                ((ActionBarMenuSubItem) view).setSelectorOverride(itemsSelectorRadOverride, itemsSelectorPaddingOverride, itemsExtraHeightOverride);
+            } else if (view instanceof ViewGroup) {
+                final ViewGroup group = (ViewGroup) view;
+                for (int a = 0, count = group.getChildCount(); a < count; a++) {
+                    applyItemsSelectorOverride(group.getChildAt(a));
+                }
             }
         }
 

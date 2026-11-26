@@ -146,6 +146,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
 import com.android.internal.telephony.ITelephony;
+import com.exteragram.messenger.utils.ui.TabletSplitUiHelper;
 import com.google.android.gms.auth.api.phone.SmsRetriever;
 import com.google.android.gms.auth.api.phone.SmsRetrieverClient;
 import com.google.android.gms.tasks.Task;
@@ -3185,7 +3186,14 @@ public class AndroidUtilities {
     }
 
     public static int getTabletLeftFragmentSize(final int fullWidth, final int insetLeft, final int insetRight) {
-        return insetLeft + Math.max(dp(320), (fullWidth - insetLeft - insetRight) * 35 / 100);
+        return TabletSplitUiHelper.getRightPaneStart(fullWidth, insetLeft, insetRight);
+    }
+
+    public static boolean isTabletTwoPane() {
+        if (isInMultiwindow) {
+            return TabletSplitUiHelper.canFitTwoPanes(displaySize.x);
+        }
+        return !isSmallTablet() || displaySize.x > displaySize.y;
     }
 
     public static int getPhotoSize() {

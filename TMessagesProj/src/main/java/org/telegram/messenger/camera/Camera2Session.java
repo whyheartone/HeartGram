@@ -87,6 +87,7 @@ public class Camera2Session {
         final CameraManager cameraManager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
 
         float bestAspectRatio = 0;
+        float bestMinZoom = Float.MAX_VALUE;
         Size bestSize = null;
         String cameraId = null;
         try {
@@ -104,17 +105,28 @@ public class Camera2Session {
                 if ((viewWidth / (float) viewHeight >= 1f) != (cameraAspectRatio >= 1f)) {
                     cameraAspectRatio = 1f / cameraAspectRatio;
                 }
-                if (bestAspectRatio <= 0 || Math.abs((float) viewWidth / viewHeight - bestAspectRatio) > Math.abs((float) viewWidth / viewHeight - cameraAspectRatio)) {
+                float minZoomRatio = 1f;
+                if (!front && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    Range<Float> range = characteristics.get(CameraCharacteristics.CONTROL_ZOOM_RATIO_RANGE);
+                    if (range != null) {
+                        minZoomRatio = range.getLower();
+                    }
+                }
+                final float viewAspect = (float) viewWidth / viewHeight;
+                final float bestDiff = Math.abs(viewAspect - bestAspectRatio);
+                final float curDiff = Math.abs(viewAspect - cameraAspectRatio);
+                final boolean betterAspect = bestAspectRatio <= 0 || curDiff < bestDiff - 0.05f;
+                final boolean widerLens = !front && Math.abs(curDiff - bestDiff) <= 0.05f && minZoomRatio < bestMinZoom - 0.05f;
+                if (betterAspect || widerLens || (bestDiff > curDiff && minZoomRatio <= bestMinZoom + 0.05f)) {
                     if (confMap != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                         Size size = chooseOptimalSize(confMap.getOutputSizes(SurfaceTexture.class), viewWidth, viewHeight, false);
                         if (size != null) {
                             bestAspectRatio = cameraAspectRatio;
+                            bestMinZoom = minZoomRatio;
                             cameraId = id;
                             bestSize = size;
                         }
                     }
-                } else {
-
                 }
             }
         } catch (Exception e) {

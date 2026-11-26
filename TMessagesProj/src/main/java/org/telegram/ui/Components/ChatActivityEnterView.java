@@ -255,6 +255,7 @@ import xyz.nextalone.nagram.NaConfig;
 
 import me.vkryl.android.animator.BoolAnimator;
 import me.vkryl.android.animator.FactorAnimator;
+import com.exteragram.messenger.components.QuickTilesMenu;
 
 public class ChatActivityEnterView extends FrameLayout implements
     NotificationCenter.NotificationCenterDelegate,
@@ -2896,6 +2897,8 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
             }
         });
+        emojiButton.setOnLongClickListener(x -> parentFragment != null && parentFragment.getChatActivityEnterView() == this && parentFragment.showQuickStickers(x));
+        QuickTilesMenu.attachLongPressRamp(emojiButton, () -> parentFragment != null && parentFragment.getChatActivityEnterView() == this && parentFragment.canShowQuickStickers());
         messageEditTextContainer.addView(emojiButton, LayoutHelper.createFrame(DEFAULT_HEIGHT, DEFAULT_HEIGHT, Gravity.BOTTOM | Gravity.LEFT, 2, 0, 0, 0));
         setEmojiButtonImage(false, false);
 
@@ -2988,6 +2991,12 @@ public class ChatActivityEnterView extends FrameLayout implements
                 }
                 delegate.didPressAttachButton();
             });
+            if (parentFragment != null && isChat) {
+                attachButton.setOnLongClickListener(v -> parentFragment.getChatActivityEnterView() == this && attachLayoutPaddingAlpha != 0f
+                        && (adjustPanLayoutHelper == null || !adjustPanLayoutHelper.animationInProgress()) && parentFragment.showQuickAttach(v));
+                QuickTilesMenu.attachLongPressRamp(attachButton, () -> parentFragment.getChatActivityEnterView() == this && attachLayoutPaddingAlpha != 0f
+                        && (adjustPanLayoutHelper == null || !adjustPanLayoutHelper.animationInProgress()) && parentFragment.canShowQuickAttach());
+            }
             attachButton.setContentDescription(getString(R.string.AccDescrAttachButton));
             updateFieldRight(1);
         }
@@ -14498,6 +14507,16 @@ public class ChatActivityEnterView extends FrameLayout implements
 
     public void showEmojiView() {
         showPopup(1, POPUP_CONTENT_EMOJI_KEYBOARD);
+    }
+
+    public void openStickersPanel() {
+        if (emojiButtonRestricted || adjustPanLayoutHelper != null && adjustPanLayoutHelper.animationInProgress()) {
+            return;
+        }
+        showPopup(1, POPUP_CONTENT_EMOJI_KEYBOARD);
+        if (emojiView != null) {
+            emojiView.openStickers();
+        }
     }
 
     private void showPopup(int show, int contentType) {

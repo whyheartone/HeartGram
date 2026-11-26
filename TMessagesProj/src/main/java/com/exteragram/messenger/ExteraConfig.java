@@ -1249,6 +1249,14 @@ public final class ExteraConfig {
         NaConfig.INSTANCE.getGroupedMessageMenu().setConfigBool(value);
     }
 
+    public static float getTabletLeftFraction() {
+        return getPreferences().getFloat("tabletLeftFraction", 0.35f);
+    }
+
+    public static void setTabletLeftFraction(float value) {
+        getPreferences().edit().putFloat("tabletLeftFraction", value).apply();
+    }
+
     public static String getRecognitionLanguage() {
         return getPreferences().getString("recognitionLanguage", "none");
     }

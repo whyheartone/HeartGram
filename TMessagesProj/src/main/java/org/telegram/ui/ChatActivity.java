@@ -8,10 +8,14 @@
 
 package org.telegram.ui;
 
+import com.exteragram.messenger.components.QuickAttachMenu;
+import com.exteragram.messenger.components.QuickStickersMenu;
+import com.exteragram.messenger.components.QuickTilesMenu;
 import com.exteragram.messenger.export.ui.ExportActivity;
 import com.exteragram.messenger.messageexport.ChatScreenshotExportBridge;
 import com.exteragram.messenger.messageexport.MessageExport;
 import com.exteragram.messenger.messageexport.ui.MessageExportSheet;
+import com.exteragram.messenger.utils.system.SystemUtils;
 
 import app.exteraless.chats.DeletedReplyQuote;
 import app.exteraless.chats.LinkedCustomEmoji;
@@ -15362,7 +15366,118 @@ public class ChatActivity extends BaseFragment implements
         return true;
     }
 
+    private QuickTilesMenu quickTilesMenu;
+    private View quickAttachAnchor;
+    private boolean openQuickCameraOnGrant;
+    private Runnable quickAttachOnResume;
+
+    private boolean canShowQuickTiles() {
+        return getParentActivity() != null && !isPaused() && quickTilesMenu == null && chatActivityEnterView != null && editingMessageObject == null
+                && !chatActivityEnterView.isEphemeralMessageVisible() && !chatActivityEnterView.isRichDraftActive()
+                && TextUtils.isEmpty(chatActivityEnterView.getSlowModeTimer());
+    }
+
+    public boolean canShowQuickAttach() {
+        return canShowQuickTiles() && allowSendPhotos();
+    }
+
+    public boolean canShowQuickStickers() {
+        return canShowQuickTiles() && !chatActivityEnterView.isPopupShowing() && (currentChat == null || ChatObject.canSendStickers(currentChat));
+    }
+
+    public boolean showQuickAttach(View anchor) {
+        if (!canShowQuickAttach()) {
+            return false;
+        }
+        if (!SystemUtils.isImagesAndVideoPermissionGranted()) {
+            quickAttachAnchor = anchor;
+            SystemUtils.requestImagesAndVideoPermission(getParentActivity());
+            return true;
+        }
+        quickTilesMenu = QuickAttachMenu.show(this, anchor, new QuickAttachMenu.Delegate() {
+            @Override
+            public void openCamera() {
+                openQuickCamera();
+            }
+
+            @Override
+            public void openGallery() {
+                if (chatAttachAlert != null) {
+                    chatAttachAlert.setEditingMessageObject(0, null);
+                }
+                openAttachMenu();
+            }
+
+            @Override
+            public void sendPhoto(MediaController.PhotoEntry entry, boolean notify, int scheduleDate, int scheduleRepeatPeriod, boolean forceDocument) {
+                if (editingMessageObject != null || !allowSendPhotos()) {
+                    return;
+                }
+                ArrayList<MediaController.PhotoEntry> entries = new ArrayList<>();
+                entries.add(entry);
+                AlertsCreator.ensurePaidMessageConfirmation(currentAccount, getDialogId(), 1, stars -> sendPhotosGroup(entries, notify, scheduleDate, scheduleRepeatPeriod, forceDocument, stars));
+            }
+        });
+        if (quickTilesMenu == null) {
+            return false;
+        }
+        quickTilesMenu.setOnDismiss(() -> quickTilesMenu = null);
+        return true;
+    }
+
+    public boolean showQuickStickers(View anchor) {
+        if (!canShowQuickStickers()) {
+            return false;
+        }
+        quickTilesMenu = QuickStickersMenu.show(this, anchor, new QuickStickersMenu.Delegate() {
+            @Override
+            public void sendSticker(TLRPC.Document sticker, MessageObject.SendAnimationData animationData) {
+                if (chatActivityEnterView != null) {
+                    chatActivityEnterView.onStickerSelected(sticker, null, "recent", animationData, false, true, 0, 0);
+                }
+            }
+
+            @Override
+            public void openStickers() {
+                if (chatActivityEnterView != null) {
+                    chatActivityEnterView.openStickersPanel();
+                }
+            }
+        });
+        if (quickTilesMenu == null) {
+            return false;
+        }
+        quickTilesMenu.setOnDismiss(() -> quickTilesMenu = null);
+        return true;
+    }
+
+    private void openQuickCamera() {
+        if (getParentActivity() == null) {
+            return;
+        }
+        if (!SharedConfig.inAppCamera || !CameraView.isCameraAllowed()) {
+            processSelectedAttach(attach_photo);
+        } else if (getParentActivity().checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            openQuickCameraOnGrant = true;
+            getParentActivity().requestPermissions(new String[]{Manifest.permission.CAMERA}, 18);
+        } else {
+            openAttachMenu(true);
+        }
+    }
+
+    private void runQuickAttachAction(Runnable action) {
+        if (isPaused()) {
+            quickAttachOnResume = action;
+        } else {
+            action.run();
+        }
+    }
+
     private void openAttachMenu() {
+        openAttachMenu(false);
+    }
+
+    private void openAttachMenu(boolean camera) {
         if (app.exteraless.privacy.BotAccountRouter.guardComposer(this, currentAccount, dialog_id)) return;
         if (getParentActivity() == null || chatActivityEnterView != null && !TextUtils.isEmpty(chatActivityEnterView.getSlowModeTimer())) {
             return;
@@ -15387,6 +15502,9 @@ public class ChatActivity extends BaseFragment implements
         chatAttachAlert.init();
         chatAttachAlert.getCommentView().setText(chatActivityEnterView.getFieldText());
         chatAttachAlert.parentThemeDelegate = themeDelegate;
+        if (camera) {
+            chatAttachAlert.getPhotoLayout().openCameraOnShow();
+        }
         showDialog(chatAttachAlert);
     }
 
@@ -20924,6 +21042,23 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public void onRequestPermissionsResultFragment(int requestCode, String[] permissions, int[] grantResults) {
+        if (requestCode == BasePermissionsActivity.REQUEST_CODE_EXTERNAL_STORAGE && quickAttachAnchor != null) {
+            View anchor = quickAttachAnchor;
+            quickAttachAnchor = null;
+            if (SystemUtils.isImagesAndVideoPermissionGranted()) {
+                runQuickAttachAction(() -> {
+                    if (anchor.isShown()) showQuickAttach(anchor);
+                });
+            }
+        } else if (requestCode == 18 && openQuickCameraOnGrant) {
+            openQuickCameraOnGrant = false;
+            if (grantResults != null && grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                runQuickAttachAction(() -> {
+                    if (allowSendPhotos()) openAttachMenu(true);
+                });
+            }
+            return;
+        }
         if (chatActivityEnterView != null) {
             chatActivityEnterView.onRequestPermissionsResultFragment(requestCode, permissions, grantResults);
         }
@@ -32678,6 +32813,11 @@ public class ChatActivity extends BaseFragment implements
         cachedIsGestureNavigation = AndroidUtil.isGestureNavigation(getContext());
         checkShowBlur(false);
         activityResumeTime = System.currentTimeMillis();
+        if (quickAttachOnResume != null) {
+            Runnable action = quickAttachOnResume;
+            quickAttachOnResume = null;
+            AndroidUtilities.runOnUIThread(action);
+        }
         if (openImport && getSendMessagesHelper().getImportingHistory(dialog_id) != null) {
             ImportingAlert alert = new ImportingAlert(getParentActivity(), null, this, themeDelegate);
             alert.setOnHideListener(dialog -> {
@@ -33502,6 +33642,18 @@ public class ChatActivity extends BaseFragment implements
         return false;
     }
 
+    public void onTabletSplitChanged() {
+        if (chatListView == null || chatAdapter == null) {
+            return;
+        }
+        for (int a = 0; a < messages.size(); a++) {
+            MessageObject messageObject = messages.get(a);
+            messageObject.resetLayout();
+            messageObject.forceUpdate = true;
+        }
+        chatAdapter.notifyDataSetChanged(false);
+    }
+
     @Override
     public void onConfigurationChanged(android.content.res.Configuration newConfig) {
         fixLayout();
@@ -34067,6 +34219,7 @@ public class ChatActivity extends BaseFragment implements
 
             ActionBarPopupWindow.ActionBarPopupWindowLayout popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getParentActivity(), R.drawable.popup_fixed_alert4, themeDelegate, flags);
             popupLayout.setMinimumWidth(AndroidUtilities.dp(200));
+            popupLayout.setCascadeEnabled(true);
             Rect backgroundPaddings = new Rect();
             Drawable shadowDrawable = getParentActivity().getResources().getDrawable(R.drawable.popup_fixed_alert4).mutate();
             shadowDrawable.getPadding(backgroundPaddings);

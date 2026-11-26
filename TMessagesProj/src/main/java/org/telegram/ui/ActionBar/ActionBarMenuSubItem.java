@@ -56,6 +56,7 @@ public class ActionBarMenuSubItem extends FrameLayout implements Theme.Colorable
     private Drawable appliedSelectorBackground;
 
     int selectorRad = 12;
+    private int selectorRadOverride = -1, selectorBasePaddingOverride = -1, extraHeightOverride;
     boolean top;
     boolean bottom;
 
@@ -139,14 +140,25 @@ public class ActionBarMenuSubItem extends FrameLayout implements Theme.Colorable
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(dp(itemHeight), View.MeasureSpec.EXACTLY));
+        super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(dp(itemHeight + extraHeightOverride), View.MeasureSpec.EXACTLY));
         if (expandIfMultiline && textView.getLayout().getLineCount() > 1) {
-            super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(dp(itemHeight + 8), View.MeasureSpec.EXACTLY));
+            super.onMeasure(widthMeasureSpec, View.MeasureSpec.makeMeasureSpec(dp(itemHeight + extraHeightOverride + 8), View.MeasureSpec.EXACTLY));
         }
     }
 
     public void setItemHeight(int itemHeight) {
         this.itemHeight = itemHeight;
+    }
+
+    public void setSelectorOverride(int selectorRad, int basePadding, int extraHeight) {
+        if (this.selectorRadOverride == selectorRad && this.selectorBasePaddingOverride == basePadding && this.extraHeightOverride == extraHeight) {
+            return;
+        }
+        this.selectorRadOverride = selectorRad;
+        this.selectorBasePaddingOverride = basePadding;
+        this.extraHeightOverride = extraHeight;
+        updateBackground();
+        requestLayout();
     }
 
     public void setChecked(boolean checked) {
@@ -467,9 +479,12 @@ public class ActionBarMenuSubItem extends FrameLayout implements Theme.Colorable
     }
 
     public void updateBackground() {
-        setBackground(appliedSelectorBackground = Theme.createRadSelectorDrawable(selectorColor, top ? selectorRad : 0, bottom ? selectorRad : 0));
+        final int rad = selectorRadOverride >= 0 ? selectorRadOverride : selectorRad;
+        final int basePadding = selectorBasePaddingOverride >= 0 ? selectorBasePaddingOverride : 3;
+        final boolean overridden = selectorRadOverride >= 0;
+        setBackground(appliedSelectorBackground = Theme.createRadSelectorDrawable(selectorColor, top ? rad : 0, bottom ? rad : 0));
         // exteraGram: «вдавливание» пункта меню при нажатии (exteraGram — UIUtil.applyScaleStateListAnimator(this, ..., 0.04f, 1.5f))
-        app.exteraless.utils.UIUtil.applyScaleStateListAnimator(this, 0.04f, 1.5f);
+        app.exteraless.utils.UIUtil.applyScaleStateListAnimator(this, rad, top && !overridden, bottom && !overridden, basePadding, 0.04f, 1.5f);
     }
 
     private int getThemedColor(int key) {
