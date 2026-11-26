@@ -8,6 +8,9 @@
 
 package org.telegram.ui;
 
+import com.exteragram.messenger.export.ui.ExportActivity;
+import com.exteragram.messenger.export.ui.ExportUiHelper;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.ilerp;
@@ -668,6 +671,7 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     private final static int enable_no_forwards = 46;
     private final static int disable_no_forwards = 47;
     private final static int send_money = 48;
+    private final static int export_history = 49;
 
     private final static int event_log = 102;
     private final static int message_filter = 103;
@@ -2860,6 +2864,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
                     } catch (Exception e) {
                         FileLog.e(e);
                     }
+                } else if (id == export_history) {
+                    TLRPC.TL_forumTopic topic = isTopic ? getMessagesController().getTopicsController().findTopic(chatId, topicId) : null;
+                    ExportActivity.open(ProfileActivity.this, getMessagesController().getInputPeer(getDialogId()), isTopic ? (int) topicId : 0, topic != null ? topic.title : null);
                 } else if (id == call_item || id == video_call_item) {
                     onCallClicked(id == video_call_item);
                 } else if (id == search_members) {
@@ -13107,6 +13114,10 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
         }
         if (false && isPeerNoForwards()) {
             otherItem.hideSubItem(gallery_menu_save);
+        }
+
+        if (!myProfile && currentEncryptedChat == null && ExportUiHelper.canExportHistory(chatId != 0 ? getMessagesController().getChat(chatId) : null, isTopic)) {
+            ExportUiHelper.addHistoryMenuItem(otherItem, export_history, isTopic, add_shortcut, delete_topic, leave_group, delete_group);
         }
 
         if (userId != 0 && !isBot && !myProfile) {

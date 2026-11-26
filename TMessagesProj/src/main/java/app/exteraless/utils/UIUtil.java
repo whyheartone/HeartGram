@@ -2,10 +2,14 @@ package app.exteraless.utils;
 
 import android.animation.AnimatorSet;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.GradientDrawable;
 import android.animation.ObjectAnimator;
 import android.animation.StateListAnimator;
 import android.view.View;
 import android.view.animation.OvershootInterpolator;
+
+import androidx.annotation.ColorInt;
+import androidx.core.graphics.ColorUtils;
 
 /**
  * UI-утилиты, перенесённые из exteraGram
@@ -13,6 +17,17 @@ import android.view.animation.OvershootInterpolator;
 public final class UIUtil {
 
     private UIUtil() {
+    }
+
+    public static GradientDrawable createBottomFade(@ColorInt int color) {
+        return new GradientDrawable(
+                GradientDrawable.Orientation.TOP_BOTTOM,
+                new int[]{
+                        ColorUtils.setAlphaComponent(color, 0),
+                        ColorUtils.setAlphaComponent(color, 60),
+                        color
+                }
+        );
     }
 
     /**

@@ -749,6 +749,46 @@ public final class ExteraConfig {
         AppearanceConfig.playerYandexCanvas.setConfigBool(value);
     }
 
+    public static boolean getMessageExportWatermark() {
+        ensureLoaded();
+        return AppearanceConfig.messageExportWatermark.Bool();
+    }
+
+    public static void setMessageExportWatermark(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.messageExportWatermark.setConfigBool(value);
+    }
+
+    public static boolean getMessageExportSource() {
+        ensureLoaded();
+        return AppearanceConfig.messageExportSource.Bool();
+    }
+
+    public static void setMessageExportSource(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.messageExportSource.setConfigBool(value);
+    }
+
+    public static boolean getMessageExportAuthors() {
+        ensureLoaded();
+        return AppearanceConfig.messageExportAuthors.Bool();
+    }
+
+    public static void setMessageExportAuthors(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.messageExportAuthors.setConfigBool(value);
+    }
+
+    public static boolean getMessageExportTime() {
+        ensureLoaded();
+        return AppearanceConfig.messageExportTime.Bool();
+    }
+
+    public static void setMessageExportTime(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.messageExportTime.setConfigBool(value);
+    }
+
     public static boolean getPlayerRhythmBackground() {
         ensureLoaded();
         return AppearanceConfig.playerRhythmBackground.Bool();

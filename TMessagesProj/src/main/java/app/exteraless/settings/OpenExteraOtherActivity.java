@@ -94,6 +94,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
     private boolean sensitiveCanChange;
 
     private int backupHeaderRow;
+    private int exportDataRow;
     private int exportEtgRow;
     private int importEtgRow;
     private int etgDividerRow;
@@ -165,6 +166,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
         }
 
         backupHeaderRow = addRow("backupHeader");
+        exportDataRow = addRow("exportData");
         exportEtgRow = addRow("exportEtgSettings");
         importEtgRow = addRow("importEtgSettings");
         etgDividerRow = addRow();
@@ -272,6 +274,8 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             toggleCheck(view, NaConfig.INSTANCE.getEnhancedVideoBitrate());
         } else if (position == sensitiveContentRow) {
             toggleSensitiveContent(view);
+        } else if (position == exportDataRow) {
+            com.exteragram.messenger.export.ui.ExportActivity.open(this);
         } else if (position == exportEtgRow) {
             exportEtgSettings();
         } else if (position == importEtgRow) {
@@ -733,6 +737,9 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
                     } else if (position == ayuMomentsRow) {
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndIcon(getString(R.string.OEGeneralAyuMoments), R.drawable.ayu_ghost, false);
+                    } else if (position == exportDataRow) {
+                        cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
+                        cell.setTextAndIcon(getString(R.string.ExportData), R.drawable.msg_download, true);
                     } else if (position == exportEtgRow) {
                         cell.setColors(Theme.key_windowBackgroundWhiteGrayIcon, Theme.key_windowBackgroundWhiteBlackText);
                         cell.setTextAndIcon(getString(R.string.OEGeneralExportEtgSettings), R.drawable.msg_shareout, true);
@@ -796,7 +803,7 @@ public class OpenExteraOtherActivity extends BaseNekoSettingsActivity {
             } else if (position == googleDividerRow || position == glyphDividerRow
                     || position == bottomDividerRow) {
                 return TYPE_INFO_PRIVACY;
-            } else if (position == exportEtgRow || position == importEtgRow
+            } else if (position == exportDataRow || position == exportEtgRow || position == importEtgRow
                     || position == resetSettingsRow || position == deleteAccountRow
                     || position == glyphRow || position == ayuMomentsRow) {
                 return TYPE_TEXT;

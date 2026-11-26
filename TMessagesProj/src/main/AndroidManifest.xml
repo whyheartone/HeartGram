@@ -869,6 +869,12 @@
             android:foregroundServiceType="dataSync"
         />
         <service
+            android:name="com.exteragram.messenger.export.ExportService"
+            android:enabled="true"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+        />
+        <service
             android:name=".LocationSharingService"
             android:enabled="true"
             android:exported="true"

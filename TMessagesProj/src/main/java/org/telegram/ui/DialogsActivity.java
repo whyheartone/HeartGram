@@ -8,6 +8,9 @@
 
 package org.telegram.ui;
 
+import com.exteragram.messenger.export.ui.ExportPanelCell;
+import com.exteragram.messenger.export.ui.ExportUiHelper;
+
 import app.exteraless.appearance.AppearanceConfig;
 import app.exteraless.components.TranslateBeforeSendWrapper;
 import app.exteraless.drawer.DrawerContainer;
@@ -664,6 +667,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     private DialogsActivityTopBubblesFadeView topBubblesFadeView;
     private ActiveGiftAuctionsHintCell activeGiftAuctionsHintCell;
     private DialogsHintCell dialogsHintCell;
+    private ExportPanelCell exportPanelCell;
     private UnconfirmedAuthHintCell authHintCell;
     private Long cacheSize, deviceSize;
     private CommunityRequestsCell communityPendingRequests;
@@ -3360,6 +3364,7 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         authHintCell = null;
         activeGiftAuctionsHintCell = null;
         dialogsHintCell = null;
+        exportPanelCell = null;
         communityPendingRequests = null;
         topPanelLayout = null;
 
@@ -5102,6 +5107,9 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
             });
             topPanelLayout.addView(dialogsHintCell);
 
+            exportPanelCell = new ExportPanelCell(context, this, this::checkExportPanelVisibility);
+            topPanelLayout.addView(exportPanelCell);
+
 
             if (communityId != 0) {
                 communityPendingRequests = new CommunityRequestsCell(context, resourceProvider, true);
@@ -6618,6 +6626,19 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
         checkCommunityPendingRequestsVisible(true);
         checkUnconfirmedAuthHintCellVisibility();
         checkActiveGiftAuctionsHintCellVisibility();
+        checkExportPanelVisibility();
+    }
+
+    private void checkExportPanelVisibility() {
+        if (fragmentView == null || topPanelLayout == null || exportPanelCell == null) {
+            return;
+        }
+        final boolean isVisible = !isInPreviewMode()
+            && folderId == 0 && communityId == 0 && initialDialogsType == DIALOGS_TYPE_DEFAULT
+            && ExportUiHelper.hasVisibleState(currentAccount)
+            && (rightSlidingDialogContainer == null || !rightSlidingDialogContainer.hasFragment())
+            && !animatorSearchVisible.getValue();
+        topPanelLayout.setViewVisible(exportPanelCell, isVisible);
     }
 
     private void checkUnconfirmedAuthHintCellVisibility() {

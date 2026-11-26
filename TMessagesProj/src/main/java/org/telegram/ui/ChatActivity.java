@@ -8,6 +8,11 @@
 
 package org.telegram.ui;
 
+import com.exteragram.messenger.export.ui.ExportActivity;
+import com.exteragram.messenger.messageexport.ChatScreenshotExportBridge;
+import com.exteragram.messenger.messageexport.MessageExport;
+import com.exteragram.messenger.messageexport.ui.MessageExportSheet;
+
 import app.exteraless.chats.DeletedReplyQuote;
 import app.exteraless.chats.LinkedCustomEmoji;
 import app.exteraless.OpenExteraConfig;
@@ -1907,6 +1912,8 @@ public class ChatActivity extends BaseFragment implements
 
     private final static int chat_menu_topic_create = 73;
     private final static int chat_menu_topics_panel = 75;
+    private final static int export_image = 97;
+    private final static int export_history = 98;
 
     private final static int id_chat_compose_panel = 1000;
     private final static int to_the_beginning = 200;
@@ -4331,6 +4338,8 @@ public class ChatActivity extends BaseFragment implements
                     openForward(true);
                 } else if (id == share) {
                     share();
+                } else if (id == export_image) {
+                    MessageExport.open(ChatActivity.this, selectedMessagesIds);
                 } else if (id == open_direct) {
                     if (currentChat == null) return;
                     presentFragment(ChatActivity.of(-currentChat.linked_monoforum_id));
@@ -4464,6 +4473,8 @@ public class ChatActivity extends BaseFragment implements
                     }
                 } else if (id == mute) {
                     toggleMute(false);
+                } else if (id == export_history) {
+                    ExportActivity.open(ChatActivity.this, getMessagesController().getInputPeer(getDialogId()), 0, null);
                 } else if (id == add_shortcut) {
                     try {
                         getMediaDataController().installShortcut(currentUser.id, MediaDataController.SHORTCUT_TYPE_USER_OR_CHAT);
@@ -5082,6 +5093,9 @@ public class ChatActivity extends BaseFragment implements
             }
             if (currentUser != null && currentUser.self && getDialogId() != UserObject.VERIFY) {
                 headerItem.lazilyAddSubItem(add_shortcut, R.drawable.msg_home, LocaleController.getString(R.string.AddShortcut));
+            }
+            if (currentUser != null && currentUser.self && chatMode == MODE_DEFAULT) {
+                headerItem.lazilyAddSubItem(export_history, R.drawable.msg_download, LocaleController.getString(R.string.ExportChatHistory));
             }
             if (!isTopic && !ChatObject.isMonoForum(currentChat)) {
                 clearHistoryItem = headerItem.lazilyAddSubItem(clear_history, R.drawable.msg_clear,
@@ -11731,6 +11745,7 @@ public class ChatActivity extends BaseFragment implements
         if (currentEncryptedChat == null && getDialogId() != UserObject.VERIFY && NaConfig.INSTANCE.getActionBarButtonForward().Bool()) {
             actionModeViews.add(actionMode.addItemWithWidth(forward, R.drawable.msg_forward_noquote, dp(54), LocaleController.getString(R.string.Forward)));
         }
+        actionModeViews.add(actionMode.addItemWithWidth(export_image, R.drawable.msg_photos, dp(48), LocaleController.getString(R.string.MessageExport)));
         actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, dp(54), LocaleController.getString(R.string.Delete)));
 
         if (currentEncryptedChat == null) {
@@ -11772,6 +11787,7 @@ public class ChatActivity extends BaseFragment implements
         actionMode.setItemVisibility(delete, cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
         actionMode.setItemVisibility(tag_message, getUserConfig().isPremium() ? View.VISIBLE : View.GONE);
         actionMode.setItemVisibility(share, View.GONE);
+        actionMode.setItemVisibility(export_image, View.GONE);
 
         actionModeOtherItem.setSubItemVisibility(star, selectedMessagesCanStarIds[0].size() + selectedMessagesCanStarIds[1].size() != 0);
         updateActionModeMenuItems();
@@ -15874,7 +15890,7 @@ public class ChatActivity extends BaseFragment implements
 
     @Override
     public boolean dismissDialogOnPause(Dialog dialog) {
-        return dialog != chatAttachAlert && dialog != chatThemeBottomSheet && !(dialog instanceof BotWebViewSheet) && super.dismissDialogOnPause(dialog);
+        return dialog != chatAttachAlert && dialog != chatThemeBottomSheet && !(dialog instanceof BotWebViewSheet) && !(dialog instanceof MessageExportSheet) && super.dismissDialogOnPause(dialog);
     }
 
     int waitingForWebpageId;
@@ -21421,6 +21437,10 @@ public class ChatActivity extends BaseFragment implements
 
                 if (deleteItem != null) {
                     deleteItem.setVisibility(cantDeleteMessagesCount == 0 ? View.VISIBLE : View.GONE);
+                }
+                ActionBarMenuItem exportItem = actionBar.createActionMode().getItem(export_image);
+                if (exportItem != null) {
+                    exportItem.setVisibility(MessageExport.canExport(this, selectedMessagesIds) ? View.VISIBLE : View.GONE);
                 }
                 hasUnfavedSelected = false;
                 for (int a = 0; a < 2; a++) {
@@ -32643,6 +32663,7 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onResume() {
         super.onResume();
+        ChatScreenshotExportBridge.onChatResumed(this);
         if (avatarContainer != null) {
             avatarContainer.restartTitleScroll();
         }
@@ -32866,6 +32887,7 @@ public class ChatActivity extends BaseFragment implements
     @Override
     public void onPause() {
         super.onPause();
+        ChatScreenshotExportBridge.onChatPaused(this);
         scrolling = false;
         if (scrimPopupWindow != null) {
             scrimPopupWindow.setPauseNotifications(false);

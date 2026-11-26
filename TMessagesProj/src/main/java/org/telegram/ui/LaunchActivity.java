@@ -1710,6 +1710,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         long dialogId = 0;
         boolean showDialogsList = false;
         boolean showPlayer = false;
+        boolean showExport = false;
         boolean showLocations = false;
         boolean showGroupVoip = false;
         boolean showCallLog = false;
@@ -3200,6 +3201,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                     }
                 } else if (intent.getAction().equals("com.tmessages.openplayer")) {
                     showPlayer = true;
+                } else if (intent.getAction().equals(com.exteragram.messenger.export.ui.ExportUiHelper.ACTION_SHOW)) {
+                    showExport = true;
                 } else if (intent.getAction().equals("org.tmessages.openlocations")) {
                     showLocations = true;
                 } else if (action.equals("voip_chat")) {
@@ -3332,6 +3335,11 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 if (!actionBarLayout.getFragmentStack().isEmpty() && !com.exteragram.messenger.player.PlayerLauncher.isShowing()) {
                     BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
                     fragment.showDialog(com.exteragram.messenger.player.PlayerLauncher.create(this, null));
+                }
+                pushOpened = false;
+            } else if (showExport) {
+                if (!actionBarLayout.getFragmentStack().isEmpty()) {
+                    com.exteragram.messenger.export.ui.ExportProgressSheet.show(actionBarLayout.getLastFragment(), intentAccount[0]);
                 }
                 pushOpened = false;
             } else if (showLocations) {
@@ -7224,6 +7232,7 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         GramWalletStorageAuth.onActivityStopped(this);
         isStarted = false;
         PipCoordinator.getInstance().onActivityStop(this);
+        com.exteragram.messenger.messageexport.ChatScreenshotExportBridge.unregister(this);
         if (PhotoViewer.hasInstance() && PhotoViewer.getInstance().isVisible()) {
             PhotoViewer.getInstance().onStop();
         }

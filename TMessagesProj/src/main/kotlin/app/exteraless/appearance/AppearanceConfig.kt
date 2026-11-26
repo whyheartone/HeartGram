@@ -405,6 +405,18 @@ object AppearanceConfig {
     @JvmField
     val playerMode = addConfig("OEPlayerMode", ConfigItem.configTypeInt, 0)
 
+    @JvmField
+    val messageExportWatermark = addConfig("OEMessageExportWatermark", ConfigItem.configTypeBool, true)
+
+    @JvmField
+    val messageExportSource = addConfig("OEMessageExportSource", ConfigItem.configTypeBool, true)
+
+    @JvmField
+    val messageExportAuthors = addConfig("OEMessageExportAuthors", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val messageExportTime = addConfig("OEMessageExportTime", ConfigItem.configTypeBool, true)
+
     @JvmStatic
     fun lyricsProvidersSet(): Set<String> {
         ensureLoaded()
