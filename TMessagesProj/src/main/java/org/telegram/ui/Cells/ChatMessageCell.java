@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import com.exteragram.messenger.icons.SvgDocumentPreview;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.find;
@@ -11696,7 +11698,9 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     currentPhotoObjectThumbStripped = currentMessageObject.strippedThumb;
                 }
                 currentPhotoFilter = "86_86_b";
-                photoImage.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), "86_86", ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), currentPhotoFilter, currentPhotoObjectThumbStripped, 0, null, messageObject, 1);
+                if (!SvgDocumentPreview.setThumbnail(photoImage, messageObject, ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), currentPhotoFilter, currentPhotoObjectThumbStripped)) {
+                    photoImage.setImage(ImageLocation.getForObject(currentPhotoObject, messageObject.photoThumbsObject), "86_86", ImageLocation.getForObject(currentPhotoObjectThumb, messageObject.photoThumbsObject), currentPhotoFilter, currentPhotoObjectThumbStripped, 0, null, messageObject, 1);
+                }
             }
             return width;
         }
@@ -14825,7 +14829,7 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                 } else if (buttonState == -1) {
                     if (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT) {
-                        return (drawPhotoImage && (currentPhotoObject != null || currentPhotoObjectThumb != null) && (photoImage.hasBitmapImage() || currentMessageObject.mediaExists() || currentMessageObject.attachPathExists)) ? MediaActionDrawable.ICON_NONE : MediaActionDrawable.ICON_FILE;
+                        return (drawPhotoImage && (currentPhotoObject != null || currentPhotoObjectThumb != null || SvgDocumentPreview.THUMB_FILTER.equals(photoImage.getImageFilter())) && (photoImage.hasBitmapImage() || currentMessageObject.mediaExists() || currentMessageObject.attachPathExists)) ? MediaActionDrawable.ICON_NONE : MediaActionDrawable.ICON_FILE;
                     } else if (currentMessageObject.needDrawBluredPreview()) {
                         return MediaActionDrawable.ICON_FIRE;
                     } else if (hasEmbed) {
@@ -15663,6 +15667,8 @@ public class ChatMessageCell extends BaseCell implements SeekBar.SeekBarDelegate
                     }
                     autoPlayingMedia = true;
                 }
+            } else if (documentAttachType == DOCUMENT_ATTACH_TYPE_DOCUMENT && drawPhotoImage) {
+                SvgDocumentPreview.setThumbnail(photoImage, currentMessageObject, ImageLocation.getForObject(currentPhotoObjectThumb, currentMessageObject.photoThumbsObject), currentPhotoFilter, currentPhotoObjectThumbStripped);
             }
             if (currentMessageObject.type == MessageObject.TYPE_TEXT) {
                 if (!autoPlayingMedia && documentAttachType == DOCUMENT_ATTACH_TYPE_GIF && currentMessageObject.gifState != 1) {

@@ -5,6 +5,8 @@ import android.text.TextUtils;
 import android.view.HapticFeedbackConstants;
 import android.view.View;
 
+import com.exteragram.messenger.ExteraConfig;
+
 import org.json.JSONObject;
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ApplicationLoader;
@@ -122,6 +124,7 @@ public final class WidgetMedia {
         /** widget_state was read; until then the widget does not start (its storage would be empty). */
         boolean stateLoaded;
         boolean activateOnLoad;
+        boolean startedByUser;
         int crashes, crashedSession;
         boolean dead;
         /** The width a layout asked the height at, and whether its bubble is outgoing ({@link #measure}). */
@@ -491,7 +494,7 @@ public final class WidgetMedia {
         while (measuring.size() < MEASURE_AT_ONCE && !appPaused && (entry = nextToMeasure()) != null) {
             toMeasure.remove(entry);
             WidgetSandboxMessage message = entry.message;
-            if (message == null || entry.dead || entry.shown > 0) continue;
+            if (message == null || entry.dead || entry.shown > 0 || waitsForTap(entry)) continue;
             String source = heightSource(entry.url, message, entry.measureWidthPx);
             if (!source.equals("placeholder") && !source.startsWith("cache of width")) continue;
             message.setWidthPx(entry.measureWidthPx);
@@ -696,6 +699,7 @@ public final class WidgetMedia {
      * until the new one loads; after {@link #MAX_CRASHES} deaths it stays stopped with its badge.
      */
     private static void start(Entry entry) {
+        if (waitsForTap(entry)) return;
         WidgetSandboxMessage message = entry.message;
         if (entry.dead) {
             if (entry.crashes >= MAX_CRASHES) return;
@@ -703,6 +707,24 @@ public final class WidgetMedia {
             message.unload();
         }
         message.activate();
+    }
+
+    private static boolean waitsForTap(Entry entry) {
+        return !entry.startedByUser && !ExteraConfig.getAutoRunWidgets();
+    }
+
+    public static boolean waitsForTap(String url) {
+        Entry entry = entries.get(url);
+        return entry != null && waitsForTap(entry);
+    }
+
+    public static void startByUser(String url) {
+        Entry entry = entries.get(url);
+        if (entry == null || entry.startedByUser) return;
+        entry.startedByUser = true;
+        if (entry.shown == 0 || entry.message == null) return;
+        if (entry.stateLoaded) start(entry);
+        else entry.activateOnLoad = true;
     }
 
     /** UI: a block stopped showing the widget. */

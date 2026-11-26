@@ -86,6 +86,10 @@ object GeneralConfig {
         return crashReports.Bool()
     }
 
+    /** Вкладка профиля по умолчанию: 0 default, 1 media, 2 common groups. */
+    @JvmField
+    val defaultProfileTab = addConfig("OEGeneralDefaultProfileTab", ConfigItem.configTypeInt, 0)
+
     private fun addConfig(key: String, type: Int, defaultValue: Any?): ConfigItem {
         val item = ConfigItem(key, type, defaultValue)
         configs.add(item)

@@ -8,6 +8,8 @@
 
 package org.telegram.messenger;
 
+import com.exteragram.messenger.icons.SvgDocumentPreview;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.find;
 import static org.telegram.messenger.AndroidUtilities.replaceTags;
@@ -7382,6 +7384,9 @@ public class MessageObject {
     }
 
     public static boolean canPreviewDocument(TLRPC.Document document) {
+        if (SvgDocumentPreview.isSvg(document)) {
+            return document.size <= SvgDocumentPreview.MAX_FILE_SIZE;
+        }
         if (document != null && document.mime_type != null) {
             String mime = document.mime_type;
             if (isDocumentHasThumb(document) && (mime.equalsIgnoreCase("image/png") || mime.equalsIgnoreCase("image/jpg") || mime.equalsIgnoreCase("image/jpeg")) || (Build.VERSION.SDK_INT >= 26 && (mime.equalsIgnoreCase("image/heic")))) {
@@ -7395,8 +7400,6 @@ public class MessageObject {
             } else if (BuildVars.DEBUG_PRIVATE_VERSION) {
                 String fileName = FileLoader.getDocumentFileName(document);
                 if (fileName.startsWith("tg_secret_sticker") && fileName.endsWith("json")) {
-                    return true;
-                } else if (fileName.endsWith(".svg")) {
                     return true;
                 }
             }

@@ -8,6 +8,8 @@
 
 package org.telegram.ui;
 
+import com.exteragram.messenger.icons.SvgDocumentPreview;
+
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.AndroidUtilities.dpf2;
 import static org.telegram.messenger.AndroidUtilities.lerp;
@@ -17786,10 +17788,11 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                     currentAnimation.addSecondParentView(containerView);
                     imageReceiver.setImageBitmap(currentAnimation);
                     return;
-                } else if (sharedMediaType == MediaDataController.MEDIA_FILE) {
-                    if (messageObject.canPreviewDocument()) {
+                } else if (sharedMediaType == MediaDataController.MEDIA_FILE || SvgDocumentPreview.isSvg(messageObject.getDocument())) {
+                    if (messageObject.canPreviewDocument() && !SvgDocumentPreview.isHidden(messageObject)) {
                         TLRPC.Document document = messageObject.getDocument();
-                        imageReceiver.setNeedsQualityThumb(true);
+                        ImageLocation svgLocation = SvgDocumentPreview.getImageLocation(messageObject, true);
+                        imageReceiver.setNeedsQualityThumb(svgLocation == null);
                         ImageReceiver.BitmapHolder placeHolder = null;
                         if (currentThumb != null && imageReceiver == centerImage) {
                             placeHolder = currentThumb;
@@ -17800,7 +17803,7 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
                         boolean needFullImage = autoDownload || currentIndex == index || FileLoader.getInstance(currentAccount).getPathToAttach(document).exists();
                         ImageLocation imageThumbLocation = placeHolder == null ? ImageLocation.getForDocument(FileLoader.getClosestPhotoSizeWithSize(messageObject.photoThumbs, 100), document) : null;
                         BitmapDrawable thumbPlaceHolder = placeHolder != null ? new BitmapDrawable(placeHolder.bitmap) : null;
-                        ImageLocation imageLocation = needFullImage ? ImageLocation.getForDocument(document) : null;
+                        ImageLocation imageLocation = needFullImage ? (svgLocation != null ? svgLocation : ImageLocation.getForDocument(document)) : null;
                         imageReceiver.setImage(imageLocation, String.format(Locale.US, "%d_%d", size, size), imageThumbLocation, "b", thumbPlaceHolder, document.size, null, messageObject, 0);
                         imageReceiver.setMark(needFullImage ? null : MARK_DEFERRED_IMAGE_LOADING);
                     } else {

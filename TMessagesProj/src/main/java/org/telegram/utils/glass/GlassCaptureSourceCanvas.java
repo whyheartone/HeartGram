@@ -34,6 +34,7 @@ public class GlassCaptureSourceCanvas {
 
     public enum SourceIndex {
         BLURRED,
+        SHARP,
         GLASS,
         FROSTED_GLASS,
         /** The frosted blur without the saturation of the glass, through {@link #setFilteredColorFilter}; captured once requested. */
@@ -62,6 +63,7 @@ public class GlassCaptureSourceCanvas {
 
     private final RenderNode debugRenderNode = new RenderNode("debug");
     private final Source blurredSource = new SourceImpl(SourceIndex.BLURRED);
+    private final Source sharpSource = new SourceImpl(SourceIndex.SHARP);
     private final Source glassSource = new SourceImpl(SourceIndex.GLASS);
     private final Source frostedGlassSource = new SourceImpl(SourceIndex.FROSTED_GLASS);
     private final Source frostedFilteredSource = new SourceImpl(SourceIndex.FROSTED_FILTERED);
@@ -124,6 +126,8 @@ public class GlassCaptureSourceCanvas {
         switch (index) {
             case BLURRED:
                 return blurredSource;
+            case SHARP:
+                return sharpSource;
             case GLASS:
                 return glassSource;
             case FROSTED_GLASS:
@@ -192,7 +196,7 @@ public class GlassCaptureSourceCanvas {
                     position.normalizedPositionGlassWithOffset.left,
                     position.normalizedPositionGlassWithOffset.top);
             recordingCanvas.scale(position.glassDownsample, position.glassDownsample);
-            recordingCanvas.drawRenderNode(position.renderNode);
+            recordingCanvas.drawRenderNode(position.renderNodeBlurred);
             recordingCanvas.restore();
             recordingCanvas.drawRect(position.originalPosition, Theme.DEBUG_GREEN_STROKE);
             recordingCanvas.drawRect(
@@ -349,6 +353,7 @@ public class GlassCaptureSourceCanvas {
         public final RectF normalizedPositionFrostedGlassWithOffset = new RectF();
 
         public final RenderNode renderNode;
+        public final RenderNode renderNodeBlurred;
         public final RenderNode renderNodeGlass;
         public final RenderNode renderNodeGlassFrosted;
         /**
@@ -370,7 +375,8 @@ public class GlassCaptureSourceCanvas {
 
         public Position(int index) {
             renderNode = new RenderNode("cap-" + index);
-            renderNode.setUseCompositingLayer(true, null);
+            renderNodeBlurred = new RenderNode("blurred-" + index);
+            renderNodeBlurred.setUseCompositingLayer(true, null);
             renderNodeGlass = new RenderNode("glass-" + index);
             renderNodeGlass.setRenderEffect(RenderNodeEffects.getSaturationX3RenderEffect());
             renderNodeGlassFrosted = new RenderNode("glass-frosted-" + index);
@@ -395,6 +401,8 @@ public class GlassCaptureSourceCanvas {
         public RenderNode getRenderNode(@NonNull SourceIndex index) {
             switch (index) {
                 case BLURRED:
+                    return renderNodeBlurred;
+                case SHARP:
                     return renderNode;
                 case GLASS:
                     return renderNodeGlass;
@@ -423,7 +431,7 @@ public class GlassCaptureSourceCanvas {
             if (this.glassDownsample != glassDownsample) {
                 this.glassDownsample = glassDownsample;
                 glassRadius = blurRadiusForDownsample(dpf2(7), glassDownsample);
-                renderNode.setRenderEffect(RenderEffect.createBlurEffect(
+                renderNodeBlurred.setRenderEffect(RenderEffect.createBlurEffect(
                         glassRadius, glassRadius, Shader.TileMode.CLAMP));
             }
             if (this.frostedGlassDownsample != frostedGlassDownsample) {
@@ -496,9 +504,14 @@ public class GlassCaptureSourceCanvas {
             recordingCanvas.restore();
             renderNode.endRecording();
 
+            renderNodeBlurred.setPosition(0, 0, glassWidth, glassHeight);
+            recordingCanvas = renderNodeBlurred.beginRecording();
+            recordingCanvas.drawRenderNode(renderNode);
+            renderNodeBlurred.endRecording();
+
             renderNodeGlass.setPosition(0, 0, glassWidth, glassHeight);
             recordingCanvas = renderNodeGlass.beginRecording();
-            recordingCanvas.drawRenderNode(renderNode);
+            recordingCanvas.drawRenderNode(renderNodeBlurred);
             renderNodeGlass.endRecording();
 
             renderNodeGlassFrosted.setPosition(
@@ -521,7 +534,7 @@ public class GlassCaptureSourceCanvas {
             if (frostedFiltered) {
                 renderNodeFiltered.setPosition(0, 0, glassWidth, glassHeight);
                 recordingCanvas = renderNodeFiltered.beginRecording();
-                recordingCanvas.drawRenderNode(renderNode);
+                recordingCanvas.drawRenderNode(renderNodeBlurred);
                 renderNodeFiltered.endRecording();
 
                 renderNodeFrostedFiltered.setPosition(

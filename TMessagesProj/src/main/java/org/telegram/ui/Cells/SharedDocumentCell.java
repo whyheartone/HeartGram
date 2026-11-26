@@ -8,6 +8,8 @@
 
 package org.telegram.ui.Cells;
 
+import com.exteragram.messenger.icons.SvgDocumentPreview;
+
 import org.telegram.messenger.FileLog;
 import android.content.Context;
 import android.graphics.Canvas;
@@ -451,7 +453,9 @@ public class SharedDocumentCell extends FrameLayout implements Theme.Colorable, 
             if (thumb == bigthumb) {
                 bigthumb = null;
             }
-            if (thumb instanceof TLRPC.TL_photoSizeEmpty || thumb == null) {
+            if (SvgDocumentPreview.setThumbnail(thumbImageView.getImageReceiver(), messageObject, null, null, messageObject.strippedThumb)) {
+            thumbImageView.setVisibility(VISIBLE);
+        } else if (thumb instanceof TLRPC.TL_photoSizeEmpty || thumb == null) {
                 thumbImageView.setVisibility(INVISIBLE);
                 thumbImageView.setImageBitmap(null);
                 extTextView.setAlpha(1.0f);
@@ -667,6 +671,9 @@ public class SharedDocumentCell extends FrameLayout implements Theme.Colorable, 
     @Override
     public void onSuccessDownload(String name) {
         progressView.setProgress(1, true);
+        if (message != null && SvgDocumentPreview.setThumbnail(thumbImageView.getImageReceiver(), message, null, null, message.strippedThumb)) {
+            thumbImageView.setVisibility(VISIBLE);
+        }
         updateFileExistIcon(true);
         downloadedSize = 0;
         updateDateView();

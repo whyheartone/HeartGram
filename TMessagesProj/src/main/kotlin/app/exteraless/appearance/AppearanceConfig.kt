@@ -743,6 +743,16 @@ object AppearanceConfig {
     const val CORNER_TYPE_FORUM = 1
     const val CORNER_TYPE_COMMUNITY = 2
 
+    /** Стиль размытия шапки в профилях/простых экранах: 0 default, 1 progressive, 2 fade. */
+    @JvmField
+    val headerBlurStyle =
+        addConfig("OEAppearanceHeaderBlurStyle", ConfigItem.configTypeInt, 1)
+
+    /** Кнопки действий в профиле в стиле Material 3. */
+    @JvmField
+    val newProfileActionsStyle =
+        addConfig("OEAppearanceNewProfileActionsStyle", ConfigItem.configTypeBool, false)
+
     private fun addConfig(key: String, type: Int, defaultValue: Any?): ConfigItem {
         val item = ConfigItem(key, type, defaultValue)
         configs.add(item)

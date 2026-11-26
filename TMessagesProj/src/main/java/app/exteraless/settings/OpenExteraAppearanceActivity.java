@@ -100,6 +100,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     // Blur
     private int blurHeaderRow;
     private int glassOutlineRow;
+    private int headerBlurStyleRow;
     private int glassMessageMenuRow;
     private int forceBlurRow;
     private int disableAvatarBlurRow;
@@ -126,6 +127,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private int md3ListItemsRow;
     private int md3PlayerRow;
     private int md3MiniPlayerRow;
+    private int md3ProfileActionsRow;
     private int md3TilesRow;
     private boolean md3Expanded;
     private int iosGroupRow;
@@ -247,10 +249,11 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             md3ListItemsRow = addRow("md3ListItems");
             md3PlayerRow = addRow("md3Player");
             md3MiniPlayerRow = addRow("md3MiniPlayer");
+            md3ProfileActionsRow = addRow("md3ProfileActions");
             md3TilesRow = addRow("hgTiles");
         } else {
             md3LoadingRow = md3SliderRow = md3SwitchRow = md3ChatHeaderRow = md3NavBarRow = md3ListItemsRow = -1;
-            md3PlayerRow = md3MiniPlayerRow = md3TilesRow = -1;
+            md3PlayerRow = md3MiniPlayerRow = md3ProfileActionsRow = md3TilesRow = -1;
         }
         iosGroupRow = addRow("iosStyles");
         if (iosExpanded) {
@@ -271,6 +274,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
 
         blurHeaderRow = addRow("blurHeader");
         glassOutlineRow = addRow("glassOutline");
+        headerBlurStyleRow = addRow("headerBlurStyle");
         glassMessageMenuRow = addRow("glassMessageMenu");
         forceBlurRow = addRow("forceBlur");
         disableAvatarBlurRow = addRow("disableAvatarBlur");
@@ -799,6 +803,10 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             AppearanceConfig.md3MiniPlayer.setConfigBool(!AppearanceConfig.md3MiniPlayer.Bool());
             rebuildAllAndSelf(view, AppearanceConfig.md3MiniPlayer.Bool());
             return;
+        } else if (position == md3ProfileActionsRow) {
+            AppearanceConfig.newProfileActionsStyle.setConfigBool(!AppearanceConfig.newProfileActionsStyle.Bool());
+            rebuildAllAndSelf(view, AppearanceConfig.newProfileActionsStyle.Bool());
+            return;
         } else if (position == md3TilesRow) {
             boolean on = !app.heartgram.tiles.ChatTiles.enabled();
             app.heartgram.HeartGramPrefs.prefs().edit().putBoolean("tiles", on).apply();
@@ -836,6 +844,9 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     getString(R.string.OEAppearanceGlassOutlineSolid),
                     getString(R.string.OEAppearanceGlassOutlineHidden)
             }, AppearanceConfig.glassOutlineStyle, null);
+            return;
+        } else if (position == headerBlurStyleRow) {
+            showHeaderBlurSelector(position);
             return;
         } else if (position == startupFolderRow) {
             showStartupFolderDialog(position);
@@ -1218,6 +1229,9 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     } else if (position == md3MiniPlayerRow) {
                         cell.setText(getString(R.string.OEAppearanceMd3MiniPlayer), "",
                                 AppearanceConfig.md3MiniPlayer.Bool(), true, true);
+                    } else if (position == md3ProfileActionsRow) {
+                        cell.setText(getString(R.string.NewProfileActionsStyle), "",
+                                AppearanceConfig.newProfileActionsStyle.Bool(), true, true);
                     } else if (position == md3TilesRow) {
                         cell.setText(getString(R.string.HGMd3Tiles), "",
                                 app.heartgram.tiles.ChatTiles.enabled(), false, true);
@@ -1259,6 +1273,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
                     } else if (position == glassOutlineRow) {
                         String[] v = {getString(R.string.OEAppearanceGlassOutlineGlare), getString(R.string.OEAppearanceGlassOutlineSolid), getString(R.string.OEAppearanceGlassOutlineHidden)};
                         cell.setTextAndValue(getString(R.string.OEAppearanceGlassOutline), v[clamp(AppearanceConfig.glassOutlineStyle.Int(), v.length)], true);
+                    } else if (position == headerBlurStyleRow) {
+                        cell.setTextAndValue(getString(R.string.HeaderBlurStyle), headerBlurLabel(AppearanceConfig.headerBlurStyle.Int()), true);
                     } else if (position == startupFolderRow) {
                         cell.setTextAndValue(getString(R.string.OEStartupFolder), startupFolderValue(), true);
                     } else if (position == tabTitleStyleRow) {
@@ -1374,10 +1390,10 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             } else if (position == md3LoadingRow || position == md3SliderRow
                     || position == md3SwitchRow || position == md3ChatHeaderRow
                     || position == md3NavBarRow || position == md3ListItemsRow
-                    || position == md3PlayerRow || position == md3MiniPlayerRow || position == md3TilesRow
+                    || position == md3PlayerRow || position == md3MiniPlayerRow || position == md3ProfileActionsRow || position == md3TilesRow
                     || position == iosNavBarRow || position == iosChatHeaderRow) {
                 return TYPE_ROUND_CHECK;
-            } else if (position == folderPillHeightRow || position == tilesRadiusRow || position == tilesGapRow || position == tilesBrightRow || position == tilesTintRow || position == dividerStyleRow || position == glassOutlineRow
+            } else if (position == folderPillHeightRow || position == tilesRadiusRow || position == tilesGapRow || position == tilesBrightRow || position == tilesTintRow || position == dividerStyleRow || position == glassOutlineRow || position == headerBlurStyleRow
                     || position == tabTitleStyleRow
                     || position == startupFolderRow
                     || position == tabCounterRow || position == titleTextRow) {
@@ -1387,8 +1403,8 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         }
     }
 
-    /** Сколько стилей MD3 включено. Счётчик «N/8» рядом с шевроном. */
-    private static final int MD3_STYLE_COUNT = 9;
+    /** Сколько стилей MD3 включено. Счётчик рядом с шевроном. */
+    private static final int MD3_STYLE_COUNT = 10;
     /** Значение селектора NagramX, соответствующее Material Design 3. */
     private static final int STYLE_MD3 = 2;
 
@@ -1412,8 +1428,41 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         if (AppearanceConfig.m3ListItems.Bool()) n++;
         if (AppearanceConfig.md3Player.Bool()) n++;
         if (AppearanceConfig.md3MiniPlayer.Bool()) n++;
+        if (AppearanceConfig.newProfileActionsStyle.Bool()) n++;
         if (app.heartgram.tiles.ChatTiles.enabled()) n++;
         return n;
+    }
+
+    private String headerBlurLabel(int style) {
+        if (style == 1 && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+            return getString(R.string.HeaderBlurProgressive);
+        }
+        if (style == 2) {
+            return getString(R.string.HeaderBlurFade);
+        }
+        return getString(R.string.HeaderBlurDefault);
+    }
+
+    private void showHeaderBlurSelector(int position) {
+        if (getParentActivity() == null) {
+            return;
+        }
+        boolean hasProgressive = android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU;
+        final int[] values = hasProgressive ? new int[]{0, 1, 2} : new int[]{0, 2};
+        final CharSequence[] labels = hasProgressive
+                ? new CharSequence[]{getString(R.string.HeaderBlurDefault), getString(R.string.HeaderBlurProgressive), getString(R.string.HeaderBlurFade)}
+                : new CharSequence[]{getString(R.string.HeaderBlurDefault), getString(R.string.HeaderBlurFade)};
+        AlertDialog.Builder builder = new AlertDialog.Builder(getParentActivity());
+        builder.setTitle(getString(R.string.HeaderBlurStyle));
+        builder.setItems(labels, (dialog, which) -> {
+            AppearanceConfig.headerBlurStyle.setConfigInt(values[clamp(which, values.length)]);
+            if (listAdapter != null) {
+                listAdapter.notifyItemChanged(position);
+            }
+            rebuildAll();
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 
     private void onM3ListItemsChanged() {

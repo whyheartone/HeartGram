@@ -592,6 +592,46 @@ public final class ExteraConfig {
         AppearanceConfig.glassMessageMenu.setConfigBool(value);
     }
 
+    public static HeaderBlurStyle getHeaderBlurStyle() {
+        ensureLoaded();
+        return enumAt(HeaderBlurStyle.values(), AppearanceConfig.headerBlurStyle.Int(), HeaderBlurStyle.PROGRESSIVE);
+    }
+
+    public static void setHeaderBlurStyle(HeaderBlurStyle value) {
+        ensureLoaded();
+        AppearanceConfig.headerBlurStyle.setConfigInt(value.ordinal());
+    }
+
+    public static boolean getNewProfileActionsStyle() {
+        ensureLoaded();
+        return AppearanceConfig.newProfileActionsStyle.Bool();
+    }
+
+    public static void setNewProfileActionsStyle(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.newProfileActionsStyle.setConfigBool(value);
+    }
+
+    public static DefaultProfileTab getDefaultProfileTab() {
+        ensureLoaded();
+        return enumAt(DefaultProfileTab.values(), GeneralConfig.defaultProfileTab.Int(), DefaultProfileTab.DEFAULT);
+    }
+
+    public static void setDefaultProfileTab(DefaultProfileTab value) {
+        ensureLoaded();
+        GeneralConfig.defaultProfileTab.setConfigInt(value.ordinal());
+    }
+
+    public static boolean getAutoRunWidgets() {
+        ensureLoaded();
+        return ChatsConfig.autoRunWidgets.Bool();
+    }
+
+    public static void setAutoRunWidgets(boolean value) {
+        ensureLoaded();
+        ChatsConfig.autoRunWidgets.setConfigBool(value);
+    }
+
     public static boolean getForceBlur() {
         return getPreferences().getBoolean("forceBlur", false);
     }
@@ -1901,6 +1941,12 @@ public final class ExteraConfig {
                 return true;
             case "glassOutlineStyle":
                 setGlassOutlineStyle(enumAt(GlassOutlineStyle.values(), value, GlassOutlineStyle.GLARE));
+                return true;
+            case "headerBlurStyle":
+                setHeaderBlurStyle(enumAt(HeaderBlurStyle.values(), value, HeaderBlurStyle.PROGRESSIVE));
+                return true;
+            case "defaultProfileTab":
+                setDefaultProfileTab(enumAt(DefaultProfileTab.values(), value, DefaultProfileTab.DEFAULT));
                 return true;
             case "cameraType":
                 setCameraType(enumAt(CameraType.values(), value, CameraType.CAMERA_1));

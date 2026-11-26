@@ -5,6 +5,8 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.view.View;
 
+import com.exteragram.messenger.utils.ui.WidgetRunPlaceholder;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.SharedConfig;
 import org.telegram.tgnet.TLRPC;
@@ -29,6 +31,7 @@ public final class WidgetInlinePreview implements WidgetSandboxPlayer.Host {
     private final Paint background = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Path clip = new Path();
     private WidgetSandboxPlayer player;
+    private WidgetRunPlaceholder runPlaceholder;
     private int widthPx;
     private boolean shown;
 
@@ -65,6 +68,7 @@ public final class WidgetInlinePreview implements WidgetSandboxPlayer.Host {
 
     /** UI: the view no longer shows it. */
     public void hide() {
+        if (runPlaceholder != null) runPlaceholder.stopSpinner();
         if (!shown) return;
         shown = false;
         player.setVisible(false);
@@ -85,7 +89,14 @@ public final class WidgetInlinePreview implements WidgetSandboxPlayer.Host {
         canvas.clipPath(clip);
         background.setColor(Theme.getColor(Theme.key_chat_outBubble, resourcesProvider) | 0xff000000);
         canvas.drawRect(AndroidUtilities.rectTmp, background);
-        if (player != null && player.draw(canvas, widthPx)) view.postInvalidateOnAnimation();
+        int placeholderState = WidgetRunPlaceholder.stateOf(url, message);
+        if (placeholderState != WidgetRunPlaceholder.STATE_NONE) {
+            if (runPlaceholder == null) runPlaceholder = new WidgetRunPlaceholder(false);
+            runPlaceholder.draw(canvas, view, widthPx, height, Theme.getColor(Theme.key_chat_outPreviewInstantText, resourcesProvider), placeholderState);
+        } else {
+            if (runPlaceholder != null) runPlaceholder.stopSpinner();
+            if (player != null && player.draw(canvas, widthPx)) view.postInvalidateOnAnimation();
+        }
         canvas.restore();
     }
 

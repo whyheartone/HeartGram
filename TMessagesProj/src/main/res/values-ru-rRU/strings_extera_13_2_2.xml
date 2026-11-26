@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="HeaderBlurStyle">Размытие шапки</string>
+    <string name="HeaderBlurDefault">Обычное</string>
+    <string name="HeaderBlurProgressive">Прогрессивное</string>
+    <string name="HeaderBlurFade">Градиент</string>
+    <string name="NewProfileActionsStyle">Кнопки профиля</string>
+    <string name="DefaultProfileTab">Вкладка по умолчанию</string>
+    <string name="AutoRunWidgets">Автозапуск виджетов</string>
+    <string name="AutoRunWidgetsInfo">Иначе виджет в сообщении запустится только после нажатия.</string>
+    <string name="WidgetRun">Запустить виджет</string>
+    <string name="WidgetNotRunning">Виджет</string>
+    <string name="WidgetLoadFailed">Не удалось загрузить виджет</string>
+</resources>

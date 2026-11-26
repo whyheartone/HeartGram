@@ -10,6 +10,8 @@ import android.graphics.drawable.Drawable;
 import android.view.MotionEvent;
 import android.view.View;
 
+import com.exteragram.messenger.utils.ui.WidgetRunPlaceholder;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.BuildVars;
 import org.telegram.messenger.FileLog;
@@ -54,6 +56,7 @@ public final class RichWidgetBlock extends RichMessageLayout.RichBlock
     /** Newer layouts of a message get larger serials: the newest attached block runs the widget. */
     public final int serial = serials.incrementAndGet();
     private WidgetSandboxPlayer player;
+    private WidgetRunPlaceholder runPlaceholder;
     // UI: this block runs the widget (WidgetMedia#attach); otherwise it only shows its frames.
     private boolean running;
     /**
@@ -291,6 +294,7 @@ public final class RichWidgetBlock extends RichMessageLayout.RichBlock
 
     @Override
     protected void onDetachedFromWindow() {
+        if (runPlaceholder != null) runPlaceholder.stopSpinner();
         if (player == null) return;
         stop();
         player.unbind();
@@ -355,7 +359,14 @@ public final class RichWidgetBlock extends RichMessageLayout.RichBlock
         clip.addRoundRect(AndroidUtilities.rectTmp, radii, Path.Direction.CW);
         canvas.clipPath(clip);
         canvas.translate(0, shift);
-        if (player.draw(canvas, width) && view != null) view.postInvalidateOnAnimation();
+        int placeholderState = WidgetRunPlaceholder.stateOf(embed.url, message);
+        if (placeholderState == WidgetRunPlaceholder.STATE_IDLE || placeholderState != WidgetRunPlaceholder.STATE_NONE && running) {
+            if (runPlaceholder == null) runPlaceholder = new WidgetRunPlaceholder(true);
+            runPlaceholder.draw(canvas, view, width, laidOutHeight, Theme.getColor(root.isOut() ? Theme.key_chat_outPreviewInstantText : Theme.key_chat_inPreviewInstantText, resourcesProvider()), placeholderState);
+        } else {
+            if (runPlaceholder != null) runPlaceholder.stopSpinner();
+            if (player.draw(canvas, width) && view != null) view.postInvalidateOnAnimation();
+        }
         canvas.restore();
     }
 
@@ -520,6 +531,17 @@ public final class RichWidgetBlock extends RichMessageLayout.RichBlock
     @Override
     protected boolean onTouchEvent(MotionEvent event) {
         if (player == null || !running) return false;
+        if (runPlaceholder != null && WidgetMedia.waitsForTap(embed.url)) {
+            event.offsetLocation(bleedLeft, 0);
+            try {
+                return runPlaceholder.onTouchEvent(event, view, () -> {
+                    WidgetMedia.startByUser(embed.url);
+                    if (view != null) view.invalidate();
+                });
+            } finally {
+                event.offsetLocation(-bleedLeft, 0);
+            }
+        }
         if (WidgetMedia.isPreview(embed.url)) return false;
         event.offsetLocation(bleedLeft, 0);
         try {

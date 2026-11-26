@@ -363,6 +363,10 @@ object ChatsConfig {
         return SEEK_DURATIONS[if (index in SEEK_DURATIONS.indices) index else 1]
     }
 
+    /** Автоматический запуск мини-виджетов в сообщениях. */
+    @JvmField
+    val autoRunWidgets = addConfig("OEChatsAutoRunWidgets", ConfigItem.configTypeBool, false)
+
     private fun addConfig(key: String, type: Int, defaultValue: Any?): ConfigItem {
         val item = ConfigItem(key, type, defaultValue)
         configs.add(item)

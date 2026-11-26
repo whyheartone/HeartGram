@@ -210,6 +210,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
     private int dateOfForwardedMsgRow = -1;
     private int showTimeHintRow = -1;
     private int rememberAllRepliesRow = -1;
+    private int autoRunWidgetsRow = -1;
     private int chatMenuGroupRow = -1;
     private int chatMenuAdminsRow = -1;
     private int chatMenuRecentActionsRow = -1;
@@ -513,6 +514,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         dateOfForwardedMsgRow = addRow("dateOfForwardedMsg", "DateOfForwardedMsg");
         showTimeHintRow = addRow("showTimeHint", "ShowTimeHint");
         rememberAllRepliesRow = addRow("rememberAllBackMessages", "rememberAllBackMessages");
+        autoRunWidgetsRow = addRow("autoRunWidgets");
         messagesDividerRow = addRow();
 
         linkConfirmationsHeaderRow = addRow("linkConfirmationsHeader");
@@ -2198,6 +2200,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         if (position == dateOfForwardedMsgRow) return NaConfig.INSTANCE.getDateOfForwardedMsg();
         if (position == showTimeHintRow) return NaConfig.INSTANCE.getShowTimeHint();
         if (position == rememberAllRepliesRow) return NekoConfig.rememberAllBackMessages;
+        if (position == autoRunWidgetsRow) return ChatsConfig.autoRunWidgets;
         if (position == premiumEmojiStatusRow) return NaConfig.INSTANCE.getPremiumItemEmojiStatus();
         if (position == premiumEmojiInRepliesRow) return NaConfig.INSTANCE.getPremiumItemEmojiInReplies();
         if (position == premiumColorsInRepliesRow) return NaConfig.INSTANCE.getPremiumItemCustomColorInReplies();
@@ -2916,7 +2919,10 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             } else if (position == showTimeHintRow) {
                 cell.setTextAndCheck(getString(R.string.ShowTimeHint), NaConfig.INSTANCE.getShowTimeHint().Bool(), true);
             } else if (position == rememberAllRepliesRow) {
-                cell.setTextAndCheck(getString(R.string.rememberAllBackMessages), NekoConfig.rememberAllBackMessages.Bool(), false);
+                cell.setTextAndCheck(getString(R.string.rememberAllBackMessages), NekoConfig.rememberAllBackMessages.Bool(), true);
+            } else if (position == autoRunWidgetsRow) {
+                cell.setTextAndValueAndCheck(getString(R.string.AutoRunWidgets), getString(R.string.AutoRunWidgetsInfo),
+                        ChatsConfig.autoRunWidgets.Bool(), true, false);
             } else if (position == fixLinkPreviewRow) {
                 cell.setTextAndValueAndCheck(getString(R.string.FixLinkPreview), "x.com → fixupx.com",
                         NaConfig.INSTANCE.getFixLinkPreview().Bool(), false, true);

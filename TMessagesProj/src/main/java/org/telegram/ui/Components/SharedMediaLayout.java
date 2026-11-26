@@ -73,6 +73,8 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+
+import com.exteragram.messenger.utils.ui.ProfileUiHelper;
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat;
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -796,6 +798,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
 
     private int[] hasMedia;
     private int initialTab;
+    private boolean preferredTabPending;
 
     private SparseArray<MessageObject>[] selectedFiles = new SparseArray[]{new SparseArray<>(), new SparseArray<>()};
     private int cantDeleteMessagesCount;
@@ -1687,6 +1690,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
         } else {
             main_tab = null;
         }
+        preferredTabPending = viewType == VIEW_TYPE_PROFILE_ACTIVITY && initialTab == -1;
         if (initialTab == TAB_GIFTS || initialTab == TAB_RECOMMENDED_CHANNELS || initialTab == TAB_SAVED_DIALOGS || initialTab == TAB_COMMON_GROUPS) {
             this.initialTab = NaConfig.INSTANCE.getPreferCommonGroupsTab().Bool() && initialTab == TAB_GIFTS && userInfo != null && userInfo.common_chats_count > 0 ? TAB_COMMON_GROUPS : initialTab;
         } else if (user != null && user.bot && user.bot_has_main_app && user.bot_can_edit) {
@@ -6914,6 +6918,17 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                 if (!scrollSlidingTextTabStrip.hasTab(tab.first)) {
                     scrollSlidingTextTabStrip.addTextTab(tab.first, tab.second, idToView);
                 }
+            }
+        }
+        if (preferredTabPending) {
+            final int preferredTab = ProfileUiHelper.getPreferredTab();
+            if (delegate.isFragmentOpened()) {
+                preferredTabPending = false;
+            } else if (preferredTab != -1 && preferredTab != scrollSlidingTextTabStrip.getCurrentTabId() && scrollSlidingTextTabStrip.hasTab(preferredTab)) {
+                scrollSlidingTextTabStrip.setInitialTabId(preferredTab);
+                mediaPages[0].selectedType = preferredTab;
+                switchToCurrentSelectedMode(false);
+                onTabProgress(preferredTab);
             }
         }
         int id = getSelectedTab();
