@@ -229,10 +229,9 @@ class ExportActivity @JvmOverloads constructor(
         val act = parentActivity ?: return
         val builder = AlertDialog.Builder(act, resourceProvider)
         builder.setTitle(title)
-        builder.setSingleChoiceItems(options, selectedIndex) { dialog, which ->
+        builder.setItems(options) { _, which ->
             onSelected(which)
             listView.adapter?.update(true)
-            dialog.dismiss()
         }
         builder.setNegativeButton(getString(R.string.Cancel), null)
         showDialog(builder.create())
