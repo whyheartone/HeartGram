@@ -228,17 +228,9 @@ public class BaseFragmentSimpleGlass {
 
         glassBlurredFadeDrawable.setOverlayOnlyAlpha(210);
         glassBlurredFadeDrawable.setOverlayOnlyRange(gradientRangeFallback);
-        glassBlurredFadeDrawable.setGradientProfile(GlassUiHelper.HEADER_FADE_ALPHAS, GlassUiHelper.HEADER_FADE_POSITIONS);
 
         glassEngine.registerDrawable(view, glassBlurredFadeDrawable);
         return glassBlurredFadeDrawable;
-    }
-
-    public void updateActionBarFadeDrawable(View view) {
-        if (view.getBackground() instanceof GlassFadeBlurredDrawable) {
-            glassEngine.unregisterDrawable((GlassFadeBlurredDrawable) view.getBackground());
-            view.setBackground(createActionBarFadeDrawable(view));
-        }
     }
 
 

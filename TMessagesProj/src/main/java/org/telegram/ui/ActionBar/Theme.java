@@ -6683,6 +6683,10 @@ public class Theme {
         return currentTheme != null && currentTheme.isMonet();
     }
 
+    public static boolean isCurrentThemeMonet(ResourcesProvider resourcesProvider) {
+        return resourcesProvider != null ? resourcesProvider.isMonet() : isCurrentThemeMonet();
+    }
+
     public static ThemeInfo getActiveTheme() {
         return currentTheme;
     }
