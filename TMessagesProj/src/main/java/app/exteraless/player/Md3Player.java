@@ -30,13 +30,7 @@ public final class Md3Player {
     }
 
     public static BottomSheet create(Context context, Theme.ResourcesProvider resourcesProvider) {
-        if (handles(MediaController.getInstance().getPlayingMessageObject())) {
-            if (PlayerSheet.instance != null) {
-                PlayerSheet.instance.dismissImmediately();
-            }
-            return new PlayerSheet(context, resourcesProvider);
-        }
-        return new AudioPlayerAlert(context, resourcesProvider);
+        return com.exteragram.messenger.player.PlayerLauncher.create(context, resourcesProvider);
     }
 
     public static void open(BaseFragment fragment, PlayerMiniView source) {
@@ -48,9 +42,6 @@ public final class Md3Player {
             return;
         }
         BottomSheet sheet = create(fragment.getParentActivity(), fragment.getResourceProvider());
-        if (sheet instanceof PlayerSheet && source != null && source.canTransition()) {
-            ((PlayerSheet) sheet).setTransitionSource(source);
-        }
         fragment.showDialog(sheet);
     }
 

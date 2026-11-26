@@ -867,7 +867,7 @@ public abstract class BaseFragment {
     }
 
     public boolean dismissDialogOnPause(Dialog dialog) {
-        return true;
+        return !(dialog instanceof com.exteragram.messenger.player.MusicPlayerSheet && ApplicationLoader.mainInterfacePaused);
     }
 
     public boolean canBeginSlide() {

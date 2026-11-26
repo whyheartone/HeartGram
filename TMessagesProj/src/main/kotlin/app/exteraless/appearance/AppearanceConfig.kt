@@ -364,6 +364,62 @@ object AppearanceConfig {
     @JvmField
     val playerMiniTop = addConfig("OEPlayerMiniTop", ConfigItem.configTypeBool, false)
 
+    // ---- Настройки нового плеера exteraGram ----
+    @JvmField
+    val playerCoverColors = addConfig("OEPlayerCoverColors", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val playerMiniCoverColors = addConfig("OEPlayerMiniCoverColors", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val lyricsOnline = addConfig("OEPlayerLyricsOnline", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val lyricsProviders = addConfig("OEPlayerLyricsProviders", ConfigItem.configTypeString, "lrclib,lrcmux")
+
+    @JvmField
+    val lyricsProgress = addConfig("OEPlayerLyricsProgress", ConfigItem.configTypeInt, 1)
+
+    /** 0 — стиль exteraGram, 1 — стиль HeartGram (свечение, масштаб и размытие). */
+    @JvmField
+    val lyricsAnimStyle = addConfig("OEPlayerLyricsAnimStyle", ConfigItem.configTypeInt, 0)
+
+    @JvmField
+    val lyricsSubtitle = addConfig("OEPlayerLyricsSubtitle", ConfigItem.configTypeInt, 1)
+
+    @JvmField
+    val playerMotionCovers = addConfig("OEPlayerMotionCovers", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val playerYandexCanvas = addConfig("OEPlayerYandexCanvas", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val playerRhythmBackground = addConfig("OEPlayerRhythmBackground", ConfigItem.configTypeBool, true)
+
+    @JvmField
+    val playerParticles = addConfig("OEPlayerParticles", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val playerSpeedPitch = addConfig("OEPlayerSpeedPitch", ConfigItem.configTypeBool, false)
+
+    @JvmField
+    val playerMode = addConfig("OEPlayerMode", ConfigItem.configTypeInt, 0)
+
+    @JvmStatic
+    fun lyricsProvidersSet(): Set<String> {
+        ensureLoaded()
+        val raw = lyricsProviders.String() ?: ""
+        if (raw.isEmpty()) return emptySet()
+        return raw.split(',').map { it.trim() }.filter { it.isNotEmpty() }.toSet()
+    }
+
+    @JvmStatic
+    fun setLyricsProvidersSet(ids: Set<String>?) {
+        ensureLoaded()
+        val joined = ids?.map { it.trim() }?.filter { it.isNotEmpty() }?.joinToString(",") ?: ""
+        lyricsProviders.setConfigString(joined)
+    }
+
     @JvmStatic
     fun playerStyleItems(): List<ConfigItem> {
         ensureLoaded()
@@ -742,6 +798,13 @@ object AppearanceConfig {
         migrateIosChatHeader()
         migrateModernStyles()
         migrateDecorations()
+        migrateLyricsOnline()
+    }
+
+    private fun migrateLyricsOnline() {
+        if (!getPreferences().contains(lyricsOnline.key) && lrclibAllowed.Bool()) {
+            lyricsOnline.setConfigBool(true)
+        }
     }
 
     private fun migrateCenterTitle() {

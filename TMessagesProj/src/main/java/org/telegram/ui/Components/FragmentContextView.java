@@ -17,6 +17,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
 import android.content.Context;
@@ -60,6 +61,10 @@ import androidx.core.math.MathUtils;
 //import com.google.android.gms.vision.Frame;
 import androidx.annotation.NonNull;
 import androidx.core.graphics.ColorUtils;
+
+import com.exteragram.messenger.ExteraConfig;
+import com.exteragram.messenger.player.mini.MiniPlayerUiHelper;
+import com.exteragram.messenger.player.ui.SpeedPitchMenuItem;
 
 import org.telegram.messenger.AccountInstance;
 import org.telegram.messenger.AndroidUtilities;
@@ -156,8 +161,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     private SpeedIconDrawable speedIcon;
     private ActionBarMenuSlider.SpeedSlider speedSlider;
     private ActionBarMenuItem.Item[] speedItems = new ActionBarMenuItem.Item[6];
+    private SpeedPitchMenuItem speedPitchItem;
     private FrameLayout silentButton;
     private ImageView silentButtonImage;
+    private MiniPlayerUiHelper miniPlayer;
     private TextView joinButton;
     private int joinButtonWidth;
     private CellFlickerDrawable joinButtonFlicker;
@@ -898,6 +905,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         speedItems[3] = playbackSpeedButton.lazilyAddSubItem(3, R.drawable.msg_speed_fast, getString(R.string.SpeedFast));
         speedItems[4] = playbackSpeedButton.lazilyAddSubItem(4, R.drawable.msg_speed_veryfast, getString(R.string.SpeedVeryFast));
         speedItems[5] = playbackSpeedButton.lazilyAddSubItem(5, R.drawable.msg_speed_superfast, getString(R.string.SpeedSuperFast));
+        speedPitchItem = new SpeedPitchMenuItem(playbackSpeedButton, resourcesProvider);
         if (AndroidUtilities.density >= 3.0f) {
             playbackSpeedButton.setPadding(0, 1, 0, 0);
         }
@@ -928,6 +936,7 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             speedSlider.setSpeed(speed, false);
             ThemeBind.backgroundColor(speedSlider, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
             speedSlider.invalidateBlur(fragment instanceof ChatActivity);
+            speedPitchItem.update(isMusic);
             playbackSpeedButton.redrawPopup(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground));
             playbackSpeedButton.updateColor();
             updatePlaybackButton(false);
@@ -1026,6 +1035,13 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
         speedSlider.setSpeed(currentPlaybackSpeed, animated);
     }
 
+    private void applyMiniPlayerAccent() {
+        if (speedIcon != null && MiniPlayerUiHelper.isActive(miniPlayer)) {
+            speedIcon.setColor(miniPlayer.getSpeedColor(MediaController.getInstance().getPlaybackSpeed(isMusic)));
+            speedIcon.invalidateSelf();
+        }
+    }
+
     private android.graphics.drawable.Drawable lastSpeedButtonBackground;
     private PorterDuffColorFilter playButtonFilter, closeButtonFilter;
     private int playButtonFilterColor, closeButtonFilterColor, lastSpeedButtonColor;
@@ -1033,12 +1049,16 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     public void updateColors() {
         capsuleBlobDrawable.updateColors();  // final field, initialized before the constructor body
         float currentPlaybackSpeed = MediaController.getInstance().getPlaybackSpeed(isMusic);
-        final int color = getThemedColor(!equals(currentPlaybackSpeed, 1.0f) ? Theme.key_featuredStickers_addButtonPressed : Theme.key_inappPlayerClose);
+        final boolean newMiniPlayer = MiniPlayerUiHelper.isActive(miniPlayer);
+        if (newMiniPlayer) {
+            miniPlayer.updateColors();
+        }
+        final int color = newMiniPlayer ? miniPlayer.getSpeedColor(currentPlaybackSpeed) : getThemedColor(!equals(currentPlaybackSpeed, 1.0f) ? Theme.key_featuredStickers_addButtonPressed : Theme.key_inappPlayerClose);
         if (speedIcon != null) {
             speedIcon.setColor(color);
         }
         // also runs on every theme frame (Theme.Colorable): recolor in place, allocate only when a color changed
-        if (playbackSpeedButton != null) {
+        if (playbackSpeedButton != null && !newMiniPlayer) {
             final android.graphics.drawable.Drawable background = playbackSpeedButton.getBackground();
             if (background == null || background != lastSpeedButtonBackground) {
                 playbackSpeedButton.setBackground(lastSpeedButtonBackground = Theme.createSelectorDrawable(color & 0x19ffffff, 1, dp(14)));
@@ -1219,12 +1239,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
         }
         currentStyle = style;
-        md3Music = computeMd3Music();
-        if (!md3Music) {
-            if (md3Bar != null) {
-                md3Bar.setVisibility(GONE);
-            }
-            titleTextView.setVisibility(VISIBLE);
+        final boolean useNewMini = style == STYLE_AUDIO_PLAYER && ExteraConfig.getNewPlayerStyle() && app.exteraless.player.Md3Player.miniEnabled();
+        if (miniPlayer == null && useNewMini) {
+            miniPlayer = new MiniPlayerUiHelper(this, resourcesProvider);
+            miniPlayer.setOnColorsChanged(this::applyMiniPlayerAccent);
         }
         frameLayout.setWillNotDraw(currentStyle != STYLE_INACTIVE_GROUP_CALL);
         if (style != STYLE_INACTIVE_GROUP_CALL) {
@@ -1433,6 +1451,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 playbackSpeedButton.setTag(null);
             }
         }
+        if (miniPlayer != null) {
+            miniPlayer.onStyleApplied(style == STYLE_AUDIO_PLAYER && ExteraConfig.getNewPlayerStyle() && app.exteraless.player.Md3Player.miniEnabled(),
+                    playButton, titleTextView, closeButton, playbackSpeedButton, silentButton, silentButtonImage, frameLayout, selector);
+        }
     }
 
     @Override
@@ -1565,6 +1587,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, AndroidUtilities.dp2(getStyleHeight()));
+        if (currentStyle == STYLE_AUDIO_PLAYER && miniPlayer != null && miniPlayer.getSwipeShrink() > 0) {
+            setMeasuredDimension(getMeasuredWidth(), Math.max(0, getMeasuredHeight() - miniPlayer.getSwipeShrink()));
+        }
     }
 
     @Override
@@ -1662,47 +1687,10 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
     float micAmplitude;
 
     public int getStyleHeight() {
-        return currentStyle == STYLE_INACTIVE_GROUP_CALL ? 48 : md3Music ? app.exteraless.player.PlayerBarView.HEIGHT_DP : 36;
-    }
-
-    private app.exteraless.player.PlayerBarView md3Bar;
-    private boolean md3Music;
-
-    private boolean computeMd3Music() {
-        MessageObject messageObject = MediaController.getInstance().getPlayingMessageObject();
-        return currentStyle == STYLE_AUDIO_PLAYER && app.exteraless.player.Md3Player.miniEnabled() && messageObject != null && messageObject.isMusic();
-    }
-
-    private void checkMd3Bar() {
-        boolean value = computeMd3Music();
-        boolean changed = value != md3Music;
-        md3Music = value;
-        if (value && md3Bar == null) {
-            md3Bar = new app.exteraless.player.PlayerBarView(getContext(), resourcesProvider, this::performClick, () -> closeButton.performClick());
-            addView(md3Bar, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, app.exteraless.player.PlayerBarView.HEIGHT_DP, Gravity.TOP | Gravity.LEFT));
+        if (currentStyle == STYLE_AUDIO_PLAYER && miniPlayer != null && ExteraConfig.getNewPlayerStyle() && app.exteraless.player.Md3Player.miniEnabled()) {
+            return MiniPlayerUiHelper.HEIGHT_DP;
         }
-        if (md3Bar != null) {
-            md3Bar.setVisibility(value ? VISIBLE : GONE);
-        }
-        if (currentStyle == STYLE_AUDIO_PLAYER) {
-            int stock = value ? INVISIBLE : VISIBLE;
-            playButton.setVisibility(stock);
-            titleTextView.setVisibility(stock);
-            closeButton.setVisibility(stock);
-            if (playbackSpeedButton != null) {
-                playbackSpeedButton.setVisibility(stock);
-            }
-        }
-        if (changed) {
-            frameLayout.setLayoutParams(LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, getStyleHeight(), Gravity.TOP | Gravity.LEFT, 0, 0, 0, 0));
-            if (topPadding > 0 && topPadding != AndroidUtilities.dp2(getStyleHeight())) {
-                setTopPadding(AndroidUtilities.dp2(getStyleHeight()));
-            }
-            requestLayout();
-        }
-        if (value) {
-            md3Bar.update();
-        }
+        return currentStyle == STYLE_INACTIVE_GROUP_CALL ? 48 : 36;
     }
 
     public boolean isCallTypeVisible() {
@@ -1923,6 +1911,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 create = true;
             }
         }
+        if (!create && miniPlayer != null && miniPlayer.isSwipeClosing()) {
+            create = true;
+        }
         boolean wasVisible = visible;
         if (messageObject == null || messageObject.getId() == 0 || messageObject.isVideo() || app.exteraless.player.Md3Player.hidesContextPlayer(fragment, messageObject)) {
             lastMessageObject = null;
@@ -1996,7 +1987,6 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
             int prevStyle = currentStyle;
             updateStyle(STYLE_AUDIO_PLAYER);
-            checkMd3Bar();
             if (create && topPadding == 0) {
                 setTopPadding(AndroidUtilities.dp2(getStyleHeight()));
                 if (delegate != null) {
@@ -2103,6 +2093,9 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 TypefaceSpan span = new TypefaceSpan(AndroidUtilities.bold(), 0, getThemedColor(Theme.key_inappPlayerPerformer));
                 stringBuilder.setSpan(span, 0, messageObject.getMusicAuthor().length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
                 titleTextView.setText(stringBuilder, !create && wasVisible && isMusic);
+            }
+            if (miniPlayer != null) {
+                miniPlayer.bind(messageObject, !create && wasVisible);
             }
         }
     }
@@ -2752,11 +2745,14 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
             }
             invalidate();
         }
+        final int swipeSave = currentStyle == STYLE_AUDIO_PLAYER && miniPlayer != null ? miniPlayer.beginSwipeDraw(canvas) : -1;
         super.dispatchDraw(canvas);
 
-        if (currentStyle == STYLE_AUDIO_PLAYER && !md3Music) {
+        if (currentStyle == STYLE_AUDIO_PLAYER) {
             MessageObject playingMessageObject = MediaController.getInstance().getPlayingMessageObject();
-            if (playingMessageObject != null) {
+            if (MiniPlayerUiHelper.isActive(miniPlayer)) {
+                miniPlayer.drawProgress(canvas, playingMessageObject);
+            } else if (playingMessageObject != null) {
                 final float left = -dpf2(1);
                 final float right = getMeasuredWidth() + dpf2(1);
                 final float p = lerp(left, right, playingMessageObject.audioProgress);
@@ -2767,7 +2763,27 @@ public class FragmentContextView extends FrameLayout implements NotificationCent
                 canvas.drawRoundRect(left, top, p, bottom, dpf2(1), dpf2(1), progressPaint);
             }
         }
+        if (swipeSave >= 0) {
+            canvas.restoreToCount(swipeSave);
+        }
         wasDraw = true;
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if (currentStyle == STYLE_AUDIO_PLAYER && miniPlayer != null && miniPlayer.onInterceptSwipe(ev)) {
+            return true;
+        }
+        return super.onInterceptTouchEvent(ev);
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (currentStyle == STYLE_AUDIO_PLAYER && miniPlayer != null && miniPlayer.onSwipeTouchEvent(event, super::onTouchEvent)) {
+            return true;
+        }
+        return super.onTouchEvent(event);
     }
 
     boolean drawOverlay;

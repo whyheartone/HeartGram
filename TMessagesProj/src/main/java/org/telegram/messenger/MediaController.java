@@ -3498,7 +3498,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         if (audioPlayer != null) {
             if (music) {
-                audioPlayer.setPlaybackSpeed(Math.round(speed * 10f) / 10f, false);
+                audioPlayer.setPlaybackSpeed(Math.round(speed * 10f) / 10f, com.exteragram.messenger.ExteraConfig.getNewPlayerStyle() && com.exteragram.messenger.ExteraConfig.getPlayerSpeedPitch());
             } else {
                 audioPlayer.setPlaybackSpeed(Math.round(speed * 10f) / 10f);
             }
@@ -3512,6 +3512,12 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.messagePlayingSpeedChanged);
         if (!ignorePlayerUpdate) {
             CastSync.setSpeed(speed);
+        }
+    }
+
+    public void restoreMusicPlaybackSpeed() {
+        if (audioPlayer != null) {
+            audioPlayer.setPlaybackSpeed(Math.round(currentMusicPlaybackSpeed * 10f) / 10f, com.exteragram.messenger.ExteraConfig.getNewPlayerStyle() && com.exteragram.messenger.ExteraConfig.getPlayerSpeedPitch());
         }
     }
 
@@ -4187,8 +4193,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                         }
                         shouldSavePositionForCurrentAudio = name;
                     }
-                    if ((messageObject.getDuration() >= 10 * 60 || app.exteraless.player.Md3Player.enabled()) && Math.abs(currentMusicPlaybackSpeed - 1.0f) > 0.001f) {
-                        audioPlayer.setPlaybackSpeed(Math.round(currentMusicPlaybackSpeed * 10f) / 10f, false);
+                    if ((messageObject.getDuration() >= 10 * 60 || com.exteragram.messenger.ExteraConfig.getNewPlayerStyle()) && Math.abs(currentMusicPlaybackSpeed - 1.0f) > 0.001f) {
+                        audioPlayer.setPlaybackSpeed(Math.round(currentMusicPlaybackSpeed * 10f) / 10f, com.exteragram.messenger.ExteraConfig.getNewPlayerStyle() && com.exteragram.messenger.ExteraConfig.getPlayerSpeedPitch());
                     }
                 }
                 if (messageObject.forceSeekTo >= 0) {
@@ -4483,7 +4489,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         Utilities.globalQueue.postRunnable(() -> {
             AudioInfo info = null;
             try {
-                info = AudioInfo.getAudioInfo(file);
+                info = com.exteragram.messenger.player.AudioInfoCache.get(file);
             } catch (Exception e) {
                 FileLog.e(e);
             }

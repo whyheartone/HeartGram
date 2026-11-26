@@ -734,7 +734,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
             presentFragment(new PillStackSettingsActivity());
             return;
         } else if (position == playerStyleRow) {
-            app.exteraless.player.PlayerSheet.openStyleEditor(this);
+            com.exteragram.messenger.player.PlayerLauncher.openSettings(this);
             return;
         } else if (position == md3EditorRow) {
             presentFragment(new app.heartgram.settings.HeartGramMd3Activity());

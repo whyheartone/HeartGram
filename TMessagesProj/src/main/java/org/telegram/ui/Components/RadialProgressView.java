@@ -34,6 +34,8 @@ import java.util.HashSet;
 
 public class RadialProgressView extends View implements Drawable.Callback, Theme.Colorable {
 
+    public static final int STYLE_MATERIAL3_LOADING = M3CircularProgress.STYLE_LOADING_INDICATOR;
+
     private long lastUpdateTime;
     private float radOffset;
     private float currentCircleLength;

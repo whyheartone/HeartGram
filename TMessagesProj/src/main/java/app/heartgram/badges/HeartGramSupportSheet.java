@@ -61,10 +61,10 @@ public final class HeartGramSupportSheet {
         root.setPadding(dp(20), dp(12), dp(20), dp(16));
         root.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
 
-        // 3D-сердце HeartGram по умолчанию; если у поддержавшего выбрано кастомное эмодзи — показываем его
+        // 3D-сердце HeartGram по умолчанию; если открыли значок поддержавшего с кастомным эмодзи — показываем его.
+        // Когда previewDocument == 0 (окно открыто из «Другое»), всегда показываем наше сердце, а не чужой или свой эмодзи.
         FrameLayout art = new FrameLayout(context);
-        long shown = previewDocument != 0 ? previewDocument
-                : HeartGramBadges.documentFor(UserConfig.getInstance(UserConfig.selectedAccount).getCurrentUser());
+        long shown = previewDocument;
         if (shown != 0 && !HeartGramBadges.isDefaultHeartDocument(shown)) {
             art.addView(HeartGramBadgeSheet.createEmojiView(context, shown), new FrameLayout.LayoutParams(dp(84), dp(84), Gravity.CENTER));
         } else {

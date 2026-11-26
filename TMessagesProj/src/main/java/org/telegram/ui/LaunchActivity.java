@@ -3329,9 +3329,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
                 pushOpened = false;
                 isNew = false;
             } else if (showPlayer) {
-                if (!actionBarLayout.getFragmentStack().isEmpty()) {
+                if (!actionBarLayout.getFragmentStack().isEmpty() && !com.exteragram.messenger.player.PlayerLauncher.isShowing()) {
                     BaseFragment fragment = actionBarLayout.getFragmentStack().get(0);
-                    fragment.showDialog(app.exteraless.player.Md3Player.create(this, null));
+                    fragment.showDialog(com.exteragram.messenger.player.PlayerLauncher.create(this, null));
                 }
                 pushOpened = false;
             } else if (showLocations) {
@@ -9674,8 +9674,8 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
     }
 
     private static void dismissPlayerSheets() {
-        if (app.exteraless.player.PlayerSheet.instance != null) {
-            app.exteraless.player.PlayerSheet.instance.dismissImmediately();
+        if (com.exteragram.messenger.player.MusicPlayerSheet.instance != null) {
+            com.exteragram.messenger.player.MusicPlayerSheet.instance.dismiss();
         }
         if (AudioPlayerAlert.instance != null) {
             AudioPlayerAlert.instance.dismiss();

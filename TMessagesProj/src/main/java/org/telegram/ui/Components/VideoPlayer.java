@@ -2048,13 +2048,15 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
                 @NonNull Context context,
                 boolean enableFloatOutput,
                 boolean enableAudioTrackPlaybackParams) {
-            return new DefaultAudioSink.Builder(context)
+            final com.exteragram.messenger.player.rhythm.RhythmTap rhythmTap = new com.exteragram.messenger.player.rhythm.RhythmTap();
+            return rhythmTap.wrap(new DefaultAudioSink.Builder(context)
                     .setEnableFloatOutput(enableFloatOutput)
                     .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
                     .setAudioProcessors(new AudioProcessor[]{
-                            new TeeAudioProcessor(new VisualizerBufferSink())
+                            new TeeAudioProcessor(new VisualizerBufferSink()),
+                            rhythmTap.createProcessor()
                     })
-                    .build();
+                    .build());
         }
     }
 

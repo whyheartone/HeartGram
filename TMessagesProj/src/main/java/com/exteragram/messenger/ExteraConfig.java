@@ -648,6 +648,147 @@ public final class ExteraConfig {
         AppearanceConfig.showFeedUnreadCounter.setConfigBool(value);
     }
 
+    // ---- Плеер exteraGram (хранится в AppearanceConfig) ----
+
+    public static boolean getNewPlayerStyle() {
+        ensureLoaded();
+        return AppearanceConfig.md3Player.Bool();
+    }
+
+    public static void setNewPlayerStyle(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.md3Player.setConfigBool(value);
+    }
+
+    public static boolean getPlayerCoverColors() {
+        ensureLoaded();
+        return AppearanceConfig.playerCoverColors.Bool();
+    }
+
+    public static void setPlayerCoverColors(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.playerCoverColors.setConfigBool(value);
+    }
+
+    public static boolean getPlayerMiniCoverColors() {
+        ensureLoaded();
+        return AppearanceConfig.playerMiniCoverColors.Bool();
+    }
+
+    public static void setPlayerMiniCoverColors(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.playerMiniCoverColors.setConfigBool(value);
+    }
+
+    public static boolean getLyricsOnline() {
+        ensureLoaded();
+        return AppearanceConfig.lyricsOnline.Bool();
+    }
+
+    public static void setLyricsOnline(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.lyricsOnline.setConfigBool(value);
+        AppearanceConfig.lrclibAllowed.setConfigBool(value);
+    }
+
+    public static Set<String> getLyricsProviders() {
+        return AppearanceConfig.lyricsProvidersSet();
+    }
+
+    public static void setLyricsProviders(Set<String> value) {
+        AppearanceConfig.setLyricsProvidersSet(value);
+    }
+
+    public static int getLyricsProgress() {
+        ensureLoaded();
+        return AppearanceConfig.lyricsProgress.Int();
+    }
+
+    public static void setLyricsProgress(int value) {
+        ensureLoaded();
+        AppearanceConfig.lyricsProgress.setConfigInt(value);
+    }
+
+    public static int getLyricsAnimStyle() {
+        ensureLoaded();
+        return AppearanceConfig.lyricsAnimStyle.Int();
+    }
+
+    public static void setLyricsAnimStyle(int value) {
+        ensureLoaded();
+        AppearanceConfig.lyricsAnimStyle.setConfigInt(value);
+    }
+
+    public static int getLyricsSubtitle() {
+        ensureLoaded();
+        return AppearanceConfig.lyricsSubtitle.Int();
+    }
+
+    public static void setLyricsSubtitle(int value) {
+        ensureLoaded();
+        AppearanceConfig.lyricsSubtitle.setConfigInt(value);
+    }
+
+    public static boolean getPlayerMotionCovers() {
+        ensureLoaded();
+        return AppearanceConfig.playerMotionCovers.Bool();
+    }
+
+    public static void setPlayerMotionCovers(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.playerMotionCovers.setConfigBool(value);
+    }
+
+    public static boolean getPlayerYandexCanvas() {
+        ensureLoaded();
+        return AppearanceConfig.playerYandexCanvas.Bool();
+    }
+
+    public static void setPlayerYandexCanvas(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.playerYandexCanvas.setConfigBool(value);
+    }
+
+    public static boolean getPlayerRhythmBackground() {
+        ensureLoaded();
+        return AppearanceConfig.playerRhythmBackground.Bool();
+    }
+
+    public static void setPlayerRhythmBackground(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.playerRhythmBackground.setConfigBool(value);
+    }
+
+    public static boolean getPlayerParticles() {
+        ensureLoaded();
+        return AppearanceConfig.playerParticles.Bool();
+    }
+
+    public static void setPlayerParticles(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.playerParticles.setConfigBool(value);
+    }
+
+    public static boolean getPlayerSpeedPitch() {
+        ensureLoaded();
+        return AppearanceConfig.playerSpeedPitch.Bool();
+    }
+
+    public static void setPlayerSpeedPitch(boolean value) {
+        ensureLoaded();
+        AppearanceConfig.playerSpeedPitch.setConfigBool(value);
+    }
+
+    public static int getPlayerMode() {
+        ensureLoaded();
+        return AppearanceConfig.playerMode.Int();
+    }
+
+    public static void setPlayerMode(int value) {
+        ensureLoaded();
+        AppearanceConfig.playerMode.setConfigInt(value);
+    }
+
     public static float getStickerSize() {
         ensureLoaded();
         return (float) (NekoConfig.stickerSize.Float());

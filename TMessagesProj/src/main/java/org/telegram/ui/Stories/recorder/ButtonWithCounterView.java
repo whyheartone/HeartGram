@@ -196,6 +196,17 @@ public class ButtonWithCounterView extends FrameLayout implements Loadable, Them
         }
     }
 
+    public void setColor(int color, int rippleColor) {
+        if (filled) {
+            customBackgroundColor = true;
+            setBackground(Theme.createRoundRectDrawable(dp(radiusDp), backgroundColor = color));
+        } else {
+            customTextColor = true;
+            text.setTextColor(color);
+        }
+        setRippleColor(rippleColor);
+    }
+
     public void updateColors(Theme.ResourcesProvider resourcesProvider) {
         this.resourcesProvider = resourcesProvider;
         customTextColor = false;

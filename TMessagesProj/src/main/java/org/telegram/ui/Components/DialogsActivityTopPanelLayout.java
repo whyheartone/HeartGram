@@ -77,6 +77,10 @@ public class DialogsActivityTopPanelLayout extends AnimatedLinearLayout implemen
         this.defaultRadiusDp = defaultRadius;
     }
 
+    public int getDefaultRadiusDp() {
+        return defaultRadiusDp;
+    }
+
     /** also called on every theme update (Theme.Colorable) */
     @Override
     public void updateColors() {
