@@ -2205,6 +2205,10 @@ public class Theme {
             return Theme.isCurrentThemeDark();
         }
 
+        default boolean isMonet() {
+            return Theme.isCurrentThemeMonet();
+        }
+
         default void applyServiceShaderMatrix(int w, int h, float translationX, float translationY) {
             Theme.applyServiceShaderMatrix(w, h, translationX, translationY);
         }

@@ -16634,6 +16634,13 @@ public class ChatActivity extends BaseFragment implements
         showFieldPanel(show, null, null, null, webPage, true, 0, null, cancel, 0, true);
     }
 
+    public void setForwardParams(boolean noQuote) {
+        noForwardQuote = noQuote;
+        if (messagePreviewParams != null) {
+            messagePreviewParams.setHideForwardSendersName(noQuote);
+        }
+    }
+
     public void showFieldPanelForForward(boolean show, ArrayList<MessageObject> messageObjectsToForward) {
         showFieldPanel(show, null, null, messageObjectsToForward, null, true, 0, null, false, 0, true);
     }

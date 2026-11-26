@@ -1182,6 +1182,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
     private HashMap<Integer, MessageObject> playlistMap = new HashMap<>();
     private ArrayList<MessageObject> shuffledPlaylist = new ArrayList<>();
     private int currentPlaylistNum;
+    private MessageObject detachedPlayingObject;
+    private MessageObject detachedAnchor;
     private boolean playlistReordered;
     private boolean forceLoopCurrentPlaylist;
     private boolean[] playlistEndReached = new boolean[]{false, false};
@@ -1850,6 +1852,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         playlist.clear();
         playlistMap.clear();
         shuffledPlaylist.clear();
+        detachedPlayingObject = null;
+        detachedAnchor = null;
         playlistClassGuid = 0;
         playlistEndReached[0] = playlistEndReached[1] = false;
         playlistMergeDialogId = 0;
@@ -2133,6 +2137,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
                     int newIndex = playlist.indexOf(playingMessageObject);
                     if (newIndex >= 0) {
                         currentPlaylistNum = newIndex;
+                    } else if (isPlayingDetached()) {
+                        restoreDetachedIndex(playlist);
                     } else {
                         if (currentPlaylistNum < 0 || currentPlaylistNum >= playlist.size()) {
                             currentPlaylistNum = 0;
@@ -2881,10 +2887,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         ArrayList<MessageObject> all = new ArrayList<>(playlist);
         shuffledPlaylist.clear();
 
+        final boolean detached = isPlayingDetached();
         MessageObject messageObject = null;
-        if (currentPlaylistNum >= 0 && currentPlaylistNum < playlist.size()) {
-            messageObject = playlist.get(currentPlaylistNum);
-            all.remove(currentPlaylistNum);
+        final int playingIndex = playingMessageObject != null ? playlist.indexOf(playingMessageObject) : -1;
+        final int currentIndex = playingIndex >= 0 ? playingIndex : currentPlaylistNum;
+        if (!detached && currentIndex >= 0 && currentIndex < playlist.size()) {
+            messageObject = playlist.get(currentIndex);
+            all.remove(currentIndex);
         }
 
         int count = all.size();
@@ -2896,6 +2905,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         if (messageObject != null) {
             shuffledPlaylist.add(messageObject);
             currentPlaylistNum = shuffledPlaylist.size() - 1;
+        } else if (detached) {
+            currentPlaylistNum = shuffledPlaylist.size();
+            detachedAnchor = null;
         }
     }
 
@@ -3139,13 +3151,16 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     private void playNextMessageWithoutOrder(boolean byStop) {
         ArrayList<MessageObject> currentPlayList = SharedConfig.shuffleMusic ? shuffledPlaylist : playlist;
+        syncPlaylistNum(currentPlayList);
 
-        if (byStop && (SharedConfig.repeatMode == 2 || SharedConfig.repeatMode == 1 && currentPlayList.size() == 1) && !forceLoopCurrentPlaylist) {
+        final boolean detached = isPlayingDetached();
+        if (byStop && (SharedConfig.repeatMode == 2 || SharedConfig.repeatMode == 1 && currentPlayList.size() == 1 && !detached) && !forceLoopCurrentPlaylist) {
+            final MessageObject detachedObject = detached ? playingMessageObject : null;
             cleanupPlayer(false, false);
-            if (currentPlaylistNum < 0 || currentPlaylistNum >= currentPlayList.size()) {
+            if (detachedObject == null && (currentPlaylistNum < 0 || currentPlaylistNum >= currentPlayList.size())) {
                 return;
             }
-            MessageObject messageObject = currentPlayList.get(currentPlaylistNum);
+            MessageObject messageObject = detachedObject != null ? detachedObject : currentPlayList.get(currentPlaylistNum);
             messageObject.audioProgress = 0;
             messageObject.audioProgressSec = 0;
             playMessage(messageObject);
@@ -3157,7 +3172,7 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             return;
         }
 
-        boolean last = traversePlaylist(currentPlayList, isPlaylistOrderReversed() ? +1 : -1);
+        boolean last = traversePlaylist(currentPlayList, getNextTrackDirection());
         if (last && byStop && SharedConfig.repeatMode == 0 && !forceLoopCurrentPlaylist) {
             stopPlaybackOnTrackEnd();
             return;
@@ -3170,6 +3185,13 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
         playMusicAgain = true;
         playMessage(currentPlayList.get(currentPlaylistNum));
+    }
+
+    public int getNextTrackDirection() {
+        if (SharedConfig.shuffleMusic) {
+            return -1;
+        }
+        return (currentSavedMusicList == null) == SharedConfig.playOrderReversed ? 1 : -1;
     }
 
     private void stopPlaybackOnTrackEnd() {
@@ -3212,16 +3234,18 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     public void playPreviousMessage() {
         ArrayList<MessageObject> currentPlayList = SharedConfig.shuffleMusic ? shuffledPlaylist : playlist;
-        if (currentPlayList.isEmpty() || currentPlaylistNum < 0 || currentPlaylistNum >= currentPlayList.size()) {
+        syncPlaylistNum(currentPlayList);
+        final boolean detached = isPlayingDetached();
+        if (currentPlayList.isEmpty() || !detached && (currentPlaylistNum < 0 || currentPlaylistNum >= currentPlayList.size())) {
             return;
         }
-        MessageObject currentSong = currentPlayList.get(currentPlaylistNum);
+        MessageObject currentSong = detached ? playingMessageObject : currentPlayList.get(currentPlaylistNum);
         if (currentSong.audioProgressSec > 10) {
             seekToProgress(currentSong, 0);
             return;
         }
 
-        traversePlaylist(currentPlayList, isPlaylistOrderReversed() ? -1 : 1);
+        traversePlaylist(currentPlayList, -getNextTrackDirection());
         if (currentPlaylistNum >= currentPlayList.size()) {
             return;
         }
@@ -3234,7 +3258,31 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         return currentSavedMusicList != null ? !SharedConfig.playOrderReversed : SharedConfig.playOrderReversed;
     }
 
+    private void syncPlaylistNum(ArrayList<MessageObject> list) {
+        final int index = findPlaylistNum(list);
+        if (index >= 0) {
+            currentPlaylistNum = index;
+        }
+    }
+
+    private int findPlaylistNum(ArrayList<MessageObject> list) {
+        if (playingMessageObject == null || isPlayingDetached()) {
+            return -1;
+        }
+        if (currentPlaylistNum >= 0 && currentPlaylistNum < list.size() && list.get(currentPlaylistNum) == playingMessageObject) {
+            return currentPlaylistNum;
+        }
+        return list.indexOf(playingMessageObject);
+    }
+
     private boolean traversePlaylist(ArrayList<MessageObject> playlist, int direction) {
+        if (isPlayingDetached()) {
+            detachedPlayingObject = null;
+            detachedAnchor = null;
+            if (direction > 0) {
+                currentPlaylistNum--;
+            }
+        }
         boolean last = false;
         final int wasCurrentPlaylistNum = currentPlaylistNum;
         int connectionState = ConnectionsManager.getInstance(UserConfig.selectedAccount).getConnectionState();
@@ -3306,8 +3354,8 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             return;
         }
         int nextIndex;
-        if (isPlaylistOrderReversed()) {
-            nextIndex = currentPlaylistNum + 1;
+        if (getNextTrackDirection() > 0) {
+            nextIndex = isPlayingDetached() ? currentPlaylistNum : currentPlaylistNum + 1;
             if (nextIndex >= currentPlayList.size()) {
                 nextIndex = 0;
             }
@@ -3515,14 +3563,26 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
         }
     }
 
+    public float getPlaybackSpeed(boolean music) {
+        return music ? currentMusicPlaybackSpeed : currentPlaybackSpeed;
+    }
+
+    public void setRewindPlaybackSpeed(float speed) {
+        if (audioPlayer != null) {
+            audioPlayer.setPlaybackSpeed(Math.round(speed * 10f) / 10f);
+        }
+    }
+
+    public void pauseAndStopLoading(MessageObject messageObject) {
+        if (audioPlayer != null && pauseMessage(messageObject, false)) {
+            audioPlayer.stopLoading();
+        }
+    }
+
     public void restoreMusicPlaybackSpeed() {
         if (audioPlayer != null) {
             audioPlayer.setPlaybackSpeed(Math.round(currentMusicPlaybackSpeed * 10f) / 10f, com.exteragram.messenger.ExteraConfig.getNewPlayerStyle() && com.exteragram.messenger.ExteraConfig.getPlayerSpeedPitch());
         }
-    }
-
-    public float getPlaybackSpeed(boolean music) {
-        return music ? currentMusicPlaybackSpeed : currentPlaybackSpeed;
     }
 
     public float getFastPlaybackSpeed(boolean music) {
@@ -4518,7 +4578,9 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
             } else {
                 if (playingMessageObject != null) {
                     currentPlaylistNum = playlist.indexOf(playingMessageObject);
-                    if (currentPlaylistNum == -1) {
+                    if (currentPlaylistNum == -1 && isPlayingDetached()) {
+                        restoreDetachedIndex(playlist);
+                    } else if (currentPlaylistNum == -1) {
                         clearPlaylist();
                         cleanupPlayer(true, true);
                     }
@@ -4669,6 +4731,48 @@ public class MediaController implements AudioManager.OnAudioFocusChangeListener,
 
     public ArrayList<MessageObject> getPlaylist() {
         return playlist;
+    }
+
+    public void removeFromPlaylist(MessageObject messageObject) {
+        final ArrayList<MessageObject> currentPlayList = SharedConfig.shuffleMusic ? shuffledPlaylist : playlist;
+        final boolean wasDetached = isPlayingDetached();
+        final int index = currentPlayList.indexOf(messageObject);
+        playlist.remove(messageObject);
+        shuffledPlaylist.remove(messageObject);
+        if (index < 0) {
+            return;
+        }
+        if (messageObject == playingMessageObject) {
+            detachedPlayingObject = messageObject;
+            currentPlaylistNum = index;
+        } else if (index < currentPlaylistNum) {
+            currentPlaylistNum--;
+        } else if (!wasDetached || index != currentPlaylistNum) {
+            return;
+        }
+        if (isPlayingDetached()) {
+            detachedAnchor = currentPlaylistNum >= 0 && currentPlaylistNum < currentPlayList.size() ? currentPlayList.get(currentPlaylistNum) : null;
+        }
+    }
+
+    private boolean isPlayingDetached() {
+        if (detachedPlayingObject == null) {
+            return false;
+        }
+        if (detachedPlayingObject != playingMessageObject || playlist.contains(detachedPlayingObject)) {
+            detachedPlayingObject = null;
+            detachedAnchor = null;
+            return false;
+        }
+        return true;
+    }
+
+    private void restoreDetachedIndex(ArrayList<MessageObject> list) {
+        final int index = detachedAnchor != null ? list.indexOf(detachedAnchor) : -1;
+        currentPlaylistNum = index >= 0 ? index : list.size();
+        if (index < 0) {
+            detachedAnchor = null;
+        }
     }
 
     public MessagesController.SavedMusicList getMusicList() {

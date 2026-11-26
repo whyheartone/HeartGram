@@ -249,6 +249,17 @@ public class ItemOptions {
         init();
     }
 
+    private boolean dismissOnMoveOutside = false;
+
+    public ItemOptions setDismissOnMoveOutside(boolean dismissOnMoveOutside) {
+        this.dismissOnMoveOutside = dismissOnMoveOutside;
+        return this;
+    }
+
+    public boolean isDismissOnMoveOutside() {
+        return dismissOnMoveOutside;
+    }
+
     // for swipeback
 
     public static ItemOptions swipeback(ActionBarPopupWindow.ActionBarPopupWindowLayout parentLayout, Theme.ResourcesProvider resourcesProvider) {
@@ -2071,6 +2082,13 @@ public class ItemOptions {
             hoveredItem = null;
             target.setPressed(false);
             target.performClick();
+        } else if (dismissOnMoveOutside && scrimView != null) {
+            int[] loc = new int[2];
+            scrimView.getLocationOnScreen(loc);
+            if (rawX < loc[0] || rawX > loc[0] + scrimView.getWidth() ||
+                rawY < loc[1] || rawY > loc[1] + scrimView.getHeight()) {
+                dismiss();
+            }
         }
     }
 

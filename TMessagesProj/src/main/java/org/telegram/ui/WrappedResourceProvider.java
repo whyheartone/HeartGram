@@ -94,4 +94,12 @@ public class WrappedResourceProvider implements Theme.ResourcesProvider {
         }
         return resourcesProvider.getAnimatedEmojiColorFilter();
     }
+
+    @Override
+    public boolean isMonet() {
+        if (resourcesProvider == null) {
+            return Theme.isCurrentThemeMonet();
+        }
+        return resourcesProvider.isMonet();
+    }
 }

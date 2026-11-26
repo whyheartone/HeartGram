@@ -466,6 +466,16 @@ public class UItem extends AdapterWithDiffUtils.Item implements Cloneable {
         return item;
     }
 
+    public static UItem asSlideView(int id, String[] choices, int chosen, Utilities.Callback<Integer> whenChose) {
+        UItem item = new UItem(UniversalAdapter.VIEW_TYPE_SLIDE, false);
+        item.id = id;
+        item.texts = choices;
+        item.intValue = chosen;
+        item.intCallback = whenChose;
+        item.longValue = -1;
+        return item;
+    }
+
     public static UItem asIntSlideView(
         int style,
         int min, int value, int max,

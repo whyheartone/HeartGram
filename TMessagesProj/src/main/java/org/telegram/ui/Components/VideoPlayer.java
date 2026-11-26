@@ -1573,11 +1573,24 @@ public class VideoPlayer implements Player.Listener, VideoListener, AnalyticsLis
         return player.getPlaybackState();
     }
 
+    private boolean loadingStopped;
+
     public Uri getCurrentUri() {
         return currentUri;
     }
 
+    public void stopLoading() {
+        if (player != null) {
+            player.stop();
+            loadingStopped = true;
+        }
+    }
+
     public void play() {
+        if (loadingStopped && player != null) {
+            loadingStopped = false;
+            player.prepare();
+        }
         mixedPlayWhenReady = true;
         if (mixedAudio) {
             if (!audioPlayerReady || !videoPlayerReady) {
