@@ -1387,7 +1387,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 }
             }
             listenerInProgress = false;
-            processLaterArrays();
+            processDeferredObserverOperations();
         } else if (id == NotificationCenter.fileUploadProgressChanged) {
             listenerInProgress = true;
             String fileName = (String) args[0];
@@ -1404,7 +1404,7 @@ public class DownloadController extends BaseController implements NotificationCe
                 }
             }
             listenerInProgress = false;
-            processLaterArrays();
+            processDeferredObserverOperations();
             try {
                 ArrayList<SendMessagesHelper.DelayedMessage> delayedMessages = getSendMessagesHelper().getDelayedMessages(fileName);
                 if (delayedMessages != null) {
