@@ -243,6 +243,18 @@ public class AvatarsDrawable {
         overrideAlpha = alpha;
     }
 
+    public interface ImageDrawer {
+        boolean draw(Canvas canvas, ImageReceiver imageReceiver, long id);
+    }
+
+    public ImageDrawer imageDrawer;
+
+    private void drawImage(Canvas canvas, ImageReceiver imageReceiver, long id) {
+        if (imageDrawer == null || !imageDrawer.draw(canvas, imageReceiver, id)) {
+            imageReceiver.draw(canvas);
+        }
+    }
+
     public static class DrawingState {
 
         public static final int ANIMATION_TYPE_NONE = -1;
@@ -675,10 +687,10 @@ public class AvatarsDrawable {
                 if (avatarScale != 1f) {
                     canvas.save();
                     canvas.scale(avatarScale, avatarScale, imageReceiver.getCenterX(), imageReceiver.getCenterY());
-                    imageReceiver.draw(canvas);
+                    drawImage(canvas, imageReceiver, states[a].id);
                     canvas.restore();
                 } else {
-                    imageReceiver.draw(canvas);
+                    drawImage(canvas, imageReceiver, states[a].id);
                 }
                 maxX = Math.max(maxX, imageReceiver.getCenterX() + imageReceiver.getImageWidth() / 2.0f * avatarScale);
                 if (needRestore) {
