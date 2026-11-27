@@ -34,37 +34,42 @@ import org.telegram.messenger.MediaController;
 import org.telegram.messenger.MessageObject;
 import org.telegram.messenger.R;
 import org.telegram.ui.ActionBar.Theme;
-import org.telegram.ui.Components.RecyclerListView;
 
 import java.util.Locale;
 
 /**
- * Живое превью для {@link PlayerSettingsSheet}: использует текущий играющий трек,
- * его реальную обложку и цвета (или цвета активной темы, если трек не играет).
- * При открытии поверх реального MusicPlayerSheet показывает компактную полоску мини-плеера.
+ * Контекстное визуальное превью для вкладок настроек плеера:
+ * - «Оформление» (0): как выглядят цвета обложки, фон в такт, частицы и анимация обложки;
+ * - «Текст песен» (1): как выглядят прогресс строки, стиль анимации и субтитры;
+ * - «Мини-плеер» (2): как выглядит верхняя капсула мини-плеера.
+ * Если трек играет сейчас — берёт его обложку и цвета; если нет — чистый образец оформления без фейкового трека.
  */
 @SuppressLint("ViewConstructor")
 public class PlayerSettingsPreviewView extends View {
 
-    private static final String[] LYRICS_MAIN = {
-            "Stars are drifting by",
-            "Hold onto the light",
-            "Fading in the night"
+    public static final int MODE_APPEARANCE = 0;
+    public static final int MODE_LYRICS = 1;
+    public static final int MODE_MINI = 2;
+
+    private static final String[] SAMPLE_MAIN = {
+            "Lines rise smoothly in rhythm",
+            "Active line glows in focus",
+            "Following the music beat"
     };
-    private static final String[] LYRICS_TRANS = {
-            "Звёзды уплывают вдаль",
-            "Удержи этот свет",
-            "Тая в тишине ночи"
+    private static final String[] SAMPLE_TRANS = {
+            "Строки плывут в такт музыке",
+            "Активная строка мягко светится",
+            "Следуя ритму композиции"
     };
-    private static final String[] LYRICS_ROMA = {
-            "Zvyozdy uplyvayut vdal",
-            "Uderzhi etot svet",
-            "Taya v tishine nochi"
+    private static final String[] SAMPLE_ROMA = {
+            "Stroki plyvut v takt muzyke",
+            "Aktivnaya stroka myagko svetitsya",
+            "Sleduya ritmu kompozitsii"
     };
 
     private static final float CARD_RADIUS_DP = 18f;
     private static final float MINI_RADIUS_DP = 16f;
-    private static final float COVER_RADIUS_DP = 12f;
+    private static final float COVER_RADIUS_DP = 14f;
     private static final long LINE_DURATION_MS = 2300L;
 
     private final Theme.ResourcesProvider resourcesProvider;
@@ -97,7 +102,7 @@ public class PlayerSettingsPreviewView extends View {
     private final Path wavePath = new Path();
     private final Path clipPath = new Path();
 
-    private boolean miniOnly;
+    private int mode = MODE_APPEARANCE;
     private boolean playing = true;
     private long lastFrameMs;
     private float phaseTimeSec;
@@ -113,20 +118,19 @@ public class PlayerSettingsPreviewView extends View {
     public PlayerSettingsPreviewView(Context context, Theme.ResourcesProvider resourcesProvider) {
         super(context);
         this.resourcesProvider = resourcesProvider;
-        setTag(RecyclerListView.TAG_NOT_SECTION);
 
         titlePaint.setTypeface(AndroidUtilities.bold());
-        titlePaint.setTextSize(dp(13.5f));
-        subtitlePaint.setTextSize(dp(11.5f));
+        titlePaint.setTextSize(dp(14f));
+        subtitlePaint.setTextSize(dp(12f));
         lyricActivePaint.setTypeface(AndroidUtilities.bold());
-        lyricActivePaint.setTextSize(dp(13.5f));
+        lyricActivePaint.setTextSize(dp(15f));
         lyricFillPaint.setTypeface(AndroidUtilities.bold());
-        lyricFillPaint.setTextSize(dp(13.5f));
+        lyricFillPaint.setTextSize(dp(15f));
         lyricDimPaint.setTypeface(AndroidUtilities.bold());
-        lyricDimPaint.setTextSize(dp(12f));
-        lyricSubPaint.setTextSize(dp(10.5f));
+        lyricDimPaint.setTextSize(dp(13f));
+        lyricSubPaint.setTextSize(dp(11.5f));
         badgeTextPaint.setTypeface(AndroidUtilities.bold());
-        badgeTextPaint.setTextSize(dp(9.5f));
+        badgeTextPaint.setTextSize(dp(10f));
 
         wavePaint.setStyle(Paint.Style.STROKE);
         wavePaint.setStrokeCap(Paint.Cap.ROUND);
@@ -138,7 +142,7 @@ public class PlayerSettingsPreviewView extends View {
         coverReceiver.setRoundRadius(dp(COVER_RADIUS_DP));
         miniCoverReceiver.setRoundRadius(dp(8));
         coverReceiver.setDelegate((imageReceiver, set, thumb, memCache) -> {
-            if (set) {
+            if (set && boundMessage != null) {
                 CoverColorExtractor.extract(boundMessage, imageReceiver, seed -> refresh());
                 invalidate();
             }
@@ -147,16 +151,16 @@ public class PlayerSettingsPreviewView extends View {
         refresh();
     }
 
-    public void setMiniOnly(boolean miniOnly) {
-        if (this.miniOnly != miniOnly) {
-            this.miniOnly = miniOnly;
+    public void setMode(int mode) {
+        if (this.mode != mode) {
+            this.mode = mode;
             requestLayout();
             invalidate();
         }
     }
 
     public int getPreferredHeightDp() {
-        return miniOnly ? 60 : 214;
+        return mode == MODE_MINI ? 72 : 148;
     }
 
     public void refresh() {
@@ -179,7 +183,9 @@ public class PlayerSettingsPreviewView extends View {
         if (seed != null && seed != CoverColorExtractor.NO_SEED) {
             coverColors = PlayerColors.fromSeed(seed, themeColors.dark);
         } else {
-            coverColors = themeColors;
+            // Если трек не играет — не выдумываем розовый, берём выразительную вариацию цвета темы
+            final int demoSeed = ColorUtils.blendARGB(themeColors.accent, 0xFF5C8DF6, 0.25f);
+            coverColors = PlayerColors.fromSeed(demoSeed, themeColors.dark);
         }
 
         final PlayerColors activeCard = ExteraConfig.getPlayerCoverColors() ? coverColors : themeColors;
@@ -190,7 +196,7 @@ public class PlayerSettingsPreviewView extends View {
 
         if (lastGradientAccent != coverColors.accent || coverFallbackGradient == null) {
             lastGradientAccent = coverColors.accent;
-            coverFallbackGradient = new LinearGradient(0f, 0f, dp(76), dp(76),
+            coverFallbackGradient = new LinearGradient(0f, 0f, dp(88), dp(88),
                     coverColors.accent, coverColors.tonal, Shader.TileMode.CLAMP);
         }
         invalidate();
@@ -243,24 +249,32 @@ public class PlayerSettingsPreviewView extends View {
             lineProgress += (dt * 1000f) / LINE_DURATION_MS;
             if (lineProgress >= 1f) {
                 lineProgress -= 1f;
-                activeLine = (activeLine + 1) % LYRICS_MAIN.length;
+                activeLine = (activeLine + 1) % SAMPLE_MAIN.length;
             }
         }
 
         final int padX = dp(12);
-        final int padTop = dp(4);
-        final String trackTitle = boundMessage != null && !TextUtils.isEmpty(boundMessage.getMusicTitle())
-                ? boundMessage.getMusicTitle()
-                : getString(R.string.AudioUnknownTitle);
-        final String trackArtist = boundMessage != null && !TextUtils.isEmpty(boundMessage.getMusicAuthor())
-                ? boundMessage.getMusicAuthor()
-                : "HeartGram";
+        final int padY = dp(6);
 
-        // 1. Мини-плеер (показывает реальный трек и PlayerMiniCoverColors)
-        final float miniH = dp(48);
-        miniRect.set(padX, padTop, w - padX, padTop + miniH);
+        if (mode == MODE_MINI) {
+            drawMiniPreview(canvas, padX, padY, w - padX, h - padY);
+        } else if (mode == MODE_LYRICS) {
+            drawLyricsOnlyPreview(canvas, padX, padY, w - padX, h - padY);
+        } else {
+            drawAppearancePreview(canvas, padX, padY, w - padX, h - padY);
+        }
+
+        if (playing) {
+            postInvalidateOnAnimation();
+        }
+    }
+
+    private void drawMiniPreview(Canvas canvas, float left, float top, float right, float bottom) {
+        miniRect.set(left, top, right, bottom);
         final boolean miniCoverOn = ExteraConfig.getPlayerMiniCoverColors();
-        final int miniAccent = PlayerColors.getMiniPlayerAccent(themeColors.accent, resourcesProvider);
+        final int miniAccent = miniCoverOn
+                ? PlayerColors.getMiniPlayerAccent(coverColors.accent, resourcesProvider)
+                : themeColors.accent;
         final int baseMiniSurface = Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider);
         final int miniBg = miniCoverOn
                 ? ColorUtils.blendARGB(baseMiniSurface, coverColors.tonal, themeColors.dark ? 0.42f : 0.30f)
@@ -268,61 +282,58 @@ public class PlayerSettingsPreviewView extends View {
         miniPaint.setColor(miniBg);
         canvas.drawRoundRect(miniRect, dp(MINI_RADIUS_DP), dp(MINI_RADIUS_DP), miniPaint);
 
-        final float mcSize = dp(32);
-        miniCoverRect.set(miniRect.left + dp(8), miniRect.centerY() - mcSize / 2f, miniRect.left + dp(8) + mcSize, miniRect.centerY() + mcSize / 2f);
-        drawCoverArtwork(canvas, miniCoverRect, miniCoverReceiver, dp(8), false, false);
+        final float mcSize = dp(34);
+        miniCoverRect.set(miniRect.left + dp(10), miniRect.centerY() - mcSize / 2f, miniRect.left + dp(10) + mcSize, miniRect.centerY() + mcSize / 2f);
+        drawCoverArtwork(canvas, miniCoverRect, miniCoverReceiver, dp(9), false, false);
 
-        final float textLeft = miniCoverRect.right + dp(10);
-        final float textMaxW = miniRect.right - dp(54) - textLeft;
+        final float textLeft = miniCoverRect.right + dp(12);
+        final float textMaxW = miniRect.right - dp(58) - textLeft;
+        final String trackTitle = boundMessage != null && !TextUtils.isEmpty(boundMessage.getMusicTitle())
+                ? boundMessage.getMusicTitle()
+                : getString(R.string.PlayerSettings);
+        final String trackArtist = boundMessage != null && !TextUtils.isEmpty(boundMessage.getMusicAuthor())
+                ? boundMessage.getMusicAuthor()
+                : (miniCoverOn ? getString(R.string.PlayerCoverColorsMini) : getString(R.string.Appearance));
+
         final int miniTitleColor = miniCoverOn
-                ? PlayerColors.getMiniPlayerText(themeColors.text, resourcesProvider)
+                ? ColorUtils.blendARGB(coverColors.text, themeColors.text, boundMessage != null ? 0f : 0.3f)
                 : Theme.getColor(Theme.key_windowBackgroundWhiteBlackText, resourcesProvider);
         final int miniSubColor = miniCoverOn
-                ? PlayerColors.getMiniPlayerSecondary(themeColors.textSecondary, resourcesProvider)
+                ? ColorUtils.blendARGB(coverColors.textSecondary, themeColors.textSecondary, boundMessage != null ? 0f : 0.3f)
                 : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         titlePaint.setColor(miniTitleColor);
         subtitlePaint.setColor(miniSubColor);
         canvas.drawText(TextUtils.ellipsize(trackTitle, titlePaint, Math.max(0f, textMaxW), TextUtils.TruncateAt.END).toString(),
                 textLeft, miniRect.centerY() - dp(1.5f), titlePaint);
         canvas.drawText(TextUtils.ellipsize(trackArtist, subtitlePaint, Math.max(0f, textMaxW), TextUtils.TruncateAt.END).toString(),
-                textLeft, miniRect.centerY() + dp(13f), subtitlePaint);
+                textLeft, miniRect.centerY() + dp(13.5f), subtitlePaint);
 
-        final float ringR = dp(13);
-        miniPlayRect.set(miniRect.right - dp(24) - ringR, miniRect.centerY() - ringR, miniRect.right - dp(24) + ringR, miniRect.centerY() + ringR);
+        final float ringR = dp(14);
+        miniPlayRect.set(miniRect.right - dp(26) - ringR, miniRect.centerY() - ringR, miniRect.right - dp(26) + ringR, miniRect.centerY() + ringR);
         waveTrackPaint.setColor(ColorUtils.setAlphaComponent(miniAccent, 65));
         canvas.drawOval(miniPlayRect, waveTrackPaint);
         wavePaint.setColor(miniAccent);
-        canvas.drawArc(miniPlayRect, -90f, 360f * ((activeLine + lineProgress) / LYRICS_MAIN.length), false, wavePaint);
-
+        canvas.drawArc(miniPlayRect, -90f, 360f * ((activeLine + lineProgress) / SAMPLE_MAIN.length), false, wavePaint);
         iconPaint.setColor(miniTitleColor);
         drawPlayPauseIcon(canvas, miniPlayRect.centerX(), miniPlayRect.centerY(), dp(4.5f), playing, iconPaint);
+    }
 
-        if (miniOnly) {
-            if (playing) {
-                postInvalidateOnAnimation();
-            }
-            return;
-        }
-
-        // 2. Карточка полного плеера + текста песен (в цветах обложки или темы)
-        final boolean coverOn = ExteraConfig.getPlayerCoverColors();
-        final PlayerColors cardPalette = coverOn ? coverColors : themeColors;
-        final float cardTop = miniRect.bottom + dp(8);
-        final float cardBottom = h - dp(4);
-        cardRect.set(padX, cardTop, w - padX, cardBottom);
+    private void drawAppearancePreview(Canvas canvas, float left, float top, float right, float bottom) {
+        cardRect.set(left, top, right, bottom);
         final float cardR = dp(CARD_RADIUS_DP);
-
-        cardPaint.setShader(null);
-        cardPaint.setColor(cardPalette.background);
-        canvas.drawRoundRect(cardRect, cardR, cardR, cardPaint);
-
-        final float covSize = dp(76);
-        coverRect.set(cardRect.left + dp(14), cardRect.top + dp(16), cardRect.left + dp(14) + covSize, cardRect.top + dp(16) + covSize);
-
+        final boolean coverOn = ExteraConfig.getPlayerCoverColors();
         final boolean rhythmOn = ExteraConfig.getPlayerRhythmBackground();
         final boolean particlesOn = ExteraConfig.getPlayerParticles();
         final boolean motionOn = ExteraConfig.getPlayerMotionCovers();
         final boolean canvasOn = ExteraConfig.getPlayerYandexCanvas();
+        final PlayerColors pal = coverOn ? coverColors : themeColors;
+
+        cardPaint.setShader(null);
+        cardPaint.setColor(pal.background);
+        canvas.drawRoundRect(cardRect, cardR, cardR, cardPaint);
+
+        final float covSize = dp(86);
+        coverRect.set(cardRect.left + dp(16), cardRect.centerY() - covSize / 2f, cardRect.left + dp(16) + covSize, cardRect.centerY() + covSize / 2f);
 
         canvas.save();
         clipPath.rewind();
@@ -332,20 +343,118 @@ public class PlayerSettingsPreviewView extends View {
             rhythmBackground.setParticlesEnabled(playing && particlesOn);
             rhythmBackground.draw(canvas, cardRect, cardR, coverRect, dp(COVER_RADIUS_DP), 1f, 0f);
         } else if (particlesOn && coverOn) {
-            drawAmbientParticles(canvas, cardRect, coverRect, cardPalette);
+            drawAmbientParticles(canvas, cardRect, coverRect, pal);
         }
         canvas.restore();
 
         drawCoverArtwork(canvas, coverRect, coverReceiver, dp(COVER_RADIUS_DP), motionOn, canvasOn);
-        drawWavyBar(canvas, coverRect.left, coverRect.bottom + dp(14), coverRect.right, (activeLine + lineProgress) / LYRICS_MAIN.length, cardPalette.wave, cardPalette.track);
 
-        final float lyricsLeft = coverRect.right + dp(14);
-        final float lyricsRight = cardRect.right - dp(12);
-        drawLyricsPreview(canvas, lyricsLeft, cardRect.top + dp(14), lyricsRight, cardRect.bottom - dp(12), cardPalette);
+        final float infoLeft = coverRect.right + dp(16);
+        final float infoRight = cardRect.right - dp(16);
+        final String heading = boundMessage != null && !TextUtils.isEmpty(boundMessage.getMusicTitle())
+                ? boundMessage.getMusicTitle()
+                : getString(R.string.PlayerCoverColors);
+        final String sub = boundMessage != null && !TextUtils.isEmpty(boundMessage.getMusicAuthor())
+                ? boundMessage.getMusicAuthor()
+                : buildAppearanceSummary(coverOn, rhythmOn, particlesOn, motionOn);
 
-        if (playing) {
-            postInvalidateOnAnimation();
+        titlePaint.setColor(pal.text);
+        subtitlePaint.setColor(pal.textSecondary);
+        canvas.drawText(TextUtils.ellipsize(heading, titlePaint, Math.max(0f, infoRight - infoLeft), TextUtils.TruncateAt.END).toString(),
+                infoLeft, cardRect.top + dp(38), titlePaint);
+        canvas.drawText(TextUtils.ellipsize(sub, subtitlePaint, Math.max(0f, infoRight - infoLeft), TextUtils.TruncateAt.END).toString(),
+                infoLeft, cardRect.top + dp(58), subtitlePaint);
+
+        drawWavyBar(canvas, infoLeft, cardRect.bottom - dp(34), infoRight, (activeLine + lineProgress) / SAMPLE_MAIN.length, pal.wave, pal.track);
+    }
+
+    private void drawLyricsOnlyPreview(Canvas canvas, float left, float top, float right, float bottom) {
+        cardRect.set(left, top, right, bottom);
+        final float cardR = dp(CARD_RADIUS_DP);
+        final PlayerColors pal = ExteraConfig.getPlayerCoverColors() ? coverColors : themeColors;
+
+        cardPaint.setShader(null);
+        cardPaint.setColor(pal.background);
+        canvas.drawRoundRect(cardRect, cardR, cardR, cardPaint);
+
+        final boolean online = ExteraConfig.getLyricsOnline();
+        final int progressMode = ExteraConfig.getLyricsProgress();
+        final int animStyle = ExteraConfig.getLyricsAnimStyle();
+        final int subtitleMode = ExteraConfig.getLyricsSubtitle();
+
+        final float contentLeft = cardRect.left + dp(16);
+        final float contentRight = cardRect.right - dp(16);
+
+        final String chipLabel = online
+                ? String.format(Locale.US, "%s (%d/%d)", getString(R.string.PlayerLyrics), ExteraConfig.getLyricsProviders().size(), LyricsProvider.values().length)
+                : getString(R.string.BlurOff);
+        final float chipW = badgeTextPaint.measureText(chipLabel) + dp(14);
+        badgeRect.set(contentLeft, cardRect.top + dp(12), Math.min(contentRight, contentLeft + chipW), cardRect.top + dp(30));
+        badgePaint.setColor(online ? pal.accent : ColorUtils.setAlphaComponent(pal.text, 40));
+        canvas.drawRoundRect(badgeRect, dp(9), dp(9), badgePaint);
+        badgeTextPaint.setColor(online ? pal.onAccent : ColorUtils.setAlphaComponent(pal.text, 180));
+        canvas.drawText(chipLabel, badgeRect.left + dp(7), badgeRect.centerY() + dp(3.5f), badgeTextPaint);
+
+        final int prevIdx = (activeLine + SAMPLE_MAIN.length - 1) % SAMPLE_MAIN.length;
+        final int nextIdx = (activeLine + 1) % SAMPLE_MAIN.length;
+        final float enter = Math.min(1f, lineProgress / 0.25f);
+        final float scale = animStyle == LyricsView.ANIM_HEARTGRAM ? 1f + 0.06f * Math.min(1f, enter * 1.25f) : 0.96f + 0.04f * enter;
+        final float shiftY = (1f - enter) * dp(animStyle == LyricsView.ANIM_HEARTGRAM ? 7f : 4f);
+
+        final float line1Y = cardRect.top + dp(52);
+        final float activeY = cardRect.top + dp(76) + shiftY;
+        final float subY = activeY + dp(17);
+        final float line3Y = subtitleMode == LyricsView.SUBTITLE_NONE ? activeY + dp(24) : subY + dp(20);
+
+        lyricDimPaint.setColor(ColorUtils.setAlphaComponent(pal.text, online ? 120 : 65));
+        canvas.drawText(SAMPLE_MAIN[prevIdx], contentLeft, line1Y, lyricDimPaint);
+
+        final String activeStr = SAMPLE_MAIN[activeLine];
+        canvas.save();
+        canvas.scale(scale, scale, contentLeft, activeY);
+        lyricActivePaint.setColor(ColorUtils.setAlphaComponent(pal.text, online ? (progressMode == LyricsView.PROGRESS_NONE ? 255 : 130) : 90));
+        canvas.drawText(activeStr, contentLeft, activeY, lyricActivePaint);
+
+        if (online && progressMode != LyricsView.PROGRESS_NONE) {
+            final float strW = lyricActivePaint.measureText(activeStr);
+            canvas.save();
+            if (progressMode == LyricsView.PROGRESS_HORIZONTAL) {
+                canvas.clipRect(contentLeft, activeY - dp(18), contentLeft + strW * lineProgress, activeY + dp(6));
+            } else {
+                final float fillH = dp(18) * lineProgress;
+                canvas.clipRect(contentLeft, activeY - dp(15), contentLeft + strW + dp(4), activeY - dp(15) + fillH);
+            }
+            lyricFillPaint.setColor(pal.text);
+            canvas.drawText(activeStr, contentLeft, activeY, lyricFillPaint);
+            canvas.restore();
         }
+        canvas.restore();
+
+        if (subtitleMode != LyricsView.SUBTITLE_NONE && subY < cardRect.bottom - dp(12)) {
+            final String sub = subtitleMode == LyricsView.SUBTITLE_TRANSLATION ? SAMPLE_TRANS[activeLine] : SAMPLE_ROMA[activeLine];
+            lyricSubPaint.setColor(ColorUtils.setAlphaComponent(pal.textSecondary, online ? 210 : 95));
+            canvas.drawText(sub, contentLeft, subY, lyricSubPaint);
+        }
+        if (line3Y < cardRect.bottom - dp(4)) {
+            canvas.drawText(SAMPLE_MAIN[nextIdx], contentLeft, line3Y, lyricDimPaint);
+        }
+    }
+
+    private String buildAppearanceSummary(boolean coverOn, boolean rhythmOn, boolean particlesOn, boolean motionOn) {
+        if (!coverOn) {
+            return getString(R.string.BlurOff);
+        }
+        final StringBuilder sb = new StringBuilder();
+        if (rhythmOn) sb.append(getString(R.string.PlayerRhythmBackground));
+        if (particlesOn) {
+            if (sb.length() > 0) sb.append(" • ");
+            sb.append(getString(R.string.PlayerParticles));
+        }
+        if (motionOn) {
+            if (sb.length() > 0) sb.append(" • ");
+            sb.append(getString(R.string.PlayerMotionCovers));
+        }
+        return sb.length() > 0 ? sb.toString() : getString(R.string.PlayerCoverColors);
     }
 
     private void drawCoverArtwork(Canvas canvas, RectF rect, ImageReceiver receiver, float radius, boolean motion, boolean yandexCanvas) {
@@ -371,7 +480,6 @@ public class PlayerSettingsPreviewView extends View {
             iconPaint.setStyle(Paint.Style.FILL);
             canvas.drawRoundRect(cx + r * 0.15f, cy - r * 1.6f, cx + r * 1.5f, cy - r * 0.85f, r * 0.3f, r * 0.3f, iconPaint);
         }
-
         if (motion) {
             final float sweep = (float) Math.sin(phaseTimeSec * 1.9f) * 0.5f + 0.5f;
             final float sx = rect.left + rect.width() * sweep;
@@ -379,10 +487,9 @@ public class PlayerSettingsPreviewView extends View {
                     new int[]{0x00FFFFFF, 0x3CFFFFFF, 0x00FFFFFF}, new float[]{0f, 0.5f, 1f}, Shader.TileMode.CLAMP));
             canvas.drawRoundRect(rect, radius, radius, sheenPaint);
         }
-
         if (yandexCanvas && rect.width() >= dp(50)) {
             badgePaint.setColor(0x99000000);
-            badgeRect.set(rect.left + dp(5), rect.top + dp(5), rect.left + dp(47), rect.top + dp(20));
+            badgeRect.set(rect.left + dp(5), rect.top + dp(5), rect.left + dp(49), rect.top + dp(20));
             canvas.drawRoundRect(badgeRect, dp(7), dp(7), badgePaint);
             badgeTextPaint.setColor(Color.WHITE);
             canvas.drawText("CANVAS", badgeRect.left + dp(5), badgeRect.centerY() + dp(3.5f), badgeTextPaint);
@@ -395,7 +502,7 @@ public class PlayerSettingsPreviewView extends View {
             final float seed = i * 1.73f;
             final float t = (phaseTimeSec * 0.45f + seed) % 1f;
             final double ang = seed * 2.4 + t * 0.8;
-            final float dist = dp(42) + t * dp(65);
+            final float dist = dp(42) + t * dp(75);
             final float px = cover.centerX() + (float) Math.cos(ang) * dist;
             final float py = cover.centerY() + (float) Math.sin(ang) * dist;
             if (!card.contains(px, py)) {
@@ -414,8 +521,8 @@ public class PlayerSettingsPreviewView extends View {
         canvas.drawLine(splitX, cy, right, cy, waveTrackPaint);
 
         wavePath.rewind();
-        final int steps = 20;
-        final float amp = playing ? dpf2(2.1f) : 0f;
+        final int steps = 22;
+        final float amp = playing ? dpf2(2.2f) : 0f;
         for (int i = 0; i <= steps; i++) {
             final float u = i / (float) steps;
             final float x = left + (splitX - left) * u;
@@ -428,75 +535,6 @@ public class PlayerSettingsPreviewView extends View {
         }
         wavePaint.setColor(waveColor);
         canvas.drawPath(wavePath, wavePaint);
-    }
-
-    private void drawLyricsPreview(Canvas canvas, float left, float top, float right, float bottom, PlayerColors pal) {
-        final boolean online = ExteraConfig.getLyricsOnline();
-        final int progressMode = ExteraConfig.getLyricsProgress();
-        final int animStyle = ExteraConfig.getLyricsAnimStyle();
-        final int subtitleMode = ExteraConfig.getLyricsSubtitle();
-
-        final int baseText = pal.text;
-        final int dimAlpha = online ? 120 : 65;
-
-        final String chipLabel = online
-                ? String.format(Locale.US, "%s (%d/%d)", getString(R.string.PlayerLyrics), ExteraConfig.getLyricsProviders().size(), LyricsProvider.values().length)
-                : getString(R.string.BlurOff);
-        final float chipW = badgeTextPaint.measureText(chipLabel) + dp(12);
-        badgeRect.set(left, top, Math.min(right, left + chipW), top + dp(17));
-        badgePaint.setColor(online ? pal.accent : ColorUtils.setAlphaComponent(baseText, 40));
-        canvas.drawRoundRect(badgeRect, dp(8.5f), dp(8.5f), badgePaint);
-        badgeTextPaint.setColor(online ? pal.onAccent : ColorUtils.setAlphaComponent(baseText, 180));
-        canvas.drawText(chipLabel, badgeRect.left + dp(6), badgeRect.centerY() + dp(3.2f), badgeTextPaint);
-
-        final int prevIdx = (activeLine + LYRICS_MAIN.length - 1) % LYRICS_MAIN.length;
-        final int nextIdx = (activeLine + 1) % LYRICS_MAIN.length;
-
-        final float enter = Math.min(1f, lineProgress / 0.25f);
-        final float scale = animStyle == LyricsView.ANIM_HEARTGRAM
-                ? 1f + 0.06f * Math.min(1f, enter * 1.25f)
-                : 0.96f + 0.04f * enter;
-        final float shiftY = (1f - enter) * dp(animStyle == LyricsView.ANIM_HEARTGRAM ? 8f : 5f);
-
-        final float line1Y = top + dp(34);
-        final float activeY = top + dp(56) + shiftY;
-        final float subY = activeY + dp(15);
-        final float line3Y = subtitleMode == LyricsView.SUBTITLE_NONE ? activeY + dp(21) : subY + dp(19);
-
-        lyricDimPaint.setColor(ColorUtils.setAlphaComponent(baseText, dimAlpha));
-        canvas.drawText(LYRICS_MAIN[prevIdx], left, line1Y, lyricDimPaint);
-
-        final String activeStr = LYRICS_MAIN[activeLine];
-        canvas.save();
-        canvas.scale(scale, scale, left, activeY);
-        lyricActivePaint.setColor(ColorUtils.setAlphaComponent(baseText, online ? (progressMode == LyricsView.PROGRESS_NONE ? 255 : 135) : 90));
-        canvas.drawText(activeStr, left, activeY, lyricActivePaint);
-
-        if (online && progressMode != LyricsView.PROGRESS_NONE) {
-            final float strW = lyricActivePaint.measureText(activeStr);
-            canvas.save();
-            if (progressMode == LyricsView.PROGRESS_HORIZONTAL) {
-                canvas.clipRect(left, activeY - dp(16), left + strW * lineProgress, activeY + dp(6));
-            } else {
-                final float fillH = dp(16) * lineProgress;
-                canvas.clipRect(left, activeY - dp(13), left + strW + dp(4), activeY - dp(13) + fillH);
-            }
-            lyricFillPaint.setColor(baseText);
-            canvas.drawText(activeStr, left, activeY, lyricFillPaint);
-            canvas.restore();
-        }
-        canvas.restore();
-
-        if (subtitleMode != LyricsView.SUBTITLE_NONE && subY < bottom - dp(12)) {
-            final String sub = subtitleMode == LyricsView.SUBTITLE_TRANSLATION ? LYRICS_TRANS[activeLine] : LYRICS_ROMA[activeLine];
-            lyricSubPaint.setColor(ColorUtils.setAlphaComponent(pal.textSecondary, online ? 210 : 95));
-            canvas.drawText(sub, left, subY + dp(1), lyricSubPaint);
-        }
-
-        if (line3Y < bottom - dp(2)) {
-            lyricDimPaint.setColor(ColorUtils.setAlphaComponent(baseText, dimAlpha));
-            canvas.drawText(LYRICS_MAIN[nextIdx], left, line3Y, lyricDimPaint);
-        }
     }
 
     private static void drawPlayPauseIcon(Canvas canvas, float cx, float cy, float r, boolean playing, Paint paint) {

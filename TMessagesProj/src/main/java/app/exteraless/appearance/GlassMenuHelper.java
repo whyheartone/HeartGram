@@ -36,6 +36,7 @@ public abstract class GlassMenuHelper {
 
     public static boolean isEnabled(int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         return AppearanceConfig.glassMessageMenu()
+            && !AppearanceConfig.md3NoGlassBacking()
             && BlurredBackgroundProviderImpl.checkBlurEnabled(currentAccount, resourcesProvider);
     }
 

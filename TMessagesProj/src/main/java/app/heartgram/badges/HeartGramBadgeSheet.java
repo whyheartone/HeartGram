@@ -69,9 +69,10 @@ public final class HeartGramBadgeSheet {
         root.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
 
         FrameLayout art = new FrameLayout(context);
-        // два слоя: звёзды Telegram внизу вокруг значка (не внутри), сверху 3D-сердце или кастомное эмодзи
+        // 3D-сердце показываем только для поддержавших без кастомного эмодзи; разработчикам и сменившим эмодзи — их эмодзи
+        final boolean showHeart3d = "supporter".equals(info.kind) && !HeartGramBadges.isCustomEmoji(peer);
         final StarsView stars = new StarsView(context, 50, 128);
-        if (!HeartGramBadges.isCustomEmoji(peer)) {
+        if (showHeart3d) {
             int accent = Theme.getColor(Theme.key_featuredStickers_addButton, fragment.getResourceProvider());
             stars.setColor(accent);
             art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));

@@ -610,8 +610,9 @@ public class GlassEngine {
     private static int glassSettingsGenerationId;
 
     private static void checkGlassSettings() {
-        final boolean isBlurEnabled = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR);
-        final boolean isLiquidGlassEnabled = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) && !app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
+        final boolean noGlassBacking = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
+        final boolean isBlurEnabled = LiteMode.isEnabled(LiteMode.FLAG_CHAT_BLUR) && !noGlassBacking;
+        final boolean isLiquidGlassEnabled = LiteMode.isEnabled(LiteMode.FLAG_LIQUID_GLASS) && !noGlassBacking;
 
         final boolean glassSettingsInvalidated = glassSettings == null
             || glassSettings.isBlurEnabled != isBlurEnabled

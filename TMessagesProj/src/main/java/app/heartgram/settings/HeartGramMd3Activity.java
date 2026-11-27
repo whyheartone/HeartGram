@@ -196,6 +196,7 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
         } else if (position == md3NoGlassRow) {
             boolean on = !AppearanceConfig.md3NoGlassBacking.Bool();
             AppearanceConfig.md3NoGlassBacking.setConfigBool(on);
+            org.telegram.utils.glass.GlassEngine.getCurrentGlassSettings();
             toggleCheck(view, on);
             rebuildOthers(true);
         }

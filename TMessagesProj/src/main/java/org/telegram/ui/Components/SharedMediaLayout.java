@@ -3527,10 +3527,15 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             // the content exactly in the glass: the layout's background starts 14dp in and is inset by 7dp
             topPanelLayout.setPadding(dp(11), TOP_PANEL_GLASS_TOP, dp(11), TOP_PANEL_GLASS_TOP);
 
-            BlurredBackgroundDrawable topPanelLayoutBackground = iBlur3FactoryLiquidGlass.create(topPanelLayout, glassColors);
-            topPanelLayoutBackground.setRadius(dp(24));
-            topPanelLayoutBackground.setPadding(dp(7));
-            topPanelLayout.setBlurredBackground(topPanelLayoutBackground);
+            if (!app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
+                BlurredBackgroundDrawable topPanelLayoutBackground = iBlur3FactoryLiquidGlass.create(topPanelLayout, glassColors);
+                topPanelLayoutBackground.setRadius(dp(24));
+                topPanelLayoutBackground.setPadding(dp(7));
+                topPanelLayout.setBlurredBackground(topPanelLayoutBackground);
+            } else {
+                topPanelLayout.setBlurredBackground(null);
+                topPanelLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
+            }
 
             fragmentContextViewWrapper = new FrameLayout(context);
             topPanelLayout.addView(fragmentContextViewWrapper);
@@ -3580,13 +3585,21 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                 setVisibleHeight(lastVisibleHeight);
             });
 
-            BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(scrollSlidingTextTabStrip, glassColors);
-            filterTabsViewBackground.setRadius(dp(18));
-            filterTabsViewBackground.setPadding(dp(6.666f));
-            scrollSlidingTextTabStrip.setPadding(0, dp(7), 0, dp(7));
-            scrollSlidingTextTabStrip.setClipToPadding(false);
-            scrollSlidingTextTabStrip.setBackground(null);
-            scrollSlidingTextTabStrip.setBlurredBackground(filterTabsViewBackground);
+            if (!app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
+                BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(scrollSlidingTextTabStrip, glassColors);
+                filterTabsViewBackground.setRadius(dp(18));
+                filterTabsViewBackground.setPadding(dp(6.666f));
+                scrollSlidingTextTabStrip.setPadding(0, dp(7), 0, dp(7));
+                scrollSlidingTextTabStrip.setClipToPadding(false);
+                scrollSlidingTextTabStrip.setBackground(null);
+                scrollSlidingTextTabStrip.setBlurredBackground(filterTabsViewBackground);
+            } else {
+                scrollSlidingTextTabStrip.setPadding(0, dp(7), 0, dp(7));
+                scrollSlidingTextTabStrip.setClipToPadding(false);
+                scrollSlidingTextTabStrip.setBlurredBackground(null);
+                scrollSlidingTextTabStrip.setBackground(Theme.createRoundRectDrawable(dp(18),
+                        Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
+            }
             scrollSlidingTextTabStrip.setOpen(false);
             // the glass of the tabs (inset by its padding) 6dp from the sides of the screen
             addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 50, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 6 - TABS_GLASS_INSET_DP, 0, 6 - TABS_GLASS_INSET_DP, 0));

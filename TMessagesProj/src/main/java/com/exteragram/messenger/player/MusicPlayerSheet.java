@@ -1386,44 +1386,13 @@ public class MusicPlayerSheet extends BottomSheet implements NotificationCenter.
                 }
             }
         });
-        sheet.setDimBehind(false);
-        sheet.setMiniPreviewOnly(true);
-        setEditorPreviewMode(true);
         sheet.setOnHideListener(d -> {
-            setEditorPreviewMode(false);
             if (settingsSheet == sheet) {
                 settingsSheet = null;
             }
         });
         settingsSheet = sheet;
         sheet.show();
-    }
-
-    private void setEditorPreviewMode(boolean active) {
-        if (playerLayout == null) {
-            return;
-        }
-        playerLayout.animate().cancel();
-        if (active && playerLayout.getHeight() > 0) {
-            final float scale = 0.42f;
-            playerLayout.setPivotX(playerLayout.getWidth() * 0.5f);
-            playerLayout.setPivotY(0f);
-            playerLayout.animate()
-                    .scaleX(scale)
-                    .scaleY(scale)
-                    .translationY(AndroidUtilities.statusBarHeight + dp(6))
-                    .setDuration(260)
-                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                    .start();
-        } else {
-            playerLayout.animate()
-                    .scaleX(1f)
-                    .scaleY(1f)
-                    .translationY(0f)
-                    .setDuration(260)
-                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                    .start();
-        }
     }
 
     private ItemOptions buildSaveOptions(ItemOptions o, MessageObject messageObject) {

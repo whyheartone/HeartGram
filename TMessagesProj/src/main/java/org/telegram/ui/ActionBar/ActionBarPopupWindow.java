@@ -327,12 +327,14 @@ public class ActionBarPopupWindow extends PopupWindow {
                     if (hgMd3() && child instanceof ActionBarMenuSubItem && child.getVisibility() == VISIBLE && child.getAlpha() > 0) {
                         int bg = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
                         int fg = Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
-                        hgTilePaint.setColor(app.heartgram.tiles.ChatTiles.adjust(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, 0.07f)));
-                        hgTilePaint.setAlpha((int) (Color.alpha(hgTilePaint.getColor()) * child.getAlpha()));
+                        boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
+                        int tileColor = app.heartgram.tiles.ChatTiles.adjust(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, isDark ? 0.14f : 0.09f));
+                        hgTilePaint.setColor(tileColor);
+                        hgTilePaint.setAlpha((int) ((isDark ? 220 : 245) * child.getAlpha()));
                         final int index = indexOfChild(child);
                         final boolean first = hgFirst(index), last = hgLast(index);
-                        hgTileRect.set(child.getLeft() + dp(6), child.getTop() + child.getTranslationY() + dp(first ? 2 : 1),
-                                child.getRight() - dp(6), child.getBottom() + child.getTranslationY() - dp(last ? 2 : 1));
+                        hgTileRect.set(child.getLeft() + dp(6), child.getTop() + child.getTranslationY() + dp(first ? 2 : 1.5f),
+                                child.getRight() - dp(6), child.getBottom() + child.getTranslationY() - dp(last ? 2 : 1.5f));
                         final float big = Math.min(dp(14), hgTileRect.height() * 0.34f), small = dp(5);
                         final float up = first ? big : small, low = last ? big : small;
                         hgTilePath.reset();

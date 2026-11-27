@@ -138,21 +138,19 @@ public final class HeartGramBadges {
         return own != null && !own.isEmpty();
     }
 
-    /** true, если документ — стандартный значок уровня (сердечко по умолчанию), а не пользовательское эмодзи. */
+    /** true, если документ — стандартный значок сердца поддержавшего (не разработчика и не пользовательское эмодзи). */
     public static boolean isDefaultHeartDocument(long documentId) {
         if (documentId == 0) {
             return true;
         }
         String id = String.valueOf(documentId);
-        if (DEV_EMOJI_ID.equals(id)) {
-            return true;
-        }
         Snapshot s = snapshot;
-        if (s.emoji.containsValue(id)) {
-            return true;
-        }
-        for (String ref : s.emoji.values()) {
-            Long cached = packDocuments.get(ref);
+        String sup = s.emoji.get("supporter");
+        if (sup != null && !sup.isEmpty()) {
+            if (sup.equals(id)) {
+                return true;
+            }
+            Long cached = packDocuments.get(sup);
             if (cached != null && cached == documentId) {
                 return true;
             }
