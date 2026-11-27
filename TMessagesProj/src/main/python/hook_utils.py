@@ -186,3 +186,100 @@ def set_static_private_field(clazz, name: str, value) -> bool:
 # short names as aliases of the private-field helpers.
 get_field = get_private_field
 set_field = set_private_field
+
+JavaClass = Any
+JavaObject = Any
+
+
+def java_class(clazz):
+    """Normalize a class name, jclass wrapper, or object to java.lang.Class."""
+    if clazz is None:
+        return None
+    if isinstance(clazz, str):
+        clazz = find_class(clazz)
+        if clazz is None:
+            return None
+    try:
+        return _as_class(clazz)
+    except Exception:
+        return None
+
+
+_PRIMITIVE_NAMES = {
+    "boolean": "Z", "byte": "B", "char": "C", "short": "S",
+    "int": "I", "long": "J", "float": "F", "double": "D", "void": "V",
+}
+
+
+def _resolve_param_type(spec):
+    if isinstance(spec, str):
+        if spec in _PRIMITIVE_NAMES:
+            from java import jclass
+            wrapper = {
+                "boolean": "java.lang.Boolean", "byte": "java.lang.Byte",
+                "char": "java.lang.Character", "short": "java.lang.Short",
+                "int": "java.lang.Integer", "long": "java.lang.Long",
+                "float": "java.lang.Float", "double": "java.lang.Double",
+                "void": "java.lang.Void",
+            }[spec]
+            return jclass(wrapper).TYPE
+        spec = find_class(spec)
+    return java_class(spec) if spec is not None else None
+
+
+def get_method(clazz, method_name: str, *param_types):
+    """Resolve a declared or public Java Method, failing softly with None."""
+    try:
+        cls = java_class(clazz)
+        if cls is None:
+            return None
+        from java import jarray, jclass
+        Class = jclass("java.lang.Class")
+        resolved = [_resolve_param_type(p) for p in param_types]
+        if any(p is None for p in resolved):
+            return None
+        param_arr = jarray(Class)(resolved)
+        current = cls
+        while current is not None:
+            try:
+                m = current.getDeclaredMethod(str(method_name), param_arr)
+                m.setAccessible(True)
+                return m
+            except Exception:
+                pass
+            current = current.getSuperclass()
+        try:
+            m = cls.getMethod(str(method_name), param_arr)
+            m.setAccessible(True)
+            return m
+        except Exception:
+            return None
+    except Exception:
+        return None
+
+
+def get_constructor(clazz, *param_types):
+    """Resolve a declared or public Java Constructor, failing softly with None."""
+    try:
+        cls = java_class(clazz)
+        if cls is None:
+            return None
+        from java import jarray, jclass
+        Class = jclass("java.lang.Class")
+        resolved = [_resolve_param_type(p) for p in param_types]
+        if any(p is None for p in resolved):
+            return None
+        param_arr = jarray(Class)(resolved)
+        try:
+            c = cls.getDeclaredConstructor(param_arr)
+            c.setAccessible(True)
+            return c
+        except Exception:
+            try:
+                c = cls.getConstructor(param_arr)
+                c.setAccessible(True)
+                return c
+            except Exception:
+                return None
+    except Exception:
+        return None

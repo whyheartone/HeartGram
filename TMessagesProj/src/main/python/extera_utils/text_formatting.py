@@ -42,6 +42,9 @@ class RawEntity:
     document_id: Optional[int] = None
     collapsed: bool = False
 
+    def to_tlrpc_object(self):
+        return _materialize_entities([self])[0]
+
 
 # HTML parsing
 

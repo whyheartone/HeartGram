@@ -240,11 +240,24 @@ class AlertDialogBuilder:
             _post(lambda: self._dialog.setProgress(int(progress)))
         return self
 
-    def set_top_animation(self, res_id, size, auto_repeat, background_color):
+    def set_top_animation(self, res_id, size, auto_repeat, background_color,
+                          layer_colors=None):
         def _apply():
             from java import jint
-            self._builder.setTopAnimation(int(res_id), int(size), bool(auto_repeat),
-                                          jint(int(background_color), truncate=True))
+            bg = jint(int(background_color), truncate=True)
+            if layer_colors:
+                try:
+                    HashMap = _jclass("java.util.HashMap")
+                    jmap = HashMap()
+                    for k, v in dict(layer_colors).items():
+                        jmap.put(str(k), jint(int(v), truncate=True))
+                    self._builder.setTopAnimation(
+                        int(res_id), int(size), bool(auto_repeat), bg, jmap)
+                    return
+                except Exception:
+                    pass
+            self._builder.setTopAnimation(
+                int(res_id), int(size), bool(auto_repeat), bg)
         _post(_apply)
         return self
 

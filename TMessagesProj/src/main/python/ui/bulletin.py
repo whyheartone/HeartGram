@@ -166,17 +166,25 @@ class BulletinHelper:
     # -- convenience shortcuts (best-effort, English fallback strings) --
 
     @staticmethod
-    def show_copied_to_clipboard(fragment=None):
-        BulletinHelper.show_simple("Copied to clipboard", _raw_icon("copy"), fragment)
+    def show_copied_to_clipboard(message=None, fragment=None):
+        if fragment is None and message is not None and not isinstance(message, str):
+            fragment, message = message, None
+        text = message or "Copied to clipboard"
+        BulletinHelper.show_simple(text, _raw_icon("copy"), fragment)
 
     @staticmethod
-    def show_link_copied(fragment=None):
-        BulletinHelper.show_simple("Link copied to clipboard", _raw_icon("copy"), fragment)
+    def show_link_copied(is_private_link_info=False, fragment=None):
+        if fragment is None and not isinstance(is_private_link_info, bool) and is_private_link_info is not None:
+            fragment, is_private_link_info = is_private_link_info, False
+        text = "Private link copied to clipboard" if is_private_link_info else "Link copied to clipboard"
+        BulletinHelper.show_simple(text, _raw_icon("copy"), fragment)
 
     @staticmethod
-    def show_file_saved_to_gallery(fragment=None):
-        BulletinHelper.show_simple("Saved to gallery",
-                                   _raw_icon("ic_save_to_gallery"), fragment)
+    def show_file_saved_to_gallery(is_video=False, amount=1, fragment=None):
+        if fragment is None and not isinstance(is_video, bool) and is_video is not None:
+            fragment, is_video = is_video, False
+        text = "Video saved to gallery" if is_video else "Saved to gallery"
+        BulletinHelper.show_simple(text, _raw_icon("ic_save_to_gallery"), fragment)
 
     @staticmethod
     def show_file_saved_to_downloads(file_type="DOCUMENT", amount=1, fragment=None):

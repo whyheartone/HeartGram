@@ -7,7 +7,8 @@ running on a host interpreter.
 
 import json
 import sys
-from dataclasses import dataclass
+import threading
+from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, Optional
 
@@ -50,11 +51,38 @@ class HookStrategy:
     NONE = DEFAULT
 
 
+class IntentHookType(Enum):
+    """Intent hook phase matching exteraGram's ``base_plugin.IntentHookType``."""
+    BEFORE = 0
+    AFTER = 1
+
+
+@dataclass
+class PluginMetadata:
+    """Declarative metadata snapshot exposed by ``base_plugin.PluginMetadata``."""
+    id: str = ""
+    name: str = ""
+    description: str = ""
+    author: str = ""
+    version: str = "1.0"
+    icon: str = ""
+    min_version: str = ""
+    requirements: list = field(default_factory=list)
+
+
+class PluginError(Exception):
+    """Explicit SDK error carrying the originating plugin_id."""
+
+    def __init__(self, message: str, plugin_id: Optional[str] = None) -> None:
+        super().__init__(message)
+        self.plugin_id = plugin_id
+
+
 class HookResult:
-    __slots__ = ("strategy", "request", "response", "update", "updates", "params", "result")
+    __slots__ = ("strategy", "request", "response", "update", "updates", "params", "result", "error")
 
     def __init__(self, strategy: str = HookStrategy.DEFAULT, request=None, response=None,
-                 update=None, updates=None, params=None, result=None):
+                 update=None, updates=None, params=None, result=None, error=None):
         self.strategy = strategy
         self.request = request
         self.response = response
@@ -62,9 +90,40 @@ class HookResult:
         self.updates = updates
         self.params = params
         self.result = result
+        self.error = error
 
     def __repr__(self):
         return f"HookResult(strategy={self.strategy!r})"
+
+
+class PartialChain:
+    """Context object signature for partial bytecode hooks (not supported on JVM-only builds)."""
+
+    def __init__(self, chain=None, param_types=None) -> None:
+        self.java = chain
+        self.threw = False
+        self._param_types = param_types
+
+    @property
+    def this_object(self) -> Any:
+        return None
+
+    @property
+    def caller(self) -> Any:
+        return None
+
+    @property
+    def args(self) -> list:
+        return []
+
+    def arg(self, index: int) -> Any:
+        raise IndexError(index)
+
+    def proceed(self, *args) -> Any:
+        raise NotImplementedError("PartialChain is unavailable without native bytecode hooking")
+
+    def throw_to_caller(self, throwable) -> None:
+        raise NotImplementedError("PartialChain is unavailable without native bytecode hooking")
 
 
 class AppEvent:
@@ -114,6 +173,7 @@ class MenuItemData:
     subtext: Optional[str] = None
     condition: Optional[str] = None  # MVEL visibility expression (stored as-is)
     priority: int = 0
+    on_long_click: Optional[Callable[[Dict[str, Any]], None]] = None
 
 
 # Xposed-style method hooking
@@ -360,6 +420,20 @@ def _filter_class_name(cls):
         return str(cls)
 
 
+class HookFilterData:
+    """Structured view of a HookFilter descriptor (exteraGram SDK 1.4.6.x)."""
+
+    def __init__(self, filter_type: str, arg_index: Optional[int] = None,
+                 or_filters: Any = None, mvel_expression: Optional[str] = None,
+                 instance_of: Any = None, object: Any = None) -> None:
+        self.filter_type = filter_type
+        self.arg_index = arg_index
+        self.or_filters = or_filters
+        self.mvel_expression = mvel_expression
+        self.instance_of = instance_of
+        self.object = object
+
+
 class HookFilter:
     """Declarative Java-side hook filter descriptor (PLUGINS-API.md §6).
 
@@ -374,6 +448,17 @@ class HookFilter:
     def __init__(self, kind: str, **data):
         self.kind = kind
         self.data = data
+
+    @property
+    def filter_data(self) -> HookFilterData:
+        return HookFilterData(
+            filter_type=self.kind,
+            arg_index=self.data.get("index"),
+            or_filters=self.data.get("filters"),
+            mvel_expression=self.data.get("expression"),
+            instance_of=self.data.get("class"),
+            object=self.data.get("object", self.data.get("value")),
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         out = {"type": self.kind}
@@ -574,7 +659,16 @@ class BasePlugin:
     #: это поле у exteraGram, и без него у них падает всё, что обращается к
     #: контроллеру по id (обновление экрана настроек, поиск себя в реестре).
     id: Optional[str] = None
+    name: str = ""
+    description: str = ""
+    author: str = ""
+    version: str = "1.0"
+    min_version: str = ""
+    icon: Optional[str] = None
+    requirements: list = []
+    error_message: Optional[str] = None
     enabled: bool = True
+    initialized: bool = False
 
     # ---- lifecycle (override in the subclass) ----
 
@@ -637,7 +731,36 @@ class BasePlugin:
 
     @property
     def logger(self):
-        return _PluginLogger(self)
+        custom = self.__dict__.get("_exteraless_logger")
+        if custom is not None:
+            return custom
+        try:
+            from log_utils import Logger
+            created = Logger(self._exteraless_plugin_id or "plugin", _sink=self.log)
+        except Exception:
+            created = _PluginLogger(self)
+        self.__dict__["_exteraless_logger"] = created
+        return created
+
+    @logger.setter
+    def logger(self, value) -> None:
+        self.__dict__["_exteraless_logger"] = value
+
+    @property
+    def stop_event(self) -> threading.Event:
+        """Threading event set when the plugin is unloaded."""
+        event = self.__dict__.get("_exteraless_stop_event")
+        if not isinstance(event, threading.Event):
+            event = threading.Event()
+            self.__dict__["_exteraless_stop_event"] = event
+        return event
+
+    def register_cleanup(self, cleanup: Callable[[], Any]):
+        """Register a callback to invoke automatically when this plugin unloads."""
+        if not callable(cleanup):
+            raise TypeError("cleanup must be callable")
+        self._exteraless_state("_exteraless_cleanups", list).append(cleanup)
+        return cleanup
 
     def log_exception(self, msg, exception=None):
         self.log(f"{msg}: {exception!r}" if exception is not None else str(msg))
@@ -768,6 +891,31 @@ class BasePlugin:
             PythonBridge.addSendMessageHook(self._exteraless_plugin_id, int(priority))
         except Exception as e:
             self.log(f"add_on_send_message_hook() failed: {e}")
+
+    def add_file_hook(self, file_info) -> str:
+        """Register a file extension click hook via FilesController."""
+        from file_utils import FilesController
+        return FilesController.register(file_info)
+
+    def remove_file_hook(self, ext: str, secret: str) -> None:
+        """Remove a file hook registered via add_file_hook."""
+        from file_utils import FilesController
+        FilesController.unregister(ext, secret)
+
+    def add_intent_hook(self, info, hook_type=IntentHookType.BEFORE):
+        """Register a global intent/link handler via IntentsManager."""
+        from intents import IntentsManager
+        is_before = (hook_type == IntentHookType.BEFORE
+                     or getattr(hook_type, "value", hook_type) == 0
+                     or str(hook_type).upper().endswith("BEFORE"))
+        return IntentsManager.new_global_before_handler(info) if is_before \
+            else IntentsManager.new_global_after_handler(info)
+
+    def remove_intent_hook(self, handler_id) -> None:
+        """Remove an intent hook handle or handler_id."""
+        from intents import IntentsManager
+        hid = getattr(handler_id, "handler_id", handler_id)
+        IntentsManager.unhandle(hid)
 
     # ---- menus ----
 
@@ -1008,6 +1156,29 @@ class BasePlugin:
             except ValueError:
                 pass
 
+    def _exteraless_unsupported_partial(self, name: str):
+        raise NotImplementedError(
+            f"BasePlugin.{name}() requires native DEX bytecode rewriting (not supported in HeartGram)"
+        )
+
+    def hook_call_site(self, in_method, callee, callback, occurrence: int = -1, priority=None):
+        self._exteraless_unsupported_partial("hook_call_site")
+
+    def hook_field_read(self, in_method, field, callback, occurrence: int = -1, priority=None):
+        self._exteraless_unsupported_partial("hook_field_read")
+
+    def hook_field_write(self, in_method, field, callback, occurrence: int = -1, priority=None):
+        self._exteraless_unsupported_partial("hook_field_write")
+
+    def hook_string_constant(self, in_method, text: str, callback, occurrence: int = -1, priority=None):
+        self._exteraless_unsupported_partial("hook_string_constant")
+
+    def hook_return_value(self, in_method, callback, occurrence: int = -1, priority=None):
+        self._exteraless_unsupported_partial("hook_return_value")
+
+    def unhook_partial(self, handle) -> None:
+        self._exteraless_unsupported_partial("unhook_partial")
+
     # ---- resource cleanup (driven by the loader on unload) ----
 
     def _exteraless_cleanup_resources(self):
@@ -1017,6 +1188,15 @@ class BasePlugin:
         on_plugin_unload(); never raises. The Java side performs its own
         per-plugin sweep as well — every call here tolerates duplicates.
         """
+        stop_event = self.__dict__.get("_exteraless_stop_event")
+        if isinstance(stop_event, threading.Event):
+            stop_event.set()
+        for cleanup in reversed(self.__dict__.get("_exteraless_cleanups") or ()):
+            try:
+                cleanup()
+            except Exception as e:
+                self.log(f"cleanup callback failed: {e}")
+        self.__dict__["_exteraless_cleanups"] = []
         if PluginServices is not None:
             for unhook_id in list(self._exteraless_state("_exteraless_method_hook_ids", list)):
                 try:

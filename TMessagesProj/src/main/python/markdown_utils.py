@@ -30,9 +30,17 @@ and ``![alt](tg://emoji?id=...)`` custom emoji.
 
 from typing import Any, List, Optional
 
-from extera_utils.text_formatting import RawEntity, parse_raw
+from extera_utils.text_formatting import RawEntity, TLEntityType, parse_raw
 
-__all__ = ["MarkdownEntity", "ParsedText", "parse_markdown", "parse_html"]
+__all__ = [
+    "MarkdownEntity",
+    "ParsedText",
+    "ParsedMessage",
+    "RawEntity",
+    "TLEntityType",
+    "parse_markdown",
+    "parse_html",
+]
 
 
 class MarkdownEntity:
@@ -101,6 +109,9 @@ class ParsedText:
 
     def __repr__(self) -> str:
         return f"ParsedText({self.text!r}, {len(self.entities)} entities)"
+
+
+ParsedMessage = ParsedText
 
 
 def _parse(text: Any, parse_mode: str) -> ParsedText:

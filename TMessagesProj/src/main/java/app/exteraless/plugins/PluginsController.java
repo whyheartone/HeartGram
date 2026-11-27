@@ -632,7 +632,10 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         }
     }
 
-    /** Проверка __app_version__/__sdk_version__ (операторы >=, <=, ==, >, <; без оператора — >=). */
+    /**
+     * Проверка __app_version__/__sdk_version__ (одиночные и составные через запятую:
+     * >=, <=, !=, ==, ~=, >, <; без оператора — >=; поддержка .* и суффикса -beta на текущей сборке).
+     */
     private String checkVersionConstraints(Plugin p) {
         if (p.appVersion != null && !checkVersionConstraint(p.appVersion, BuildVars.BUILD_VERSION_STRING)) {
             return "requires app " + p.appVersion;
@@ -647,14 +650,26 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         if (constraint == null || constraint.isEmpty()) {
             return true;
         }
-        String op = ">=";
-        String version = constraint.trim();
+        String normalizedCurrent = current == null ? "" : current.trim();
+        for (String rawClause : constraint.split(",")) {
+            String clause = rawClause.trim();
+            if (clause.isEmpty()) {
+                continue;
+            }
+            if (!checkSingleVersionConstraint(clause, normalizedCurrent)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static boolean checkSingleVersionConstraint(String clause, String current) {
         // Ограничение без единой цифры — это не версия: пустая строка, "null",
         // мусор из метаданных. Считать такое невыполненным нельзя, иначе плагин
         // отвергается на ровном месте.
         boolean hasDigit = false;
-        for (int i = 0; i < version.length(); i++) {
-            if (Character.isDigit(version.charAt(i))) {
+        for (int i = 0; i < clause.length(); i++) {
+            if (Character.isDigit(clause.charAt(i))) {
                 hasDigit = true;
                 break;
             }
@@ -662,21 +677,77 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
         if (!hasDigit) {
             return true;
         }
-        for (String candidate : new String[]{">=", "<=", "==", ">", "<"}) {
+        String op = ">=";
+        String version = clause;
+        for (String candidate : new String[]{">=", "<=", "!=", "==", "~=", ">", "<"}) {
             if (version.startsWith(candidate)) {
                 op = candidate;
                 version = version.substring(candidate.length()).trim();
                 break;
             }
         }
-        int cmp = compareVersions(current, version);
+        if ((version.startsWith("v") || version.startsWith("V")) && version.length() > 1
+                && Character.isDigit(version.charAt(1))) {
+            version = version.substring(1);
+        }
+        String effectiveCurrent = stripBuildSuffixIfNeeded(current, version);
+        if (version.endsWith(".*")) {
+            String prefix = version.substring(0, version.length() - 2);
+            boolean eq = compareVersionPrefix(effectiveCurrent, prefix) == 0;
+            if ("!=".equals(op)) {
+                return !eq;
+            }
+            if ("==".equals(op)) {
+                return eq;
+            }
+            version = prefix;
+        }
+        if ("~=".equals(op)) {
+            int cmp = compareVersions(effectiveCurrent, version);
+            if (cmp < 0) {
+                return false;
+            }
+            String[] pv = version.split("[.-]");
+            if (pv.length <= 1) {
+                return true;
+            }
+            StringBuilder prefix = new StringBuilder();
+            for (int i = 0; i < pv.length - 1; i++) {
+                if (i > 0) prefix.append('.');
+                prefix.append(pv[i]);
+            }
+            return compareVersionPrefix(effectiveCurrent, prefix.toString()) == 0;
+        }
+        int cmp = compareVersions(effectiveCurrent, version);
         switch (op) {
             case ">=": return cmp >= 0;
             case "<=": return cmp <= 0;
+            case "!=": return cmp != 0;
             case ">": return cmp > 0;
             case "<": return cmp < 0;
             default: return cmp == 0;
         }
+    }
+
+    private static String stripBuildSuffixIfNeeded(String current, String constraintVersion) {
+        if (current == null || constraintVersion.indexOf('-') >= 0) {
+            return current;
+        }
+        int dash = current.indexOf('-');
+        return dash > 0 ? current.substring(0, dash) : current;
+    }
+
+    private static int compareVersionPrefix(String current, String prefix) {
+        String[] pa = current.split("[.-]");
+        String[] pb = prefix.split("[.-]");
+        for (int i = 0; i < pb.length; i++) {
+            int va = i < pa.length ? parseVersionPart(pa[i]) : 0;
+            int vb = parseVersionPart(pb[i]);
+            if (va != vb) {
+                return va < vb ? -1 : 1;
+            }
+        }
+        return 0;
     }
 
     private static int compareVersions(String a, String b) {
@@ -694,7 +765,8 @@ public class PluginsController extends com.exteragram.messenger.plugins.PluginsC
 
     private static int parseVersionPart(String s) {
         try {
-            return Integer.parseInt(s.replaceAll("[^0-9].*$", ""));
+            String digits = s.replaceAll("[^0-9].*$", "");
+            return digits.isEmpty() ? 0 : Integer.parseInt(digits);
         } catch (NumberFormatException e) {
             return 0;
         }

@@ -162,3 +162,29 @@ def _save_settings_to_file():
                 continue
             _settings_cache[plugin_id] = values
             _synced[plugin_id] = snapshot
+
+
+def init(plugins_dir_path=None, all_shared_prefs=None):
+    """Compatibility entry point; Java SharedPreferences handle persistence."""
+    return None
+
+
+def clear_settings(plugin_id):
+    """Delete all stored settings for *plugin_id*."""
+    with _lock:
+        _settings_cache[plugin_id] = {}
+        _synced.pop(plugin_id, None)
+        _save_settings_to_file()
+
+
+def get_all_settings(plugin_id):
+    """Return a copy of all settings for *plugin_id*."""
+    return get_settings(plugin_id)
+
+
+def set_all_settings(plugin_id, settings: dict):
+    """Replace all stored settings for *plugin_id*."""
+    with _lock:
+        _settings_cache[plugin_id] = dict(settings or {})
+        _synced.pop(plugin_id, None)
+        _save_settings_to_file()

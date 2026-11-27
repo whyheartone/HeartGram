@@ -133,6 +133,9 @@ def hook_scope(account):
             _hook_state.account = previous
 
 
+account_scope = hook_scope
+
+
 _warned_helpers = set()
 
 
