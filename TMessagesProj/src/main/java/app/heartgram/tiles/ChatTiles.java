@@ -49,6 +49,11 @@ public final class ChatTiles {
         return p.contains("md3_menus") ? p.getBoolean("md3_menus", false) : enabled();
     }
 
+    /** Убирать общую внешнюю подложку у MD3-кнопок меню (остаются только отдельные скруглённые кнопки). */
+    public static boolean menuNoBacking() {
+        return HeartGramPrefs.prefs().getBoolean("md3_menu_no_backing", false);
+    }
+
     public static int gap() {
         return HeartGramPrefs.prefs().getInt("tiles_gap2", 2);
     }

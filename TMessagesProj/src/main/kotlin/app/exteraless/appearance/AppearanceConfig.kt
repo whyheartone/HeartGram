@@ -267,6 +267,14 @@ object AppearanceConfig {
     val md3MiniPlayer =
         addConfig("OEAppearanceMd3MiniPlayer", ConfigItem.configTypeBool, true)
 
+    @JvmField
+    val miniPlayerShowPrev =
+        addConfig("OEMiniPlayerShowPrev", ConfigItem.configTypeBool, true)
+
+    @JvmField
+    val miniPlayerShowArtist =
+        addConfig("OEMiniPlayerShowArtist", ConfigItem.configTypeBool, true)
+
     @JvmStatic
     fun md3MiniPlayer(): Boolean {
         ensureLoaded()
@@ -783,7 +791,7 @@ object AppearanceConfig {
     }
 
     @JvmStatic
-    fun md3NoGlassBacking(): Boolean = md3NoGlassBacking.Bool()
+    fun md3NoGlassBacking(): Boolean = false
 
     @JvmStatic
     fun init() {

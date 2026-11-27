@@ -319,6 +319,18 @@ object NaConfig {
             ConfigItem.configTypeBool,
             false
         )
+    val hideStoriesFromAvatars =
+        addConfig(
+            "HideStoriesFromAvatars",
+            ConfigItem.configTypeBool,
+            false
+        )
+    val keepStoriesInProfile =
+        addConfig(
+            "KeepStoriesInProfile",
+            ConfigItem.configTypeBool,
+            false
+        )
     val useLocalQuoteColorData =
         addConfig(
             "useLocalQuoteColorData",

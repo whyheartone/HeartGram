@@ -94,7 +94,9 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
     private int saveDeletedRow;
     private int saveEditsRow;
     private int deletedExceptionsModeRow;
+    private int deletedExceptionsListRow;
     private int editedExceptionsModeRow;
+    private int editedExceptionsListRow;
     private int saveInArchivedRow;
     private int saveMediaRow;
     private int saveMediaPrivateChatsRow;
@@ -146,7 +148,7 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
         boolean saveDeleted = NaConfig.INSTANCE.getEnableSaveDeletedMessages().Bool();
         boolean saveEdits = NaConfig.INSTANCE.getEnableSaveEditsHistory().Bool();
         saveMediaRow = botUserRow = botChatRow = translucentRow = -1;
-        deletedExceptionsModeRow = editedExceptionsModeRow = -1;
+        deletedExceptionsModeRow = deletedExceptionsListRow = editedExceptionsModeRow = editedExceptionsListRow = -1;
         saveDeletedPrivateRow = saveDeletedGroupsRow = saveDeletedChannelsRow = -1;
         replyToDeletedRow = deletedIconRow = deletedMarkRow = deletedMarkColorRow = -1;
         saveMediaPrivateChatsRow = saveMediaPublicChannelsRow = saveMediaPrivateChannelsRow = -1;
@@ -157,10 +159,12 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
         saveDeletedRow = addRow(NaConfig.INSTANCE.getEnableSaveDeletedMessages().getKey());
         if (saveDeleted) {
             deletedExceptionsModeRow = addRow(NaConfig.INSTANCE.getSaveDeletedExceptionsMode().getKey());
+            deletedExceptionsListRow = addRow("deletedExceptionsList");
         }
         saveEditsRow = addRow(NaConfig.INSTANCE.getEnableSaveEditsHistory().getKey());
         if (saveEdits) {
             editedExceptionsModeRow = addRow(NaConfig.INSTANCE.getSaveEditedExceptionsMode().getKey());
+            editedExceptionsListRow = addRow("editedExceptionsList");
         }
         saveInArchivedRow = addRow("saveInArchived");
         if (saveDeleted) {
@@ -286,10 +290,14 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
             toggleAyuConfig(view, NaConfig.INSTANCE.getEnableSaveDeletedMessages(), true);
         } else if (position == deletedExceptionsModeRow) {
             showSaveExceptionsModeDialog(NaConfig.INSTANCE.getSaveDeletedExceptionsMode(), deletedExceptionsModeRow);
+        } else if (position == deletedExceptionsListRow) {
+            showSaveExclusionsSheet(false);
         } else if (position == saveEditsRow) {
             toggleAyuConfig(view, NaConfig.INSTANCE.getEnableSaveEditsHistory(), true);
         } else if (position == editedExceptionsModeRow) {
             showSaveExceptionsModeDialog(NaConfig.INSTANCE.getSaveEditedExceptionsMode(), editedExceptionsModeRow);
+        } else if (position == editedExceptionsListRow) {
+            showSaveExclusionsSheet(true);
         } else if (position == saveInArchivedRow) {
             toggleAyuConfig(view, NaConfig.INSTANCE.getSaveInArchivedChats(), false);
         } else if (position == saveMediaRow) {
@@ -504,12 +512,17 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
     /** Долгое нажатие на «Исключения»: режим выбирается сразу в меню у строки, без отдельного окна. */
     @Override
     protected boolean onItemLongClick(View view, int position, float x, float y) {
+        if (position == deletedExceptionsListRow || position == editedExceptionsListRow) {
+            showSaveExclusionsSheet(position == editedExceptionsListRow);
+            return true;
+        }
         if (position != deletedExceptionsModeRow && position != editedExceptionsModeRow) {
             return super.onItemLongClick(view, position, x, y);
         }
-        final ConfigItem config = position == deletedExceptionsModeRow
-                ? NaConfig.INSTANCE.getSaveDeletedExceptionsMode()
-                : NaConfig.INSTANCE.getSaveEditedExceptionsMode();
+        final boolean edits = position == editedExceptionsModeRow;
+        final ConfigItem config = edits
+                ? NaConfig.INSTANCE.getSaveEditedExceptionsMode()
+                : NaConfig.INSTANCE.getSaveDeletedExceptionsMode();
         final int row = position;
         org.telegram.ui.Components.ItemOptions options = org.telegram.ui.Components.ItemOptions.makeOptions(this, view);
         options.addChecked(config.Int() != 1, getString(R.string.SaveExceptionsAllExceptSelected), () -> {
@@ -524,6 +537,9 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
                 listAdapter.notifyItemChanged(row);
             }
         });
+        options.addGap();
+        options.add(R.drawable.msg_list, app.heartgram.HeartGramLabels.tr("Список исключений...", "Exceptions list..."),
+                () -> showSaveExclusionsSheet(edits));
         options.show();
         return true;
     }
@@ -551,6 +567,184 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
 
     private String getSaveExceptionsModeValue(ConfigItem config) {
         return getString(config.Int() == 1 ? R.string.SaveExceptionsOnlySelected : R.string.SaveExceptionsAllExceptSelected);
+    }
+
+    private String getSaveExclusionsCountValue(boolean edits) {
+        int count = com.radolyn.ayugram.messages.AyuSavePreferences.getSaveExclusionIds(edits).size();
+        if (count == 0) {
+            return app.heartgram.HeartGramLabels.tr("Пусто", "Empty");
+        }
+        return app.heartgram.HeartGramLabels.tr("Выбрано: ", "Selected: ") + count;
+    }
+
+    private void showSaveExclusionsSheet(boolean edits) {
+        Activity activity = getParentActivity();
+        if (activity == null) {
+            return;
+        }
+        BottomSheet sheet = new BottomSheet(activity, false, getResourceProvider());
+        sheet.setApplyTopPadding(false);
+        sheet.setApplyBottomPadding(false);
+        LinearLayout root = new LinearLayout(activity);
+        root.setOrientation(LinearLayout.VERTICAL);
+        root.setPadding(AndroidUtilities.dp(16), AndroidUtilities.dp(14), AndroidUtilities.dp(16), AndroidUtilities.dp(16) + AndroidUtilities.navigationBarHeight);
+
+        TextView title = new TextView(activity);
+        title.setText(app.heartgram.HeartGramLabels.tr(
+                edits ? "Исключения (изменённые)" : "Исключения (удалённые)",
+                edits ? "Exceptions (edited)" : "Exceptions (deleted)"));
+        title.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 18);
+        title.setTypeface(AndroidUtilities.bold());
+        title.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+        root.addView(title, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 4, 0, 4, 4));
+
+        ConfigItem modeConfig = edits ? NaConfig.INSTANCE.getSaveEditedExceptionsMode() : NaConfig.INSTANCE.getSaveDeletedExceptionsMode();
+        TextView subtitle = new TextView(activity);
+        subtitle.setText(getSaveExceptionsModeValue(modeConfig));
+        subtitle.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13);
+        subtitle.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+        root.addView(subtitle, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 4, 0, 4, 12));
+
+        TextView addBtn = new TextView(activity);
+        addBtn.setText(app.heartgram.HeartGramLabels.tr("+ Добавить чат или пользователя", "+ Add chat or user"));
+        addBtn.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 14.5f);
+        addBtn.setTypeface(AndroidUtilities.bold());
+        addBtn.setGravity(Gravity.CENTER);
+        addBtn.setTextColor(getThemedColor(Theme.key_featuredStickers_buttonText));
+        int accent = getThemedColor(Theme.key_featuredStickers_addButton);
+        addBtn.setBackground(Theme.createSimpleSelectorRoundRectDrawable(AndroidUtilities.dp(12), accent, Theme.blendOver(accent, 0x22FFFFFF)));
+        addBtn.setOnClickListener(v -> {
+            sheet.dismiss();
+            android.os.Bundle args = new android.os.Bundle();
+            args.putBoolean("onlySelect", true);
+            args.putInt("dialogsType", 0);
+            org.telegram.ui.DialogsActivity dialogsActivity = new org.telegram.ui.DialogsActivity(args);
+            dialogsActivity.setDelegate((fragment, dids, message, param, notify, scheduleDate, scheduleRepeatPeriod, topicsFragment) -> {
+                if (dids != null) {
+                    for (int i = 0; i < dids.size(); i++) {
+                        long did = dids.get(i).dialogId;
+                        if (edits) {
+                            com.radolyn.ayugram.messages.AyuSavePreferences.setSaveEditedExclusion(did, true);
+                        } else {
+                            com.radolyn.ayugram.messages.AyuSavePreferences.setSaveDeletedExclusion(did, true);
+                        }
+                    }
+                    if (listAdapter != null) {
+                        int row = edits ? editedExceptionsListRow : deletedExceptionsListRow;
+                        if (row >= 0) {
+                            listAdapter.notifyItemChanged(row);
+                        }
+                    }
+                }
+                dialogsActivity.finishFragment();
+                AndroidUtilities.runOnUIThread(() -> showSaveExclusionsSheet(edits), 160);
+                return true;
+            });
+            presentFragment(dialogsActivity);
+        });
+        root.addView(addBtn, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 46, 0, 0, 0, 12));
+
+        LinearLayout listContainer = new LinearLayout(activity);
+        listContainer.setOrientation(LinearLayout.VERTICAL);
+
+        final Runnable[] rebuildList = new Runnable[1];
+        rebuildList[0] = () -> {
+            listContainer.removeAllViews();
+            ArrayList<Long> ids = com.radolyn.ayugram.messages.AyuSavePreferences.getSaveExclusionIds(edits);
+            if (listAdapter != null) {
+                int row = edits ? editedExceptionsListRow : deletedExceptionsListRow;
+                if (row >= 0) {
+                    listAdapter.notifyItemChanged(row);
+                }
+            }
+            if (ids.isEmpty()) {
+                TextView empty = new TextView(activity);
+                empty.setText(app.heartgram.HeartGramLabels.tr(
+                        "Список пуст. Нажмите кнопку выше, чтобы добавить чат, группу, канал или пользователя.",
+                        "List is empty. Tap above to add a chat, group, channel or user."));
+                empty.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 13.5f);
+                empty.setGravity(Gravity.CENTER);
+                empty.setPadding(AndroidUtilities.dp(12), AndroidUtilities.dp(20), AndroidUtilities.dp(12), AndroidUtilities.dp(20));
+                empty.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+                listContainer.addView(empty, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+                return;
+            }
+            org.telegram.messenger.MessagesController mc = getMessagesController();
+            for (Long absId : ids) {
+                LinearLayout row = new LinearLayout(activity);
+                row.setOrientation(LinearLayout.HORIZONTAL);
+                row.setGravity(Gravity.CENTER_VERTICAL);
+                row.setPadding(AndroidUtilities.dp(10), AndroidUtilities.dp(8), AndroidUtilities.dp(8), AndroidUtilities.dp(8));
+                row.setBackground(Theme.createRadSelectorDrawable(getThemedColor(Theme.key_listSelector), 12, 12));
+
+                org.telegram.tgnet.TLRPC.User user = mc.getUser(absId);
+                org.telegram.tgnet.TLRPC.Chat chat = user == null ? mc.getChat(absId) : null;
+
+                org.telegram.ui.Components.BackupImageView avatar = new org.telegram.ui.Components.BackupImageView(activity);
+                avatar.setRoundRadius(AndroidUtilities.dp(20));
+                org.telegram.ui.Components.AvatarDrawable ad = new org.telegram.ui.Components.AvatarDrawable();
+                if (user != null) {
+                    ad.setInfo(currentAccount, user);
+                    avatar.setForUserOrChat(user, ad);
+                } else if (chat != null) {
+                    ad.setInfo(currentAccount, chat);
+                    avatar.setForUserOrChat(chat, ad);
+                } else {
+                    ad.setInfo(absId, "?", "");
+                    avatar.setImageDrawable(ad);
+                }
+                row.addView(avatar, LayoutHelper.createLinear(40, 40, 0, 0, 12, 0));
+
+                LinearLayout col = new LinearLayout(activity);
+                col.setOrientation(LinearLayout.VERTICAL);
+                TextView name = new TextView(activity);
+                String displayName = user != null ? org.telegram.messenger.UserObject.getUserName(user)
+                        : (chat != null && chat.title != null ? chat.title : "ID: " + absId);
+                name.setText(displayName);
+                name.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 15);
+                name.setTypeface(AndroidUtilities.bold());
+                name.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                name.setSingleLine(true);
+                name.setEllipsize(android.text.TextUtils.TruncateAt.END);
+                col.addView(name);
+
+                TextView sub = new TextView(activity);
+                sub.setText(app.heartgram.HeartGramLabels.tr("Нажмите или зажмите, чтобы убрать • ", "Tap or hold to remove • ") + "ID " + absId);
+                sub.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 12);
+                sub.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteGrayText));
+                col.addView(sub);
+                row.addView(col, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f));
+
+                android.widget.ImageView del = new android.widget.ImageView(activity);
+                del.setImageResource(R.drawable.msg_delete);
+                del.setColorFilter(getThemedColor(Theme.key_windowBackgroundWhiteGrayIcon));
+                del.setScaleType(android.widget.ImageView.ScaleType.CENTER);
+                row.addView(del, LayoutHelper.createLinear(36, 36));
+
+                View.OnClickListener removeAction = v -> {
+                    if (edits) {
+                        com.radolyn.ayugram.messages.AyuSavePreferences.setSaveEditedExclusion(absId, false);
+                    } else {
+                        com.radolyn.ayugram.messages.AyuSavePreferences.setSaveDeletedExclusion(absId, false);
+                    }
+                    rebuildList[0].run();
+                };
+                row.setOnClickListener(removeAction);
+                row.setOnLongClickListener(v -> {
+                    removeAction.onClick(v);
+                    return true;
+                });
+                listContainer.addView(row, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, 0, 2, 0, 2));
+            }
+        };
+        rebuildList[0].run();
+
+        android.widget.ScrollView scroll = new android.widget.ScrollView(activity);
+        scroll.addView(listContainer, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT));
+        root.addView(scroll, LayoutHelper.createLinear(LayoutHelper.MATCH_PARENT, 0, 1f));
+
+        sheet.setCustomView(root);
+        showDialog(sheet);
     }
 
     private void showDeletedMarkDialog() {
@@ -860,6 +1054,11 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
                                 : NaConfig.INSTANCE.getSaveEditedExceptionsMode();
                         cell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
                         cell.setTextAndValue(getString(config.getKey()), getSaveExceptionsModeValue(config), true);
+                    } else if (position == deletedExceptionsListRow || position == editedExceptionsListRow) {
+                        boolean edits = position == editedExceptionsListRow;
+                        cell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
+                        cell.setTextAndValue(app.heartgram.HeartGramLabels.tr("Список исключений", "Exceptions list"),
+                                getSaveExclusionsCountValue(edits), true);
                     } else if (position == deletedMarkRow) {
                         cell.setTextColor(getThemedColor(Theme.key_windowBackgroundWhiteBlackText));
                         cell.setTextAndValue(getString(NaConfig.INSTANCE.getCustomDeletedMark().getKey()),
@@ -901,6 +1100,7 @@ public class OpenExteraAyuMomentsActivity extends BaseNekoSettingsActivity {
                     || position == exportDbRow || position == importDbRow) {
                 return TYPE_TEXT;
             } else if (position == deletedExceptionsModeRow || position == editedExceptionsModeRow
+                    || position == deletedExceptionsListRow || position == editedExceptionsListRow
                     || position == deletedMarkRow || position == deletedMarkColorRow || position == clearDbRow) {
                 return TYPE_SETTINGS;
             } else if (position == saveMediaRow) {

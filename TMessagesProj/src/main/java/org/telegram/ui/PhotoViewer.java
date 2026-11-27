@@ -4250,7 +4250,23 @@ public class PhotoViewer implements NotificationCenter.NotificationCenterDelegat
     }
 
     public boolean hgIsAnimatingView(View view) {
-        return view == animatingImageView;
+        return view == animatingImageView && view != null && view.getVisibility() == View.VISIBLE;
+    }
+
+    public float hgClipGlowAlpha(View view) {
+        if (view != animatingImageView || view == null || view.getVisibility() != View.VISIBLE || containerView == null) {
+            return 0f;
+        }
+        float alpha = Math.min(view.getAlpha(), containerView.getAlpha());
+        if (backgroundDrawable != null) {
+            alpha = Math.min(alpha, backgroundDrawable.getAlpha() / 255f);
+        }
+        if (animationInProgress == 2 || animationInProgress == 3) {
+            alpha *= Math.max(0f, 1f - clippingImageProgress * 3.0f);
+        } else if (!isVisible && animationInProgress != 1) {
+            return 0f;
+        }
+        return Math.max(0f, Math.min(1f, alpha));
     }
 
     public PhotoViewer() {

@@ -491,7 +491,7 @@ public class ProfileActionsView extends View {
             return;
         }
 
-        final boolean hasGlass = glassFactory != null && !app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
+        final boolean hasGlass = glassFactory != null;
         final boolean themeColors = !hasColorById && Theme.isCurrentThemeMonet(resourcesProvider);
         final float useFilledWhiteIcon = getFilledIconProgress(themeColors || isButtonColorLight());
         final boolean dark = Theme.isCurrentThemeDark();

@@ -134,10 +134,10 @@ public class Icon3D {
             modelPaths = dealModel;
         } else if (type == TYPE_HEART) {
             modelPaths = heartModel;
-            diffuse = 0.45f;
-            spec1 = 1.85f;
-            spec2 = 0.45f;
-            normalSpec = 0.08f;
+            diffuse = 0.58f;
+            spec1 = 0.90f;
+            spec2 = 0.22f;
+            normalSpec = 0.0f;
         } else if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             modelPaths = starModel;
         } else {
@@ -261,7 +261,14 @@ public class Icon3D {
         GLES20.glTexParameteri(GLES20.GL_TEXTURE_2D, GLES20.GL_TEXTURE_MAG_FILTER, GLES20.GL_LINEAR);
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mTextureDataHandle);
 
-        Bitmap bitmap1 = getBitmapFromAsset(context, "flecks.png");
+        Bitmap bitmap1;
+        if (type == TYPE_HEART) {
+            // Монолитное сердце без «блестяшек»: ровная нейтральная normal-карта (0.5, 0.5, 1.0)
+            bitmap1 = Bitmap.createBitmap(4, 4, Bitmap.Config.ARGB_8888);
+            bitmap1.eraseColor(0xFF8080FF);
+        } else {
+            bitmap1 = getBitmapFromAsset(context, "flecks.png");
+        }
 
         final int[] normalMap = new int[1];
         GLES20.glGenTextures(1, normalMap, 0);

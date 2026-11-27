@@ -61,16 +61,16 @@ public final class HeartGramSupportSheet {
         root.setPadding(dp(20), dp(12), dp(20), dp(16));
         root.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
 
-        // 3D-сердце HeartGram со звёздами вокруг него; если открыли значок поддержавшего с кастомным эмодзи — показываем его.
+        // 3D-сердце HeartGram без блёсток; если открыли значок поддержавшего с кастомным эмодзи — показываем его.
         final FrameLayout art = new FrameLayout(context);
         final int accentColor = Theme.getColor(Theme.key_featuredStickers_addButton, fragment.getResourceProvider());
-        final HeartGramBadgeSheet.StarsView stars = HeartGramBadgeSheet.createStarsView(context, accentColor, 44, 108);
-        art.addView(stars, new FrameLayout.LayoutParams(-1, -1));
         long shown = previewDocument;
         if (shown != 0 && !HeartGramBadges.isDefaultHeartDocument(shown)) {
+            final HeartGramBadgeSheet.StarsView stars = HeartGramBadgeSheet.createStarsView(context, accentColor, 44, 108);
+            art.addView(stars, new FrameLayout.LayoutParams(-1, -1));
             art.addView(HeartGramBadgeSheet.createEmojiView(context, shown, stars::setColor), new FrameLayout.LayoutParams(dp(84), dp(84), Gravity.CENTER));
         } else {
-            art.addView(HeartGramBadgeSheet.createHeart3DView(context, stars, fragment.getResourceProvider()), new FrameLayout.LayoutParams(dp(124), dp(124), Gravity.CENTER));
+            art.addView(HeartGramBadgeSheet.createHeart3DView(context, null, fragment.getResourceProvider()), new FrameLayout.LayoutParams(dp(128), dp(128), Gravity.CENTER));
         }
         LinearLayout.LayoutParams artLp = new LinearLayout.LayoutParams(dp(230), dp(146));
         artLp.gravity = Gravity.CENTER_HORIZONTAL;
@@ -122,12 +122,21 @@ public final class HeartGramSupportSheet {
         root.addView(steps, new LinearLayout.LayoutParams(-1, -2));
 
         final String contact = HeartGramBadges.supportContactOrDefault();
-        final StepHolder step1 = createStepHolder(context, R.drawable.filter_money, tr("Сделать донат", "Make a donation"), "", null, true);
+        final String step1Basic = tr("Переведите " + HeartGramBadges.priceText(false) + " на любой из реквизитов: они в настройках HeartGram, раздел «Другое».",
+                "Send " + HeartGramBadges.priceText(false) + " to any of the options: they are in HeartGram settings, section “Other”.");
+        final String step1Cool = tr("Переведите " + HeartGramBadges.priceText(true) + " на любой из реквизитов: они в настройках HeartGram, раздел «Другое».",
+                "Send " + HeartGramBadges.priceText(true) + " to any of the options: they are in HeartGram settings, section “Other”.");
+        final String step3Basic = tr("Когда платёж проверен, значок появится в вашем профиле и у имени в чатах. Его увидят другие пользователи HeartGram.",
+                "Once the payment is checked the badge appears in your profile and next to your name in chats. Other HeartGram users will see it.");
+        final String step3Cool = tr("Когда платёж проверен, появится изменяемый значок. Его можно менять: выберите любое эмодзи и свою подпись (жирный текст, ссылки, @username). Другие пользователи HeartGram увидят его у вашего имени.",
+                "Once the payment is checked you get an editable badge. You can change it any time: pick any emoji and your own caption (bold text, links, @username). Other HeartGram users see it next to your name.");
+
+        final StepHolder step1 = createStepHolder(context, R.drawable.filter_money, tr("Сделать донат", "Make a donation"), step1Basic, step1Cool, null, true);
         final StepHolder step2 = createStepHolder(context, R.drawable.msg_photos, tr("Отправить чек", "Send the receipt"),
                 tr("Пришлите скриншот перевода в личные сообщения %s. Должны быть видны сумма, дата и время.",
                         "Send a screenshot of the transfer in a private message to %s. The amount, date and time must be visible."),
-                contact, false);
-        final StepHolder step3 = createStepHolder(context, R.drawable.msg_reactions2, tr("Получить значок", "Get the badge"), "", null, false);
+                null, contact, false);
+        final StepHolder step3 = createStepHolder(context, R.drawable.msg_reactions2, tr("Получить значок", "Get the badge"), step3Basic, step3Cool, null, false);
         steps.addView(step1.row);
         steps.addView(step2.row);
         steps.addView(step3.row);
@@ -135,34 +144,25 @@ public final class HeartGramSupportSheet {
         final float[] indicatorPos = {startCool ? 1f : 0f};
         final android.animation.ValueAnimator[] chipAnim = {null};
         final Runnable updateIndicatorGeometry = () -> {
+            final float t = indicatorPos[0];
             final int innerW = tiersTrack.getWidth() - tiersTrack.getPaddingLeft() - tiersTrack.getPaddingRight();
-            if (innerW <= 0) {
-                return;
+            if (innerW > 0) {
+                final int halfW = innerW / 2;
+                FrameLayout.LayoutParams ilp = (FrameLayout.LayoutParams) tierIndicator.getLayoutParams();
+                if (ilp.width != halfW) {
+                    ilp.width = halfW;
+                    tierIndicator.setLayoutParams(ilp);
+                }
+                tierIndicator.setTranslationX(t * halfW);
             }
-            final int halfW = innerW / 2;
-            FrameLayout.LayoutParams ilp = (FrameLayout.LayoutParams) tierIndicator.getLayoutParams();
-            if (ilp.width != halfW) {
-                ilp.width = halfW;
-                tierIndicator.setLayoutParams(ilp);
-            }
-            tierIndicator.setTranslationX(indicatorPos[0] * halfW);
             final int activeText = Theme.getColor(Theme.key_featuredStickers_buttonText);
             final int inactiveText = Theme.getColor(Theme.key_dialogTextBlack);
-            tierBasic.setTextColor(androidx.core.graphics.ColorUtils.blendARGB(activeText, inactiveText, indicatorPos[0]));
-            tierCool.setTextColor(androidx.core.graphics.ColorUtils.blendARGB(inactiveText, activeText, indicatorPos[0]));
+            tierBasic.setTextColor(androidx.core.graphics.ColorUtils.blendARGB(activeText, inactiveText, t));
+            tierCool.setTextColor(androidx.core.graphics.ColorUtils.blendARGB(inactiveText, activeText, t));
+            step1.setMorphProgress(t);
+            step3.setMorphProgress(t);
         };
         tiersTrack.addOnLayoutChangeListener((v, l, t, r, b, ol, ot, or_, ob) -> updateIndicatorGeometry.run());
-
-        final Runnable applyTexts = () -> {
-            step1.setBody(context, tr("Переведите " + HeartGramBadges.priceText(cool[0]) + " на любой из реквизитов: они в настройках HeartGram, раздел «Другое».",
-                    "Send " + HeartGramBadges.priceText(cool[0]) + " to any of the options: they are in HeartGram settings, section “Other”."), null, true);
-            step3.setBody(context, cool[0]
-                    ? tr("Когда платёж проверен, появится изменяемый значок. Его можно менять: выберите любое эмодзи и свою подпись (жирный текст, ссылки, @username). Другие пользователи HeartGram увидят его у вашего имени.",
-                    "Once the payment is checked you get an editable badge. You can change it any time: pick any emoji and your own caption (bold text, links, @username). Other HeartGram users see it next to your name.")
-                    : tr("Когда платёж проверен, значок появится в вашем профиле и у имени в чатах. Его увидят другие пользователи HeartGram.",
-                    "Once the payment is checked the badge appears in your profile and next to your name in chats. Other HeartGram users will see it."), null, false);
-        };
-        applyTexts.run();
         updateIndicatorGeometry.run();
 
         final Runnable animateSwitch = () -> {
@@ -170,7 +170,7 @@ public final class HeartGramSupportSheet {
                 chipAnim[0].cancel();
             }
             chipAnim[0] = android.animation.ValueAnimator.ofFloat(indicatorPos[0], cool[0] ? 1f : 0f);
-            chipAnim[0].setDuration(240);
+            chipAnim[0].setDuration(280);
             chipAnim[0].setInterpolator(org.telegram.ui.Components.CubicBezierInterpolator.EASE_OUT_QUINT);
             chipAnim[0].addUpdateListener(a -> {
                 indicatorPos[0] = (float) a.getAnimatedValue();
@@ -179,23 +179,10 @@ public final class HeartGramSupportSheet {
             chipAnim[0].start();
 
             art.animate().cancel();
-            art.animate().scaleX(1.06f).scaleY(1.06f).setDuration(120)
-                    .withEndAction(() -> art.animate().scaleX(1f).scaleY(1f).setDuration(200)
+            art.animate().scaleX(1.05f).scaleY(1.05f).setDuration(130)
+                    .withEndAction(() -> art.animate().scaleX(1f).scaleY(1f).setDuration(210)
                             .setInterpolator(org.telegram.ui.Components.CubicBezierInterpolator.EASE_OUT_BACK).start())
                     .start();
-
-            step1.body.animate().cancel();
-            step3.body.animate().cancel();
-            step1.body.animate().alpha(0f).setDuration(90).start();
-            step3.body.animate().alpha(0f).setDuration(90).withEndAction(() -> {
-                android.transition.ChangeBounds cb = new android.transition.ChangeBounds();
-                cb.setDuration(220);
-                cb.setInterpolator(org.telegram.ui.Components.CubicBezierInterpolator.EASE_OUT_QUINT);
-                android.transition.TransitionManager.beginDelayedTransition(root, cb);
-                applyTexts.run();
-                step1.body.animate().alpha(1f).setDuration(170).start();
-                step3.body.animate().alpha(1f).setDuration(170).start();
-            }).start();
         };
         tierBasic.setOnClickListener(v -> {
             if (cool[0]) {
@@ -245,19 +232,28 @@ public final class HeartGramSupportSheet {
 
     private static final class StepHolder {
         final LinearLayout row;
-        final TextView body;
+        final TextView basicBody;
+        final TextView coolBody;
 
-        StepHolder(LinearLayout row, TextView body) {
+        StepHolder(LinearLayout row, TextView basicBody, TextView coolBody) {
             this.row = row;
-            this.body = body;
+            this.basicBody = basicBody;
+            this.coolBody = coolBody;
         }
 
-        void setBody(Context context, String textValue, String contact, boolean ton) {
-            applyBodyText(context, body, textValue, contact, ton);
+        void setMorphProgress(float t) {
+            if (coolBody == null) {
+                return;
+            }
+            float shift = dp(6);
+            basicBody.setAlpha(1f - t);
+            basicBody.setTranslationY(-shift * t);
+            coolBody.setAlpha(t);
+            coolBody.setTranslationY(shift * (1f - t));
         }
     }
 
-    private static StepHolder createStepHolder(Context context, int iconRes, String title, String bodyText, String contact, boolean ton) {
+    private static StepHolder createStepHolder(Context context, int iconRes, String title, String basicText, String coolText, String contact, boolean ton) {
         LinearLayout row = new LinearLayout(context);
         row.setOrientation(LinearLayout.HORIZONTAL);
         row.setPadding(0, dp(14), 0, 0);
@@ -272,12 +268,25 @@ public final class HeartGramSupportSheet {
         LinearLayout col = new LinearLayout(context);
         col.setOrientation(LinearLayout.VERTICAL);
         col.addView(text(context, title, 16, true, Theme.getColor(Theme.key_dialogTextBlack), Gravity.START));
-        TextView tv = text(context, "", 14, false, Theme.getColor(Theme.key_dialogTextGray2), Gravity.START);
-        tv.setPadding(0, dp(2), 0, 0);
-        applyBodyText(context, tv, bodyText, contact, ton);
-        col.addView(tv);
+
+        // Оба текста лежат в одном FrameLayout фиксированной максимальной высоты, чтобы нижние кнопки не прыгали
+        FrameLayout bodyStack = new FrameLayout(context);
+        TextView basicTv = text(context, "", 14, false, Theme.getColor(Theme.key_dialogTextGray2), Gravity.START);
+        basicTv.setPadding(0, dp(2), 0, 0);
+        applyBodyText(context, basicTv, basicText, contact, ton);
+        bodyStack.addView(basicTv, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+
+        TextView coolTv = null;
+        if (coolText != null) {
+            coolTv = text(context, "", 14, false, Theme.getColor(Theme.key_dialogTextGray2), Gravity.START);
+            coolTv.setPadding(0, dp(2), 0, 0);
+            applyBodyText(context, coolTv, coolText, contact, ton);
+            coolTv.setAlpha(0f);
+            bodyStack.addView(coolTv, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+        }
+        col.addView(bodyStack, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
         row.addView(col, new LinearLayout.LayoutParams(0, -2, 1f));
-        return new StepHolder(row, tv);
+        return new StepHolder(row, basicTv, coolTv);
     }
 
     private static void applyBodyText(Context context, TextView text, String body, final String contact, boolean ton) {

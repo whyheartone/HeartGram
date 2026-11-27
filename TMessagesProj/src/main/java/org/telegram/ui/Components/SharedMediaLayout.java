@@ -1699,7 +1699,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             this.initialTab = TAB_BOT_PREVIEWS;
         } else if (userInfo != null && userInfo.bot_info != null && userInfo.bot_info.has_preview_medias) {
             this.initialTab = TAB_STORIES;
-        } else if (main_tab instanceof TLRPC.TL_profileTabPosts && !NaConfig.INSTANCE.getDisableStories().Bool() && (userInfo != null && userInfo.stories_pinned_available || chatInfo != null && chatInfo.stories_pinned_available || isStoriesView())) {
+        } else if (main_tab instanceof TLRPC.TL_profileTabPosts && (!NaConfig.INSTANCE.getDisableStories().Bool() || NaConfig.INSTANCE.getKeepStoriesInProfile().Bool()) && (userInfo != null && userInfo.stories_pinned_available || chatInfo != null && chatInfo.stories_pinned_available || isStoriesView())) {
             this.initialTab = TAB_STORIES;
         } else if (main_tab instanceof TLRPC.TL_profileTabGifts && (userInfo != null && userInfo.stargifts_count > 0 || chatInfo != null && chatInfo.stargifts_count > 0 && !NaConfig.INSTANCE.getPreferCommonGroupsTab().Bool())) {
             this.initialTab = TAB_GIFTS;
@@ -1713,7 +1713,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             this.initialTab = TAB_AUDIO;
         } else if (main_tab instanceof TLRPC.TL_profileTabVoice && (hasMedia[2] == -1 || hasMedia[2] > 0)) {
             this.initialTab = TAB_VOICE;
-        } else if (!NaConfig.INSTANCE.getDisableStories().Bool() && (userInfo != null && userInfo.stories_pinned_available || chatInfo != null && chatInfo.stories_pinned_available || isStoriesView())) {
+        } else if ((!NaConfig.INSTANCE.getDisableStories().Bool() || NaConfig.INSTANCE.getKeepStoriesInProfile().Bool()) && (userInfo != null && userInfo.stories_pinned_available || chatInfo != null && chatInfo.stories_pinned_available || isStoriesView())) {
             this.initialTab = getInitialTab();
         } else if (userInfo != null && userInfo.stargifts_count > 0 || chatInfo != null && chatInfo.stargifts_count > 0 && !NaConfig.INSTANCE.getPreferCommonGroupsTab().Bool()) {
             this.initialTab = TAB_GIFTS;
@@ -3527,15 +3527,10 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             // the content exactly in the glass: the layout's background starts 14dp in and is inset by 7dp
             topPanelLayout.setPadding(dp(11), TOP_PANEL_GLASS_TOP, dp(11), TOP_PANEL_GLASS_TOP);
 
-            if (!app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
-                BlurredBackgroundDrawable topPanelLayoutBackground = iBlur3FactoryLiquidGlass.create(topPanelLayout, glassColors);
-                topPanelLayoutBackground.setRadius(dp(24));
-                topPanelLayoutBackground.setPadding(dp(7));
-                topPanelLayout.setBlurredBackground(topPanelLayoutBackground);
-            } else {
-                topPanelLayout.setBlurredBackground(null);
-                topPanelLayout.setBackgroundColor(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider));
-            }
+            BlurredBackgroundDrawable topPanelLayoutBackground = iBlur3FactoryLiquidGlass.create(topPanelLayout, glassColors);
+            topPanelLayoutBackground.setRadius(dp(24));
+            topPanelLayoutBackground.setPadding(dp(7));
+            topPanelLayout.setBlurredBackground(topPanelLayoutBackground);
 
             fragmentContextViewWrapper = new FrameLayout(context);
             topPanelLayout.addView(fragmentContextViewWrapper);
@@ -3585,21 +3580,13 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
                 setVisibleHeight(lastVisibleHeight);
             });
 
-            if (!app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
-                BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(scrollSlidingTextTabStrip, glassColors);
-                filterTabsViewBackground.setRadius(dp(18));
-                filterTabsViewBackground.setPadding(dp(6.666f));
-                scrollSlidingTextTabStrip.setPadding(0, dp(7), 0, dp(7));
-                scrollSlidingTextTabStrip.setClipToPadding(false);
-                scrollSlidingTextTabStrip.setBackground(null);
-                scrollSlidingTextTabStrip.setBlurredBackground(filterTabsViewBackground);
-            } else {
-                scrollSlidingTextTabStrip.setPadding(0, dp(7), 0, dp(7));
-                scrollSlidingTextTabStrip.setClipToPadding(false);
-                scrollSlidingTextTabStrip.setBlurredBackground(null);
-                scrollSlidingTextTabStrip.setBackground(Theme.createRoundRectDrawable(dp(18),
-                        Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider)));
-            }
+            BlurredBackgroundDrawable filterTabsViewBackground = iBlur3FactoryLiquidGlass.create(scrollSlidingTextTabStrip, glassColors);
+            filterTabsViewBackground.setRadius(dp(18));
+            filterTabsViewBackground.setPadding(dp(6.666f));
+            scrollSlidingTextTabStrip.setPadding(0, dp(7), 0, dp(7));
+            scrollSlidingTextTabStrip.setClipToPadding(false);
+            scrollSlidingTextTabStrip.setBackground(null);
+            scrollSlidingTextTabStrip.setBlurredBackground(filterTabsViewBackground);
             scrollSlidingTextTabStrip.setOpen(false);
             // the glass of the tabs (inset by its padding) 6dp from the sides of the screen
             addView(scrollSlidingTextTabStrip, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, 50, Gravity.CENTER_HORIZONTAL | Gravity.TOP, 6 - TABS_GLASS_INSET_DP, 0, 6 - TABS_GLASS_INSET_DP, 0));
@@ -3684,7 +3671,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
     }
 
     protected boolean includeStories() {
-        return !NaConfig.INSTANCE.getDisableStories().Bool();
+        return !NaConfig.INSTANCE.getDisableStories().Bool() || NaConfig.INSTANCE.getKeepStoriesInProfile().Bool();
 //        return true;
     }
 
@@ -4845,7 +4832,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
     }
 
     protected void onSelectedTabChanged() {
-        boolean pollerEnabled = !NaConfig.INSTANCE.getDisableStories().Bool() && (isStoriesView() || isArchivedOnlyStoriesView());
+        boolean pollerEnabled = (!NaConfig.INSTANCE.getDisableStories().Bool() || NaConfig.INSTANCE.getKeepStoriesInProfile().Bool()) && (isStoriesView() || isArchivedOnlyStoriesView());
         if (archivedStoriesAdapter.poller != null) {
             archivedStoriesAdapter.poller.start(pollerEnabled && getClosestTab() == TAB_ARCHIVED_STORIES);
         }
@@ -6741,7 +6728,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
         boolean hasEditBotPreviews = user != null && user.bot && user.bot_has_main_app && user.bot_can_edit;
         boolean hasBotPreviews = user != null && user.bot && !user.bot_can_edit && (userInfo != null && userInfo.bot_info != null && userInfo.bot_info.has_preview_medias) && !hasEditBotPreviews;
         boolean hasStories = (DialogObject.isUserDialog(dialog_id) || DialogObject.isChatDialog(dialog_id)) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || info != null && info.stories_pinned_available || isStoriesView()) && includeStories();
-        hasStories = !NaConfig.INSTANCE.getDisableStories().Bool() && hasStories;
+        hasStories = (!NaConfig.INSTANCE.getDisableStories().Bool() || NaConfig.INSTANCE.getKeepStoriesInProfile().Bool()) && hasStories;
         boolean hasGifts = giftsContainer != null && (userInfo != null && userInfo.stargifts_count > 0 || info != null && info.stargifts_count > 0);
         final TLRPC.ProfileTab main_tab = info != null ? info.main_tab : userInfo != null ? userInfo.main_tab : null;
         int changed = 0;
@@ -6855,7 +6842,7 @@ public class SharedMediaLayout extends FrameLayout implements Theme.Colorable, N
             }
             if (hasBotPreviews) {
                 tabs.add(new Pair(TAB_STORIES, getString(R.string.ProfileBotPreviewTab)));
-            } else if (!NaConfig.INSTANCE.getDisableStories().Bool() && ((DialogObject.isUserDialog(dialog_id) || DialogObject.isChatDialog(dialog_id)) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || info != null && info.stories_pinned_available || isStoriesView()) && includeStories())) {
+            } else if ((!NaConfig.INSTANCE.getDisableStories().Bool() || NaConfig.INSTANCE.getKeepStoriesInProfile().Bool()) && ((DialogObject.isUserDialog(dialog_id) || DialogObject.isChatDialog(dialog_id)) && !DialogObject.isEncryptedDialog(dialog_id) && (userInfo != null && userInfo.stories_pinned_available || info != null && info.stories_pinned_available || isStoriesView()) && includeStories())) {
                 if (isArchivedOnlyStoriesView()) {
                     tabs.add(new Pair(TAB_ARCHIVED_STORIES, getString(R.string.ProfileArchivedStories)));
                     scrollSlidingTextTabStrip.animationDuration = 420;

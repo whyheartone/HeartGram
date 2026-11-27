@@ -55,6 +55,7 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
 
     private int otherHeaderRow;
     private int md3MenusRow;
+    private int md3MenuNoBackingRow;
     private int md3LoadingRow;
     private int md3SliderRow;
     private int md3SwitchRow;
@@ -64,7 +65,6 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
     private int md3PlayerRow;
     private int md3MiniPlayerRow;
     private int md3ProfileActionsRow;
-    private int md3NoGlassRow;
     private int otherShadowRow;
 
     private TilesPreviewView preview;
@@ -101,6 +101,7 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
 
         otherHeaderRow = addRow();
         md3MenusRow = addRow("md3_menus");
+        md3MenuNoBackingRow = addRow("md3_menu_no_backing");
         md3LoadingRow = addRow("md3Loading");
         md3SliderRow = addRow("md3Slider");
         md3SwitchRow = addRow("md3Switch");
@@ -110,7 +111,6 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
         md3PlayerRow = addRow("md3Player");
         md3MiniPlayerRow = addRow("md3MiniPlayer");
         md3ProfileActionsRow = addRow("md3ProfileActions");
-        md3NoGlassRow = addRow("md3NoGlassBacking");
         otherShadowRow = addRow();
     }
 
@@ -139,6 +139,13 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
         } else if (position == md3MenusRow) {
             boolean on = !ChatTiles.menus();
             HeartGramPrefs.prefs().edit().putBoolean("md3_menus", on).apply();
+            toggleCheck(view, on);
+            if (listAdapter != null && md3MenuNoBackingRow >= 0) {
+                listAdapter.notifyItemChanged(md3MenuNoBackingRow);
+            }
+        } else if (position == md3MenuNoBackingRow) {
+            boolean on = !ChatTiles.menuNoBacking();
+            HeartGramPrefs.prefs().edit().putBoolean("md3_menu_no_backing", on).apply();
             toggleCheck(view, on);
         } else if (position == md3LoadingRow) {
             boolean on = !AppearanceConfig.newLoadingStyle.Bool();
@@ -193,12 +200,6 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
             AppearanceConfig.newProfileActionsStyle.setConfigBool(on);
             toggleCheck(view, on);
             rebuildOthers(false);
-        } else if (position == md3NoGlassRow) {
-            boolean on = !AppearanceConfig.md3NoGlassBacking.Bool();
-            AppearanceConfig.md3NoGlassBacking.setConfigBool(on);
-            org.telegram.utils.glass.GlassEngine.getCurrentGlassSettings();
-            toggleCheck(view, on);
-            rebuildOthers(true);
         }
     }
 
@@ -356,6 +357,9 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
                         cell.setTextAndCheck(tr("Оттенок акцентного цвета", "Accent color tint"), ChatTiles.tint() == 1, false);
                     } else if (position == md3MenusRow) {
                         cell.setTextAndCheck(tr("Меню блоками (ответить, ⋮)", "Menus as blocks (reply, ⋮)"), ChatTiles.menus(), true);
+                    } else if (position == md3MenuNoBackingRow) {
+                        cell.setAlpha(ChatTiles.menus() ? 1f : 0.45f);
+                        cell.setTextAndCheck(tr("Убрать подложку MD3-кнопок", "Remove MD3 button backing"), ChatTiles.menuNoBacking(), true);
                     } else if (position == md3LoadingRow) {
                         cell.setTextAndCheck(getString(R.string.OEAppearanceNewLoadingStyle), AppearanceConfig.newLoadingStyle.Bool(), true);
                     } else if (position == md3SliderRow) {
@@ -373,9 +377,7 @@ public class HeartGramMd3Activity extends BaseNekoSettingsActivity {
                     } else if (position == md3MiniPlayerRow) {
                         cell.setTextAndCheck(getString(R.string.OEAppearanceMd3MiniPlayer), AppearanceConfig.md3MiniPlayer.Bool(), true);
                     } else if (position == md3ProfileActionsRow) {
-                        cell.setTextAndCheck(getString(R.string.NewProfileActionsStyle), AppearanceConfig.newProfileActionsStyle.Bool(), true);
-                    } else if (position == md3NoGlassRow) {
-                        cell.setTextAndCheck(tr("Убрать подложку жидкого стекла", "Remove liquid glass backing"), AppearanceConfig.md3NoGlassBacking.Bool(), false);
+                        cell.setTextAndCheck(getString(R.string.NewProfileActionsStyle), AppearanceConfig.newProfileActionsStyle.Bool(), false);
                     }
                     break;
                 }

@@ -71,14 +71,11 @@ public final class HeartGramBadgeSheet {
         FrameLayout art = new FrameLayout(context);
         // 3D-сердце показываем только для поддержавших без кастомного эмодзи; разработчикам и сменившим эмодзи — их эмодзи
         final boolean showHeart3d = "supporter".equals(info.kind) && !HeartGramBadges.isCustomEmoji(peer);
-        final StarsView stars = new StarsView(context, 50, 128);
         if (showHeart3d) {
-            int accent = Theme.getColor(Theme.key_featuredStickers_addButton, fragment.getResourceProvider());
-            stars.setColor(accent);
-            art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-            GLIconTextureView heart3d = createHeart3DView(context, stars, fragment.getResourceProvider());
+            GLIconTextureView heart3d = createHeart3DView(context, null, fragment.getResourceProvider());
             art.addView(heart3d, new FrameLayout.LayoutParams(dp(168), dp(168), Gravity.CENTER));
         } else {
+            final StarsView stars = new StarsView(context, 50, 128);
             // звёзды появляются, когда цвет эмодзи уже известен (иначе они сначала в цвете темы, потом перекрашиваются)
             stars.setAlpha(0f);
             final Integer knownColor = EmojiColor.cachedFor(document);

@@ -8474,12 +8474,11 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             buttonsGlass.setButtonColor(topView.btnColor, topView.hasColorById);
         }
         buttonsGlass.setPhotoProgress(buttonsPhotoProgress);
-        final boolean noGlass = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
         if (actionsView != null) {
-            actionsView.setGlassFactory(noGlass ? null : buttonsGlass.actionsFactory);
+            actionsView.setGlassFactory(buttonsGlass.actionsFactory);
         }
         if (musicView != null) {
-            musicView.setGlassFactory(noGlass ? null : buttonsGlass.actionsFactory);
+            musicView.setGlassFactory(buttonsGlass.actionsFactory);
         }
         simpleActionBar.setButtonsGlass(buttonsGlass.headerFactory);
         simpleActionBar.setMenuGlassStroke(false);
@@ -11129,7 +11128,9 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
     }
 
     private boolean needInsetForStories() {
-        return getMessagesController().getStoriesController().hasStories(getDialogId()) && !isTopic;
+        return getMessagesController().getStoriesController().hasStories(getDialogId())
+                && !isTopic
+                && !NaConfig.INSTANCE.getHideStoriesFromAvatars().Bool();
     }
 
     public void setUserInfo(

@@ -1472,7 +1472,7 @@ public final class ExteraConfig {
     }
 
     public static boolean getEnableAdBlock() {
-        return getPreferences().getBoolean("enableAdBlock", true);
+        return getPreferences().getBoolean("enableAdBlock", false);
     }
 
     public static void setEnableAdBlock(boolean value) {

@@ -272,6 +272,9 @@ public class PlayerSettingsPreviewView extends View {
     private void drawMiniPreview(Canvas canvas, float left, float top, float right, float bottom) {
         miniRect.set(left, top, right, bottom);
         final boolean miniCoverOn = ExteraConfig.getPlayerMiniCoverColors();
+        final int coverMode = app.exteraless.appearance.AppearanceConfig.playerMiniCover.Int();
+        final int progressMode = app.exteraless.appearance.AppearanceConfig.playerMiniProgress.Int();
+        final boolean showArtist = app.exteraless.appearance.AppearanceConfig.miniPlayerShowArtist.Bool();
         final int miniAccent = miniCoverOn
                 ? PlayerColors.getMiniPlayerAccent(coverColors.accent, resourcesProvider)
                 : themeColors.accent;
@@ -282,11 +285,16 @@ public class PlayerSettingsPreviewView extends View {
         miniPaint.setColor(miniBg);
         canvas.drawRoundRect(miniRect, dp(MINI_RADIUS_DP), dp(MINI_RADIUS_DP), miniPaint);
 
-        final float mcSize = dp(34);
-        miniCoverRect.set(miniRect.left + dp(10), miniRect.centerY() - mcSize / 2f, miniRect.left + dp(10) + mcSize, miniRect.centerY() + mcSize / 2f);
-        drawCoverArtwork(canvas, miniCoverRect, miniCoverReceiver, dp(9), false, false);
+        final float textLeft;
+        if (coverMode != 2) {
+            final float mcSize = dp(34);
+            miniCoverRect.set(miniRect.left + dp(10), miniRect.centerY() - mcSize / 2f, miniRect.left + dp(10) + mcSize, miniRect.centerY() + mcSize / 2f);
+            drawCoverArtwork(canvas, miniCoverRect, miniCoverReceiver, coverMode == 1 ? mcSize / 2f : dp(9), false, false);
+            textLeft = miniCoverRect.right + dp(12);
+        } else {
+            textLeft = miniRect.left + dp(14);
+        }
 
-        final float textLeft = miniCoverRect.right + dp(12);
         final float textMaxW = miniRect.right - dp(58) - textLeft;
         final String trackTitle = boundMessage != null && !TextUtils.isEmpty(boundMessage.getMusicTitle())
                 ? boundMessage.getMusicTitle()
@@ -303,17 +311,48 @@ public class PlayerSettingsPreviewView extends View {
                 : Theme.getColor(Theme.key_windowBackgroundWhiteGrayText, resourcesProvider);
         titlePaint.setColor(miniTitleColor);
         subtitlePaint.setColor(miniSubColor);
-        canvas.drawText(TextUtils.ellipsize(trackTitle, titlePaint, Math.max(0f, textMaxW), TextUtils.TruncateAt.END).toString(),
-                textLeft, miniRect.centerY() - dp(1.5f), titlePaint);
-        canvas.drawText(TextUtils.ellipsize(trackArtist, subtitlePaint, Math.max(0f, textMaxW), TextUtils.TruncateAt.END).toString(),
-                textLeft, miniRect.centerY() + dp(13.5f), subtitlePaint);
+        final String ellipsizedTitle = TextUtils.ellipsize(trackTitle, titlePaint, Math.max(0f, textMaxW), TextUtils.TruncateAt.END).toString();
+        if (showArtist) {
+            canvas.drawText(ellipsizedTitle, textLeft, miniRect.centerY() - dp(1.5f), titlePaint);
+            canvas.drawText(TextUtils.ellipsize(trackArtist, subtitlePaint, Math.max(0f, textMaxW), TextUtils.TruncateAt.END).toString(),
+                    textLeft, miniRect.centerY() + dp(13.5f), subtitlePaint);
+        } else {
+            canvas.drawText(ellipsizedTitle, textLeft, miniRect.centerY() + dp(5f), titlePaint);
+        }
 
         final float ringR = dp(14);
         miniPlayRect.set(miniRect.right - dp(26) - ringR, miniRect.centerY() - ringR, miniRect.right - dp(26) + ringR, miniRect.centerY() + ringR);
-        waveTrackPaint.setColor(ColorUtils.setAlphaComponent(miniAccent, 65));
-        canvas.drawOval(miniPlayRect, waveTrackPaint);
-        wavePaint.setColor(miniAccent);
-        canvas.drawArc(miniPlayRect, -90f, 360f * ((activeLine + lineProgress) / SAMPLE_MAIN.length), false, wavePaint);
+        final float prog = (activeLine + lineProgress) / SAMPLE_MAIN.length;
+        if (progressMode == 0 || progressMode == 1) {
+            waveTrackPaint.setColor(ColorUtils.setAlphaComponent(miniAccent, 65));
+            canvas.drawOval(miniPlayRect, waveTrackPaint);
+            wavePaint.setColor(miniAccent);
+            if (progressMode == 0 && playing) {
+                wavePath.rewind();
+                final int steps = 40;
+                final float cx = miniPlayRect.centerX();
+                final float cy = miniPlayRect.centerY();
+                for (int i = 0; i <= steps; i++) {
+                    final float frac = prog * (i / (float) steps);
+                    final double ang = -Math.PI / 2.0 + Math.PI * 2.0 * frac;
+                    final float r = ringR + dp(1.1f) * (float) Math.sin(frac * 24.0 + phaseTimeSec * 4.2f);
+                    final float x = cx + r * (float) Math.cos(ang);
+                    final float y = cy + r * (float) Math.sin(ang);
+                    if (i == 0) wavePath.moveTo(x, y); else wavePath.lineTo(x, y);
+                }
+                canvas.drawPath(wavePath, wavePaint);
+            } else {
+                canvas.drawArc(miniPlayRect, -90f, 360f * prog, false, wavePaint);
+            }
+        } else if (progressMode == 2) {
+            final float ly = miniRect.bottom - dp(3);
+            final float lx = miniRect.left + dp(14);
+            final float rx = miniRect.right - dp(14);
+            waveTrackPaint.setColor(ColorUtils.setAlphaComponent(miniAccent, 65));
+            canvas.drawLine(lx, ly, rx, ly, waveTrackPaint);
+            wavePaint.setColor(miniAccent);
+            canvas.drawLine(lx, ly, lx + (rx - lx) * prog, ly, wavePaint);
+        }
         iconPaint.setColor(miniTitleColor);
         drawPlayPauseIcon(canvas, miniPlayRect.centerX(), miniPlayRect.centerY(), dp(4.5f), playing, iconPaint);
     }

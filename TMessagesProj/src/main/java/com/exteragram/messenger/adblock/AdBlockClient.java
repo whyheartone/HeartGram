@@ -24,18 +24,11 @@ import com.exteragram.messenger.adblock.data.BlockResult;
 import com.exteragram.messenger.adblock.interop.AdBlock;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Locale;
 
 public class AdBlockClient {
-    private static final IOException BLOCKED_EXCEPTION = new IOException("Blocked by filter") {
-        @Override
-        public synchronized Throwable fillInStackTrace() {
-            return this;
-        }
-    };
+    private static final byte[] EMPTY_BYTES = new byte[0];
 
     public static CosmeticHide getCosmeticHide(String url) {
         var result = AdBlock.getCosmeticResources(url);
@@ -78,10 +71,19 @@ public class AdBlockClient {
                 }
             }
         }
+        var headers = new HashMap<String, String>();
+        headers.put("Access-Control-Allow-Origin", "*");
+        headers.put("Access-Control-Allow-Credentials", "true");
         if ("sub_frame".equals(requestType)) {
-            return new WebResourceResponse("text/html", "utf-8", 500, "Internal Server Error", null, null);
+            return new WebResourceResponse("text/html", "utf-8", 200, "OK", headers, new ByteArrayInputStream(EMPTY_BYTES));
         }
-        return new WebResourceResponse("text/plain", "utf-8", new BlockedInputStream());
+        if ("script".equals(requestType)) {
+            return new WebResourceResponse("application/javascript", "utf-8", 200, "OK", headers, new ByteArrayInputStream(EMPTY_BYTES));
+        }
+        if ("stylesheet".equals(requestType)) {
+            return new WebResourceResponse("text/css", "utf-8", 200, "OK", headers, new ByteArrayInputStream(EMPTY_BYTES));
+        }
+        return new WebResourceResponse("text/plain", "utf-8", 204, "No Content", headers, new ByteArrayInputStream(EMPTY_BYTES));
     }
 
     public static String getRequestType(WebResourceRequest request, String currentUrl) {
@@ -237,18 +239,6 @@ public class AdBlockClient {
             }
         }
         return css.length() > 0 ? css.toString() : null;
-    }
-
-    private static class BlockedInputStream extends InputStream {
-        @Override
-        public int available() throws IOException {
-            throw BLOCKED_EXCEPTION;
-        }
-
-        @Override
-        public int read() throws IOException {
-            throw BLOCKED_EXCEPTION;
-        }
     }
 
     public static class CosmeticHide {

@@ -56,9 +56,10 @@ public final class MediaGlow {
     private static final int FADE_SLOTS = 12;
     private static final Object[] fadeOwner = new Object[FADE_SLOTS]; // WeakReference<Object>
     private static final long[] fadeStartMs = new long[FADE_SLOTS];
+    private static final long[] fadeMissMs = new long[FADE_SLOTS];
     private static int fadeNext;
     private static long lastAnyDrawMs;
-    private static long lastClipStartMs, lastClipAtMs;
+    private static long lastClipStartMs, lastClipAtMs, lastClipGlowDrawnMs;
     private static boolean fadeFramePosted;
 
     // ── движущаяся картинка (видео, GIF): показанный ореол плавно подтягивается к последнему кадру ──
@@ -150,7 +151,7 @@ public final class MediaGlow {
 
     /** Из ClippingImageView.onDraw: анимация открытия и закрытия, картинку рисует копия. */
     public static void beforeClippingDraw(Canvas canvas, ClippingImageView view, Bitmap b, RectF r) {
-        if (!enabled()) {
+        if (!enabled() || view == null || view.getVisibility() != View.VISIBLE) {
             return;
         }
         try {
@@ -158,7 +159,11 @@ public final class MediaGlow {
             if (v == null || !v.hgIsAnimatingView(view) || b == null || b.isRecycled() || r == null) {
                 return;
             }
-            drawStill(canvas, b, r, 1f, null, view);
+            float clipAlpha = v.hgClipGlowAlpha(view);
+            if (clipAlpha <= 0.01f) {
+                return;
+            }
+            drawStill(canvas, b, r, clipAlpha, null, view);
             lastClipAtMs = SystemClock.uptimeMillis();
         } catch (Throwable t) {
             android.util.Log.w("HeartGramGlow", "свечение при открытии: " + t);
@@ -305,9 +310,11 @@ public final class MediaGlow {
             for (int i = 0; i < FADE_SLOTS; i++) {
                 fadeOwner[i] = null;
                 fadeStartMs[i] = 0L;
+                fadeMissMs[i] = 0L;
             }
             lastClipStartMs = 0L;
             lastClipAtMs = 0L;
+            lastClipGlowDrawnMs = 0L;
         }
         lastAnyDrawMs = now;
         if (owner == null) {
@@ -323,16 +330,26 @@ public final class MediaGlow {
         }
         if (!ready) {
             if (found >= 0) {
-                fadeOwner[found] = null;
-                fadeStartMs[found] = 0L;
+                if (fadeMissMs[found] == 0L) {
+                    fadeMissMs[found] = now;
+                } else if (now - fadeMissMs[found] > 180L) {
+                    fadeOwner[found] = null;
+                    fadeStartMs[found] = 0L;
+                    fadeMissMs[found] = 0L;
+                }
             }
             return 0f;
+        }
+        if (found >= 0) {
+            fadeMissMs[found] = 0L;
         }
         long start;
         if (found >= 0 && fadeStartMs[found] > 0L) {
             start = fadeStartMs[found];
         } else {
-            if (!(owner instanceof ClippingImageView) && lastClipAtMs > 0L && now - lastClipAtMs <= 160L && lastClipStartMs > 0L) {
+            // Наследуем момент старта только если ореол уже рисовался при открытии; иначе плавно появляемся с нуля.
+            if (!(owner instanceof ClippingImageView) && lastClipGlowDrawnMs > 0L
+                    && now - lastClipGlowDrawnMs <= 160L && lastClipStartMs > 0L) {
                 start = lastClipStartMs;
             } else {
                 start = now;
@@ -343,6 +360,7 @@ public final class MediaGlow {
             }
             fadeOwner[slot] = new WeakReference<>(owner);
             fadeStartMs[slot] = start;
+            fadeMissMs[slot] = 0L;
             if (owner instanceof ClippingImageView) {
                 lastClipStartMs = start;
             }
@@ -386,6 +404,9 @@ public final class MediaGlow {
         }
         Object fadeKey = host != null ? host : receiver;
         float fade = fadeAlpha(fadeKey, glow != null, host);
+        if (glow != null && host instanceof ClippingImageView && fade > 0.01f && alpha > 0.01f) {
+            lastClipGlowDrawnMs = SystemClock.uptimeMillis();
+        }
         blit(canvas, glow, pad, r, alpha * fade);
     }
 

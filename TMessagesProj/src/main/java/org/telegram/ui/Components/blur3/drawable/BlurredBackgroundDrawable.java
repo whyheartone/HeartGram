@@ -768,11 +768,11 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
     }
 
     private boolean isLiquidGlassEffectEnabled() {
-        return liquidGlassEffectAllowed && getGlassSettings().isLiquidGlassEnabled && Build.VERSION.SDK_INT >= 33 && !app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
+        return liquidGlassEffectAllowed && getGlassSettings().isLiquidGlassEnabled && Build.VERSION.SDK_INT >= 33;
     }
 
     private GlassSource pickSource() {
-        if (!getGlassSettings().isBlurEnabled || app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
+        if (!getGlassSettings().isBlurEnabled) {
             return staticSource;
         }
         return isLiquidGlassEffectEnabled() ? glassSource : frostedSource;
@@ -854,9 +854,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
             impl = directImpl(drawn);
         }
         impl.draw(canvas, drawn);
-        if (!app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
-            drawRim(canvas, getAlpha() / 255f);
-        }
+        drawRim(canvas, getAlpha() / 255f);
     }
 
     private static GlassSource softwareSource(GlassSource source) {
@@ -872,7 +870,6 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
     private boolean implInvalidated = true;
     private GlassSource resolvedFor;
     private boolean resolvedOpaque;
-    private boolean resolvedNoGlassBacking;
 
     private final ImplColor colorImpl = new ImplColor();
     private ImplBitmap bitmapImpl;
@@ -893,18 +890,14 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
             }
         }
         final GlassSource unwrapped = getUnwrappedSource();
-        final boolean noGlassBacking = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
         final boolean opaque = Color.alpha(backgroundColor) == 255;
-        if (impl == null || implInvalidated || resolvedFor != unwrapped || resolvedOpaque != opaque || resolvedNoGlassBacking != noGlassBacking) {
+        if (impl == null || implInvalidated || resolvedFor != unwrapped || resolvedOpaque != opaque) {
             implInvalidated = false;
             resolvedFor = unwrapped;
             resolvedOpaque = opaque;
-            resolvedNoGlassBacking = noGlassBacking;
 
             final Impl newImpl;
-            if (noGlassBacking) {
-                newImpl = colorImpl;
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && source instanceof BlurredBackgroundDrawableViewFactory.DrawableOwner
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && source instanceof BlurredBackgroundDrawableViewFactory.DrawableOwner
                     && !(unwrapped instanceof GlassSourceColor) && !(unwrapped instanceof GlassSourceBitmap)) {
                 // the source records into its drawables and tells them when to record again
                 if (renderNodeImpl == null) {
@@ -1008,24 +1001,19 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
             final GlassSource unwrapped = unwrap(source);
             final int sourceColor = Color.alpha(backgroundColor) != 255 && unwrapped instanceof GlassSourceColor
                 ? ((GlassSourceColor) unwrapped).getColor() : 0;
-            int fillColor = ColorUtils.compositeColors(backgroundColor, sourceColor);
-            if (app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking() && Color.alpha(fillColor) > 0 && Color.alpha(fillColor) < 255) {
-                fillColor = ColorUtils.compositeColors(fillColor, Theme.getColor(Theme.key_windowBackgroundWhite));
-            }
-            drawFill(canvas, fillColor);
+            drawFill(canvas, ColorUtils.compositeColors(backgroundColor, sourceColor));
         }
 
         /** The fill (may be transparent: the shadow alone) in the shape. */
         void drawFill(Canvas canvas, int fillColor) {
-            final int effectiveShadowColor = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking() ? 0 : shadowColor;
-            if (Color.alpha(fillColor) == 0 && Color.alpha(effectiveShadowColor) == 0) {
+            if (Color.alpha(fillColor) == 0 && Color.alpha(shadowColor) == 0) {
                 return;
             }
             if (boundProps.hasArrow()) {
                 // not sliceable: the path with its shadow
                 final float alpha = getAlpha() / 255f;
                 arrowPaint.setColor(Theme.multAlpha(fillColor, alpha));
-                final int shadow = Theme.multAlpha(effectiveShadowColor, alpha * shadowAlpha);
+                final int shadow = Theme.multAlpha(shadowColor, alpha * shadowAlpha);
                 if (Color.alpha(shadow) != 0) {
                     arrowPaint.setShadowLayer(shadowLayerRadius, shadowLayerDx, shadowLayerDy, shadow);
                 } else {
@@ -1048,10 +1036,9 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
 
         /** The fill (may be transparent) with the shadow, for the current radii and shadow. */
         NinePatchDrawable check(int fillColor) {
-            final int effectiveShadowColor = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking() ? 0 : shadowColor;
             hashBuilder.start();
             hashBuilder.add(fillColor);
-            hashBuilder.add(effectiveShadowColor);
+            hashBuilder.add(shadowColor);
             hashBuilder.add(boundProps.radii);
             hashBuilder.addF(shadowLayerRadius);
             hashBuilder.addF(shadowLayerDx);
@@ -1066,7 +1053,7 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
                     fillColor,
                     boundProps.radii,
                     shadowLayerRadius,
-                    effectiveShadowColor,
+                    shadowColor,
                     shadowLayerDx,
                     shadowLayerDy,
                     colorHint

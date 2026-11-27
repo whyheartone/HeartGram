@@ -36,7 +36,7 @@ public abstract class GlassMenuHelper {
 
     public static boolean isEnabled(int currentAccount, Theme.ResourcesProvider resourcesProvider) {
         return AppearanceConfig.glassMessageMenu()
-            && !AppearanceConfig.md3NoGlassBacking()
+            && !(app.heartgram.tiles.ChatTiles.menus() && app.heartgram.tiles.ChatTiles.menuNoBacking())
             && BlurredBackgroundProviderImpl.checkBlurEnabled(currentAccount, resourcesProvider);
     }
 

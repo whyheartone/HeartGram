@@ -164,7 +164,7 @@ public class BlurredBackgroundDrawableViewFactory {
 
     public BlurredBackgroundDrawable create(View view, BlurredBackgroundColorProvider provider, boolean multiwindow) {
         final BlurredBackgroundDrawable drawable = createDrawable();
-        if (isLiquidGlassEffectAllowed && !app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
+        if (isLiquidGlassEffectAllowed) {
             // drawn while the glass settings have it on
             drawable.setLiquidGlassEffectAllowed();
         }

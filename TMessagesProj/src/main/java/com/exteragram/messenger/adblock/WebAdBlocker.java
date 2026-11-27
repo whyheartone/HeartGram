@@ -143,15 +143,7 @@ public class WebAdBlocker {
                 previousBlockedCount = blockedCount.getAndSet(0);
             }
             pageUrl = url;
-            var allowed = allowBlockedPage;
             allowBlockedPage = false;
-            if (!allowed && AdBlockManager.isActive()) {
-                var blockResult = AdBlockClient.isAdRequest(request, url);
-                if (blockResult != null && blockResult.isMatched()) {
-                    pageBlocked = true;
-                    return new WebResourceResponse("plain/text", "utf-8", PAGE_BLOCKED_STATUS, "Page blocked", null, null);
-                }
-            }
             return null;
         }
         if (!AdBlockManager.isActive()) {
@@ -198,11 +190,11 @@ public class WebAdBlocker {
         }
         cosmeticHide = hide;
         var css = hide.getHideCss();
-        if (css != null || !hide.isGenericHide()) {
+        if (css != null) {
             webView.evaluateJavascript(COSMETIC_SCRIPT
                     .replace("$BRIDGE", bridgeName)
-                    .replace("$OBSERVE", String.valueOf(!hide.isGenericHide()))
-                    .replace("$CSS", css != null ? JSONObject.quote(css) : "null"), null);
+                    .replace("$OBSERVE", "false")
+                    .replace("$CSS", JSONObject.quote(css)), null);
         }
         var injectedScript = hide.getInjectedScript();
         if (!TextUtils.isEmpty(injectedScript)) {

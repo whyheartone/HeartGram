@@ -364,6 +364,8 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
     private int hidingChatListHeaderRow = -1;
     private int hideActionBarStatusRow = -1;
     private int hideStoriesRow = -1;
+    private int hideStoriesFromAvatarsRow = -1;
+    private int keepStoriesInProfileRow = -1;
     private int hideFloatingButtonRow = -1;
     private int hideSearchBarRow = -1;
     private int hideAllChatsRow = -1;
@@ -749,6 +751,13 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         hidingChatListHeaderRow = addRow("hidingChatListHeader");
         hideActionBarStatusRow = getUserConfig().isPremium() ? addRow("hideActionBarStatus") : -1;
         hideStoriesRow = addRow("hideStories", "HideStoriesFromHeader", "DisableStories");
+        if (storiesIndex() != 0) {
+            hideStoriesFromAvatarsRow = addRow("hideStoriesFromAvatars");
+            keepStoriesInProfileRow = NaConfig.INSTANCE.getDisableStories().Bool() ? addRow("keepStoriesInProfile") : -1;
+        } else {
+            hideStoriesFromAvatarsRow = -1;
+            keepStoriesInProfileRow = -1;
+        }
         hideFloatingButtonRow = addRow("hideFloatingButton");
         hideSearchBarRow = addRow("hideSearchBar");
         hideAllChatsRow = addRow("hideAllChats");
@@ -1322,7 +1331,7 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
             boolean wasDisabled = NaConfig.INSTANCE.getDisableStories().Bool();
             NaConfig.INSTANCE.getHideStoriesFromHeader().setConfigBool(index != 0);
             NaConfig.INSTANCE.getDisableStories().setConfigBool(index == 2);
-            listAdapter.notifyItemChanged(position);
+            reloadList();
             rebuildChats();
             if (wasDisabled != (index == 2)) {
                 showRestartHint();
@@ -1957,7 +1966,8 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         } else if (position == disableProximityEventsRow) {
             MediaController.getInstance().recreateProximityWakeLock();
         } else if (position == hideActionBarStatusRow || position == hideFloatingButtonRow
-                || position == hideSearchBarRow) {
+                || position == hideSearchBarRow || position == hideStoriesFromAvatarsRow
+                || position == keepStoriesInProfileRow) {
             rebuildChats();
         } else if (position == hideAllChatsRow) {
             getNotificationCenter().postNotificationName(NotificationCenter.dialogFiltersUpdated);
@@ -2228,6 +2238,8 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
         if (position == enhancedVideoBitrateRow) return NaConfig.INSTANCE.getEnhancedVideoBitrate();
         if (position == voiceEnhancementsRow) return NaConfig.INSTANCE.getNoiseSuppressAndVoiceEnhance();
         if (position == hideActionBarStatusRow) return AppearanceConfig.hideActionBarStatus;
+        if (position == hideStoriesFromAvatarsRow) return NaConfig.INSTANCE.getHideStoriesFromAvatars();
+        if (position == keepStoriesInProfileRow) return NaConfig.INSTANCE.getKeepStoriesInProfile();
         if (position == hideFloatingButtonRow) return NaConfig.INSTANCE.getDisableDialogsFloatingButton();
         if (position == hideSearchBarRow) return NaConfig.INSTANCE.getHideDialogsSearchField();
         if (position == hideAllChatsRow) return NekoConfig.hideAllTab;
@@ -2943,6 +2955,12 @@ public class OpenExteraChatsActivity extends BaseNekoSettingsActivity {
                         NaConfig.INSTANCE.getNoiseSuppressAndVoiceEnhance().Bool(), true);
             } else if (position == hideActionBarStatusRow) {
                 cell.setTextAndCheck(getString(R.string.OEAppearanceHideActionBarStatus), AppearanceConfig.hideActionBarStatus.Bool(), true);
+            } else if (position == hideStoriesFromAvatarsRow) {
+                cell.setTextAndCheck(app.heartgram.HeartGramLabels.tr("Скрывать истории на аватарках", "Hide stories on avatars"),
+                        NaConfig.INSTANCE.getHideStoriesFromAvatars().Bool(), true);
+            } else if (position == keepStoriesInProfileRow) {
+                cell.setTextAndCheck(app.heartgram.HeartGramLabels.tr("Раздел историй в профилях", "Keep stories section in profiles"),
+                        NaConfig.INSTANCE.getKeepStoriesInProfile().Bool(), true);
             } else if (position == hideFloatingButtonRow) {
                 cell.setTextAndCheck(getString(R.string.OEAppearanceHideFloatingButton),
                         NaConfig.INSTANCE.getDisableDialogsFloatingButton().Bool(), true);

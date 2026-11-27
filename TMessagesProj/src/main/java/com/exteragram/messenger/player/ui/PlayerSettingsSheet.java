@@ -340,12 +340,50 @@ public class PlayerSettingsSheet extends BottomSheet {
     }
 
     private void buildMiniSection(Context context) {
-        final Md3Card card = createCard(context, getString(R.string.OEPlayerStyleMini), sections[2]);
-        final ChipGroup chips = createChipGroup(context, card);
+        final Md3Card progressCard = createCard(context, getString(R.string.OEPlayerMiniProgress), sections[2]);
+        addSegmented(progressCard, new String[]{
+                app.heartgram.HeartGramLabels.tr("Волна", "Wave"),
+                app.heartgram.HeartGramLabels.tr("Кольцо", "Ring"),
+                app.heartgram.HeartGramLabels.tr("Линия", "Line"),
+                getString(R.string.BlurOff)
+        }, AppearanceConfig.playerMiniProgress::Int, index -> {
+            AppearanceConfig.playerMiniProgress.setConfigInt(index);
+            previewView.refresh();
+            refreshParts();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+        });
+        addCardInfo(progressCard, app.heartgram.HeartGramLabels.tr(
+                "Стиль индикатора вокруг кнопки паузы: волнистое кольцо, обычное кольцо или полоса снизу.",
+                "Progress style around the play button: animated wave ring, smooth ring, or bottom line."));
 
+        final Md3Card appearanceCard = createCard(context, getString(R.string.OEPlayerStyleMini), sections[2]);
+        addSegmented(appearanceCard, new String[]{
+                getString(R.string.OEPlayerMiniCoverRounded),
+                getString(R.string.OEPlayerMiniCoverRound),
+                getString(R.string.OEPlayerMiniCoverHidden)
+        }, AppearanceConfig.playerMiniCover::Int, index -> {
+            AppearanceConfig.playerMiniCover.setConfigInt(index);
+            previewView.refresh();
+            refreshParts();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+        });
+
+        final ChipGroup chips = createChipGroup(context, appearanceCard);
         addChip(chips, getString(R.string.PlayerCoverColorsMini), ExteraConfig::getPlayerMiniCoverColors, value -> {
             ExteraConfig.setPlayerMiniCoverColors(value);
             onSettingChanged(previewView::refresh, this.delegate::onCoverColorsChanged);
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+        });
+        addChip(chips, getString(R.string.OEPlayerMiniPrevious), AppearanceConfig.miniPlayerShowPrev::Bool, value -> {
+            AppearanceConfig.miniPlayerShowPrev.setConfigBool(value);
+            previewView.refresh();
+            refreshParts();
+            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
+        });
+        addChip(chips, getString(R.string.OEPlayerMiniArtist), AppearanceConfig.miniPlayerShowArtist::Bool, value -> {
+            AppearanceConfig.miniPlayerShowArtist.setConfigBool(value);
+            previewView.refresh();
+            refreshParts();
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
         });
         addChip(chips, getString(R.string.OEAppearanceMd3MiniPlayer), AppearanceConfig.md3MiniPlayer::Bool, value -> {
@@ -354,14 +392,6 @@ public class PlayerSettingsSheet extends BottomSheet {
             refreshParts();
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
         });
-        addChip(chips, getString(R.string.OEAppearanceMd3Player), AppearanceConfig.md3Player::Bool, value -> {
-            AppearanceConfig.md3Player.setConfigBool(value);
-            previewView.refresh();
-            refreshParts();
-            NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
-        });
-
-        addCardInfo(card, getString(R.string.OEPlayerMiniMoveHint));
     }
 
     private Md3Card createCard(Context context, String title, LinearLayout parent) {

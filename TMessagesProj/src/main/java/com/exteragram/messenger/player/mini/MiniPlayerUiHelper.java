@@ -60,6 +60,8 @@ import com.exteragram.messenger.player.ui.ExpressiveStateDrawable;
 import com.exteragram.messenger.utils.ui.material.ColorTones;
 import com.exteragram.messenger.utils.ui.material.Material3Tokens;
 
+import app.exteraless.appearance.AppearanceConfig;
+
 import org.telegram.messenger.AndroidUtilities;
 import org.telegram.messenger.ImageReceiver;
 import org.telegram.messenger.MediaController;
@@ -381,10 +383,17 @@ public class MiniPlayerUiHelper implements NotificationCenter.NotificationCenter
     }
 
     private int resolveCoverRadiusDp() {
+        if (AppearanceConfig.playerMiniCover.Int() == 1) {
+            return COVER_SIZE_DP / 2;
+        }
         return Math.max(0, Math.min(COVER_SIZE_DP / 2, Math.min(resolveCapsuleRadiusDp(), HEIGHT_DP / 2) - PADDING_DP));
     }
 
     private void updateCoverRadius(float shrink) {
+        if (AppearanceConfig.playerMiniCover.Int() == 1) {
+            coverView.setRadiusOverride(dp(COVER_SIZE_DP) / 2f);
+            return;
+        }
         if (shrink <= 0f || voice) {
             coverView.setRadiusOverride(-1f);
             return;
@@ -518,9 +527,31 @@ public class MiniPlayerUiHelper implements NotificationCenter.NotificationCenter
             }
         }
 
+        final int coverMode = AppearanceConfig.playerMiniCover.Int();
+        final boolean hideCover = coverMode == 2;
+        coverView.setVisibility(hideCover ? View.GONE : View.VISIBLE);
+        coverView.setCoverRadius(dp(resolveCoverRadiusDp()));
+        coverView.setRadiusOverride(coverMode == 1 ? dp(COVER_SIZE_DP) / 2f : -1f);
+
+        final boolean showArtist = AppearanceConfig.miniPlayerShowArtist.Bool();
+        subtitleView.setVisibility(showArtist ? View.VISIBLE : View.GONE);
+        final int leftMargin = dp(hideCover ? PADDING_DP + 6 : TEXT_LEFT_DP);
+        final FrameLayout.LayoutParams tlp = (FrameLayout.LayoutParams) titleView.getLayoutParams();
+        final int targetTop = dp(showArtist ? TITLE_TOP_DP : (HEIGHT_DP - 20) / 2);
+        if (tlp.leftMargin != leftMargin || tlp.topMargin != targetTop) {
+            tlp.leftMargin = leftMargin;
+            tlp.topMargin = targetTop;
+            titleView.setLayoutParams(tlp);
+        }
+        final FrameLayout.LayoutParams slp = (FrameLayout.LayoutParams) subtitleView.getLayoutParams();
+        if (slp.leftMargin != leftMargin) {
+            slp.leftMargin = leftMargin;
+            subtitleView.setLayoutParams(slp);
+        }
+
         final boolean silent = controller.isSilent;
         final boolean speedSlot = !silent && (voice || messageObject.getDuration() >= LONG_TRACK_SECONDS);
-        prevButton.setVisibility(!silent && !speedSlot ? View.VISIBLE : View.GONE);
+        prevButton.setVisibility(!silent && !speedSlot && AppearanceConfig.miniPlayerShowPrev.Bool() ? View.VISIBLE : View.GONE);
         if (speedButton != null) {
             speedButton.setAlpha(speedSlot ? 1f : 0f);
             speedButton.setEnabled(speedSlot);
@@ -939,8 +970,29 @@ public class MiniPlayerUiHelper implements NotificationCenter.NotificationCenter
             }
         }
         displayedProgress = Math.max(target, resetValue);
+        final float p = displayedProgress;
         if (resetStart != 0 && host.isShown()) {
             host.postInvalidateOnAnimation();
+        }
+        final int progressMode = AppearanceConfig.playerMiniProgress.Int();
+        if (progressMode == 3) {
+            lastWaveFrame = 0;
+            return;
+        }
+        if (progressMode == 2) {
+            lastWaveFrame = 0;
+            final float left = dp(PADDING_DP + 4);
+            final float right = host.getWidth() - dp(PADDING_DP + 4);
+            if (right > left) {
+                final float y = host.getHeight() - dpf2(2.5f);
+                ringPaint.setColor(ringTrackColor);
+                canvas.drawLine(left, y, right, y, ringPaint);
+                if (p > 0f) {
+                    ringPaint.setColor(accentColor);
+                    canvas.drawLine(left, y, left + (right - left) * p, y, ringPaint);
+                }
+            }
+            return;
         }
         if (playButton.getVisibility() != View.VISIBLE || playButton.getWidth() == 0) {
             return;
@@ -949,7 +1001,6 @@ public class MiniPlayerUiHelper implements NotificationCenter.NotificationCenter
         final float cy = playButton.getY() + playButton.getHeight() / 2f;
         final float radius = dpf2(RING_RADIUS_DP);
         final float stroke = dpf2(RING_STROKE_DP);
-        final float p = displayedProgress;
         final float circumference = (float) (2 * Math.PI * radius);
         ringRect.set(cx - radius, cy - radius, cx + radius, cy + radius);
         if (p < 1f) {
@@ -965,13 +1016,13 @@ public class MiniPlayerUiHelper implements NotificationCenter.NotificationCenter
             return;
         }
         final long now = AnimationUtils.currentAnimationTimeMillis();
-        final boolean moving = playing && waveFactor > 0f;
+        final boolean moving = progressMode == 0 && playing && waveFactor > 0f;
         if (moving && lastWaveFrame != 0) {
             wavePhase = (wavePhase + (now - lastWaveFrame) / 1000f * WAVE_SPEED_DP / WAVE_LENGTH_DP * 2f * (float) Math.PI) % (2f * (float) Math.PI * 1000f);
         }
         lastWaveFrame = moving ? now : 0;
         final float ramp = p < WAVE_RAMP ? p / WAVE_RAMP : p > 1f - WAVE_RAMP ? (1f - p) / WAVE_RAMP : 1f;
-        final float amplitude = dpf2(WAVE_AMPLITUDE_DP) * waveFactor * Utilities.clamp01(ramp);
+        final float amplitude = progressMode == 0 ? dpf2(WAVE_AMPLITUDE_DP) * waveFactor * Utilities.clamp01(ramp) : 0f;
         ringPaint.setColor(accentColor);
         if (amplitude < 0.25f) {
             canvas.drawArc(ringRect, -90f, 360f * p, false, ringPaint);

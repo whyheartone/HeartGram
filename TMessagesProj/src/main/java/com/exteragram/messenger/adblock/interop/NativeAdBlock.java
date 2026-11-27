@@ -230,15 +230,6 @@ public class NativeAdBlock {
                 }
             }
         }
-        if (!genericHide) {
-            int limit = Math.min(engine.filters.genericHideSelectors.size(), 1200);
-            for (int i = 0; i < limit; i++) {
-                String sel = engine.filters.genericHideSelectors.get(i);
-                if (!exceptions.contains(sel)) {
-                    selectors.add(sel);
-                }
-            }
-        }
         return new UrlCosmeticResources(
                 selectors.toArray(new String[0]),
                 new String[0],
@@ -455,20 +446,27 @@ public class NativeAdBlock {
             for (String opt : optionsPart.split(",")) {
                 String o = opt.trim().toLowerCase(Locale.ROOT);
                 if (o.isEmpty()) continue;
-                if ("important".equals(o)) {
+                if ("badfilter".equals(o) || "popup".equals(o) || "popunder".equals(o)
+                        || "cname".equals(o) || "webrtc".equals(o) || "all".equals(o)
+                        || "elemhide".equals(o) || "ehide".equals(o)
+                        || "specifichide".equals(o) || "shide".equals(o)
+                        || o.startsWith("csp=") || o.startsWith("removeparam=")
+                        || o.startsWith("header=") || o.startsWith("replace=")
+                        || o.startsWith("rewrite=") || o.startsWith("permissions=")
+                        || o.startsWith("uritransform=") || o.startsWith("denyallow=")) {
+                    // Неподдерживаемые/специальные модификаторы: пропускаем правило, чтобы не ломать весь сайт
+                    return;
+                } else if ("important".equals(o)) {
                     important = true;
                 } else if ("third-party".equals(o) || "3p".equals(o)) {
                     thirdParty = 1;
                 } else if ("~third-party".equals(o) || "1p".equals(o) || "first-party".equals(o)) {
                     thirdParty = -1;
-                } else if ("generichide".equals(o) || "ghide".equals(o) || "document".equals(o) || "doc".equals(o)) {
-                    if ("generichide".equals(o) || "ghide".equals(o)) {
-                        genericHideFlag = true;
-                    }
-                    if ("document".equals(o) || "doc".equals(o)) {
-                        if (types == null) types = new HashSet<>();
-                        types.add("main_frame");
-                    }
+                } else if ("generichide".equals(o) || "ghide".equals(o)) {
+                    genericHideFlag = true;
+                } else if ("document".equals(o) || "doc".equals(o)) {
+                    if (types == null) types = new HashSet<>();
+                    types.add("main_frame");
                 } else if (o.startsWith("domain=")) {
                     for (String dom : o.substring(7).split("\\|")) {
                         if (dom.isEmpty()) continue;
@@ -487,6 +485,9 @@ public class NativeAdBlock {
                     if (mapped != null) {
                         if (types == null) types = new HashSet<>();
                         types.add(mapped);
+                    } else {
+                        // Неизвестный или инвертированный (~script и т.п.) модификатор: безопасно пропускаем правило
+                        return;
                     }
                 }
             }
@@ -497,6 +498,9 @@ public class NativeAdBlock {
             if (!TextUtils.isEmpty(host)) {
                 set.genericHideDisableDomains.add(host);
             }
+            return;
+        }
+        if (genericHideFlag) {
             return;
         }
 
@@ -512,7 +516,7 @@ public class NativeAdBlock {
         while (work.startsWith("*")) {
             work = work.substring(1);
         }
-        if (work.length() < 3) {
+        if (work.length() < (domainAnchor ? 4 : 6)) {
             return;
         }
 
@@ -530,7 +534,7 @@ public class NativeAdBlock {
         if (pattern.contains("*")) {
             int idx = pattern.indexOf('*');
             pattern = pattern.substring(0, idx);
-            if (pattern.length() < 4) {
+            if (pattern.length() < (domainAnchor ? 4 : 6)) {
                 return;
             }
         }

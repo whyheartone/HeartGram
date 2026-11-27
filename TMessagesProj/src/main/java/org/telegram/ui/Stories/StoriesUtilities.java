@@ -203,7 +203,7 @@ public class StoriesUtilities {
             params.inc = false;
         }
         params.showProgress = showProgress;
-        if (NaConfig.INSTANCE.getDisableStories().Bool() || params.currentState == STATE_EMPTY && params.progressToSate == 1f) {
+        if (NaConfig.INSTANCE.getDisableStories().Bool() || NaConfig.INSTANCE.getHideStoriesFromAvatars().Bool() || params.currentState == STATE_EMPTY && params.progressToSate == 1f) {
             avatarImage.setImageCoords(params.originalAvatarRect);
             canvas.save();
             canvas.scale(scale, scale, params.originalAvatarRect.centerX(), params.originalAvatarRect.centerY());

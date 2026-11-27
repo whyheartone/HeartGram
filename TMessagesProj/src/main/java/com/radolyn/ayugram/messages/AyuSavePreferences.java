@@ -185,6 +185,46 @@ public class AyuSavePreferences {
         return NaConfig.INSTANCE.getSaveEditedExceptionsMode().Int() == 1 ? marked : !marked;
     }
 
+    public static void ensureExclusionsLoadedSync() {
+        if (isSaveExclusionsLoaded) {
+            return;
+        }
+        Map<String, ?> allEntries = NekoConfig.getPreferences().getAll();
+        for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
+            if (entry.getKey().startsWith(saveExclusionPrefix)) {
+                try {
+                    long chatId = Long.parseLong(entry.getKey().substring(saveExclusionPrefix.length()));
+                    if (entry.getValue() instanceof Boolean) {
+                        saveDeletedExclusions.put(chatId, (Boolean) entry.getValue());
+                    }
+                } catch (Exception ignored) {
+                }
+            } else if (entry.getKey().startsWith(saveEditedExclusionPrefix)) {
+                try {
+                    long chatId = Long.parseLong(entry.getKey().substring(saveEditedExclusionPrefix.length()));
+                    if (entry.getValue() instanceof Boolean) {
+                        saveEditedExclusions.put(chatId, (Boolean) entry.getValue());
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        isSaveExclusionsLoaded = true;
+    }
+
+    public static java.util.ArrayList<Long> getSaveExclusionIds(boolean edits) {
+        ensureExclusionsLoadedSync();
+        java.util.ArrayList<Long> result = new java.util.ArrayList<>();
+        Map<Long, Boolean> source = edits ? saveEditedExclusions : saveDeletedExclusions;
+        for (Map.Entry<Long, Boolean> e : source.entrySet()) {
+            if (Boolean.TRUE.equals(e.getValue())) {
+                result.add(e.getKey());
+            }
+        }
+        java.util.Collections.sort(result);
+        return result;
+    }
+
     public static void loadAllExclusions() {
         Utilities.stageQueue.postRunnable(() -> {
             Map<String, ?> allEntries = NekoConfig.getPreferences().getAll();

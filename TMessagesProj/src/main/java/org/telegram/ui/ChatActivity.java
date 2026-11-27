@@ -34242,7 +34242,7 @@ public class ChatActivity extends BaseFragment implements
 
             updateScrimSourceBitmap();
 
-            if (!app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
+            if (!(app.heartgram.tiles.ChatTiles.menus() && app.heartgram.tiles.ChatTiles.menuNoBacking())) {
                 popupLayout.setBackground(scrimBlur3Factory.create(popupLayout, true)
                     .setColorProvider(BlurredBackgroundProviderImpl.messageMenuBackground(resourceProvider))
                     .setRadius(dp(12))

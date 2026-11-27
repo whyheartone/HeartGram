@@ -268,17 +268,15 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 .setPadding(dp(6));
 
         if (menu != null) {
-            final boolean noGlass = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
-            menu.setTranslationX(noGlass ? 0 : -dp(10));
-            menu.setGlassMode(!noGlass);
+            menu.setTranslationX(-dp(10));
+            menu.setGlassMode(true);
         }
         if (actionMode != null) {
-            final boolean noGlass = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
-            actionMode.setTranslationX(noGlass ? 0 : -dp(10));
-            actionMode.setGlassMode(!noGlass);
+            actionMode.setTranslationX(-dp(10));
+            actionMode.setGlassMode(true);
         }
         if (backButtonImageView != null) {
-            backButtonImageView.setTranslationX(app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking() ? 0 : dp(2));
+            backButtonImageView.setTranslationX(dp(2));
         }
     }
 
@@ -370,7 +368,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
     @Override
     public boolean hasMenuGlassStroke() {
-        return !app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
+        return true;
     }
 
     @Override
@@ -2702,20 +2700,8 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
 
         final int t = getHeight() - extraHeight - (getCurrentActionBarHeight() + s) / 2 - p;
         final int b = t + s + p * 2;
-        final boolean noGlass = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
-        if (noGlass && glassMode) {
-            if (chatAvatarContainer != null) {
-                chatAvatarContainer.setTranslationX(0);
-                chatAvatarContainer.setPivotX(0);
-            }
-            if (actionBarColor != Color.TRANSPARENT) {
-                rectTmp.set(0, 0, getMeasuredWidth(), getMeasuredHeight());
-                blurScrimPaint.setColor(actionBarColor);
-                canvas.drawRect(rectTmp, blurScrimPaint);
-            }
-        }
 
-        if (!noGlass && glassDrawable != null && drawGlassMiddlePill && !glassOnlyBack && drawGlassTitle) {
+        if (glassDrawable != null && drawGlassMiddlePill && !glassOnlyBack && drawGlassTitle) {
             if (centerTitleAndGlass && titleTextView[0] != null && titleTextView[0].getVisibility() == View.VISIBLE) {
                 int titleWidth = (int) Math.ceil(titleTextView[0].getTextWidth()) + p * 2 + dp(48);
                 int titleLeft = (getWidth() - titleWidth) / 2 + Math.round(titleTextView[0].getTranslationX());
@@ -2760,11 +2746,11 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
                 }
             }
         }
-        if (!noGlass && glassDrawableBack != null && hasBackButton) {
+        if (glassDrawableBack != null && hasBackButton) {
             glassDrawableBack.setBounds(0, t, s + p * 2, b);
             glassDrawableBack.draw(canvas);
         }
-        if (!noGlass && glassDrawableMenu != null && menuWidth > 0 && !glassOnlyBack && !doNotDrawGlassMenu && !isMenuPillInOverlay()) {
+        if (glassDrawableMenu != null && menuWidth > 0 && !glassOnlyBack && !doNotDrawGlassMenu && !isMenuPillInOverlay()) {
             int menuLeft = getWidth() - Math.max(s, menuWidth) - p * 2;
             int menuTop = t;
             int menuRight = getWidth();

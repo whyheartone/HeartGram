@@ -154,11 +154,11 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         /** Окно меню в стиле MD3: чистая скруглённая подложка без полос и обводки, как на ПК. */
-        private static Drawable hgMenuBackground() {
+        private static Drawable hgMenuBackground(boolean noBacking) {
             android.graphics.drawable.GradientDrawable fill = new android.graphics.drawable.GradientDrawable();
-            fill.setColor(Color.WHITE);
+            fill.setColor(noBacking ? Color.TRANSPARENT : Color.WHITE);
             fill.setCornerRadius(dp(22));
-            return new android.graphics.drawable.InsetDrawable(fill, dp(8));
+            return new android.graphics.drawable.InsetDrawable(fill, dp(noBacking ? 2 : 6));
         }
 
         public ActionBarPopupWindowLayout(Context context) {
@@ -177,13 +177,23 @@ public class ActionBarPopupWindow extends PopupWindow {
             super(context);
             this.resourcesProvider = resourcesProvider;
 
+            final boolean md3Menus = app.heartgram.tiles.ChatTiles.menus();
+            final boolean noBacking = md3Menus && app.heartgram.tiles.ChatTiles.menuNoBacking();
             if (resId != 0) {
-                backgroundDrawable = app.heartgram.tiles.ChatTiles.menus() ? hgMenuBackground() : getResources().getDrawable(resId).mutate();
-                setPadding(dp(8), dp(8), dp(8), dp(8));
+                backgroundDrawable = md3Menus ? hgMenuBackground(noBacking) : getResources().getDrawable(resId).mutate();
+                if (noBacking) {
+                    setPadding(dp(2), dp(4), dp(2), dp(4));
+                } else if (md3Menus) {
+                    setPadding(dp(6), dp(6), dp(6), dp(6));
+                } else {
+                    setPadding(dp(8), dp(8), dp(8), dp(8));
+                }
             }
             if (backgroundDrawable != null) {
                 backgroundDrawable.getPadding(bgPaddings);
-                ThemeBind.backgroundColor(this, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
+                if (!noBacking) {
+                    ThemeBind.backgroundColor(this, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
+                }
             }
 
 
@@ -262,12 +272,11 @@ public class ActionBarPopupWindow extends PopupWindow {
                             continue;
                         }
                         child.setTag(R.id.parent_tag, state);
-                        // View.setBackground переписывает отступы по отступам фона: без этого значок и текст пункта
-                        // прижимались к краю плитки (18 dp превращались в 6 dp), поэтому возвращаем свои
+                        // Отступы по бокам убраны для аккуратных MD3-блоков, вертикальный зазор — только между плитками.
                         final int pl = child.getPaddingLeft(), pt = child.getPaddingTop(), pr = child.getPaddingRight(), pb = child.getPaddingBottom();
                         child.setBackground(new android.graphics.drawable.InsetDrawable(
-                                Theme.createRadSelectorDrawable(selector, first ? 14 : 5, last ? 14 : 5),
-                                dp(6), dp(first ? 2 : 1), dp(6), dp(last ? 2 : 1)));
+                                Theme.createRadSelectorDrawable(selector, first ? 16 : 6, last ? 16 : 6),
+                                0, dp(first ? 1.5f : 1f), 0, dp(last ? 1.5f : 1f)));
                         child.setPadding(pl, pt, pr, pb);
                     }
                 }
@@ -328,14 +337,20 @@ public class ActionBarPopupWindow extends PopupWindow {
                         int bg = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
                         int fg = Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                         boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
-                        int tileColor = app.heartgram.tiles.ChatTiles.adjust(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, isDark ? 0.14f : 0.09f));
+                        boolean noBacking = app.heartgram.tiles.ChatTiles.menuNoBacking();
+                        int tileColor = app.heartgram.tiles.ChatTiles.adjust(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, noBacking ? (isDark ? 0.10f : 0.04f) : (isDark ? 0.14f : 0.09f)));
                         hgTilePaint.setColor(tileColor);
-                        hgTilePaint.setAlpha((int) ((isDark ? 220 : 245) * child.getAlpha()));
+                        hgTilePaint.setAlpha((int) ((noBacking ? 250 : (isDark ? 220 : 245)) * child.getAlpha()));
+                        if (noBacking) {
+                            hgTilePaint.setShadowLayer(dp(4), 0, dp(1.5f), android.graphics.Color.argb(Math.round(52 * child.getAlpha()), 0, 0, 0));
+                        } else {
+                            hgTilePaint.clearShadowLayer();
+                        }
                         final int index = indexOfChild(child);
                         final boolean first = hgFirst(index), last = hgLast(index);
-                        hgTileRect.set(child.getLeft() + dp(6), child.getTop() + child.getTranslationY() + dp(first ? 2 : 1.5f),
-                                child.getRight() - dp(6), child.getBottom() + child.getTranslationY() - dp(last ? 2 : 1.5f));
-                        final float big = Math.min(dp(14), hgTileRect.height() * 0.34f), small = dp(5);
+                        hgTileRect.set(child.getLeft(), child.getTop() + child.getTranslationY() + dp(first ? 1.5f : 1f),
+                                child.getRight(), child.getBottom() + child.getTranslationY() - dp(last ? 1.5f : 1f));
+                        final float big = Math.min(dp(16), hgTileRect.height() * 0.36f), small = dp(6);
                         final float up = first ? big : small, low = last ? big : small;
                         hgTilePath.reset();
                         hgTilePath.addRoundRect(hgTileRect, new float[]{up, up, up, up, low, low, low, low}, android.graphics.Path.Direction.CW);
