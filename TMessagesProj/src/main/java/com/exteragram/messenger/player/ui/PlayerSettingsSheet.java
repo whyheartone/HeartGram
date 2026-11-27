@@ -17,13 +17,8 @@ package com.exteragram.messenger.player.ui;
 import static org.telegram.messenger.AndroidUtilities.dp;
 import static org.telegram.messenger.LocaleController.getString;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
@@ -63,7 +58,6 @@ import org.telegram.ui.ActionBar.BaseFragment;
 import org.telegram.ui.ActionBar.BottomSheet;
 import org.telegram.ui.ActionBar.Theme;
 import org.telegram.ui.Components.BulletinFactory;
-import org.telegram.ui.Components.CubicBezierInterpolator;
 import org.telegram.ui.Components.LayoutHelper;
 
 import java.util.ArrayList;
@@ -120,13 +114,11 @@ public class PlayerSettingsSheet extends BottomSheet {
         void accept(boolean value);
     }
 
-    private static final long COLORS_DURATION_MS = 350;
     private static int selectedTab = PlayerSettingsPreviewView.MODE_APPEARANCE;
 
     private final Delegate delegate;
     private final SwitchingResourcesProvider colors;
     private final SheetPalette palette = new SheetPalette();
-    private final Paint snapshotPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
     private final ArrayList<Part> parts = new ArrayList<>();
     private final LinearLayout[] sections = new LinearLayout[3];
 
@@ -139,11 +131,6 @@ public class PlayerSettingsSheet extends BottomSheet {
     private final LinearLayout contentContainer;
     private final PlayerSettingsPreviewView previewView;
     private Chip yandexLogoutChip;
-
-    private Bitmap snapshot;
-    private int snapshotTop;
-    private boolean capturing;
-    private ValueAnimator snapshotAnimator;
 
     public PlayerSettingsSheet(Context context, BaseFragment fragment, Theme.ResourcesProvider resourcesProvider, Delegate delegate) {
         this(context, fragment, new SwitchingResourcesProvider(resourcesProvider), delegate);
@@ -287,7 +274,7 @@ public class PlayerSettingsSheet extends BottomSheet {
             chips.addView(yandexLogoutChip);
         }
 
-        addCardInfo(card, getString(R.string.PlayerCoverColorsInfo) + "\n" + getString(R.string.PlayerMotionCoversEnabled));
+        addCardInfo(card, getString(R.string.PlayerRhythmBackgroundInfo) + "\n" + getString(R.string.PlayerMotionCoversEnabled));
     }
 
     private void buildLyricsSection(Context context) {
@@ -374,7 +361,7 @@ public class PlayerSettingsSheet extends BottomSheet {
             NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
         });
 
-        addCardInfo(card, getString(R.string.PlayerCoverColorsInfo));
+        addCardInfo(card, getString(R.string.OEPlayerMiniMoveHint));
     }
 
     private Md3Card createCard(Context context, String title, LinearLayout parent) {
@@ -483,10 +470,8 @@ public class PlayerSettingsSheet extends BottomSheet {
         if (colors.current == provider) {
             return;
         }
-        captureSnapshot();
         colors.current = provider;
         applyColors();
-        fadeSnapshot();
     }
 
     private void applyColors() {
@@ -519,87 +504,6 @@ public class PlayerSettingsSheet extends BottomSheet {
     @Override
     protected boolean canDismissWithSwipe() {
         return scrollView == null || scrollView.getScrollY() == 0;
-    }
-
-    private void captureSnapshot() {
-        if (containerView == null) {
-            return;
-        }
-        final int width = containerView.getWidth();
-        final int top = Math.max(0, shadowDrawable.getBounds().top);
-        final int height = containerView.getHeight() - top;
-        if (!containerView.isAttachedToWindow() || width <= 0 || height <= 0) {
-            return;
-        }
-        final Bitmap bitmap;
-        try {
-            bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        } catch (OutOfMemoryError e) {
-            return;
-        }
-        final Canvas canvas = new Canvas(bitmap);
-        canvas.translate(0, -top);
-        capturing = true;
-        containerView.draw(canvas);
-        capturing = false;
-        releaseSnapshot();
-        snapshot = bitmap;
-        snapshotTop = top;
-        snapshotPaint.setAlpha(0xFF);
-    }
-
-    private void fadeSnapshot() {
-        if (snapshot == null) {
-            return;
-        }
-        snapshotAnimator = ValueAnimator.ofFloat(1f, 0f);
-        snapshotAnimator.setDuration(COLORS_DURATION_MS);
-        snapshotAnimator.setInterpolator(CubicBezierInterpolator.DEFAULT);
-        snapshotAnimator.addUpdateListener(a -> {
-            snapshotPaint.setAlpha((int) (0xFF * (float) a.getAnimatedValue()));
-            if (containerView != null) {
-                containerView.invalidate();
-            }
-        });
-        snapshotAnimator.addListener(new AnimatorListenerAdapter() {
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                if (snapshotAnimator == animation) {
-                    snapshotAnimator = null;
-                    releaseSnapshot();
-                }
-            }
-        });
-        snapshotAnimator.start();
-    }
-
-    private void releaseSnapshot() {
-        if (snapshotAnimator != null) {
-            final ValueAnimator animator = snapshotAnimator;
-            snapshotAnimator = null;
-            animator.cancel();
-        }
-        if (snapshot != null) {
-            snapshot.recycle();
-            snapshot = null;
-            if (containerView != null) {
-                containerView.invalidate();
-            }
-        }
-    }
-
-    @Override
-    protected void postDrawInternal(Canvas canvas, View parentView) {
-        if (snapshot != null && !capturing && parentView == containerView) {
-            canvas.drawBitmap(snapshot, 0, snapshotTop, snapshotPaint);
-        }
-        super.postDrawInternal(canvas, parentView);
-    }
-
-    @Override
-    public void dismissInternal() {
-        super.dismissInternal();
-        releaseSnapshot();
     }
 
     private static final class SheetPalette {
