@@ -17197,7 +17197,7 @@ public class ChatActivityEnterView extends FrameLayout implements
 
                 } else if (isInScheduleMode()) {
                     y -= dp(1);
-                } else {
+                } else if (resId != R.drawable.ic_send_heart && resId != R.drawable.send_extera_24) {
                     x += dp(2);
                 }
             }

@@ -26,7 +26,9 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewTreeObserver;
 
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -47,6 +49,7 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
+import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -86,6 +89,7 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         }
     }
 
+    private static final int ID_PREVIEW = 0;
     private static final int ID_COVER_COLORS = 1;
     private static final int ID_MOTION_COVERS = 2;
     private static final int ID_LYRICS_ONLINE = 3;
@@ -112,6 +116,12 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
     private int snapshotTop;
     private boolean capturing;
     private ValueAnimator snapshotAnimator;
+    private PlayerSettingsPreviewView previewView;
+    private View previewSpacer;
+    private final ViewTreeObserver.OnPreDrawListener previewPreDrawListener = () -> {
+        updatePreviewPosition();
+        return true;
+    };
 
     public PlayerSettingsSheet(Context context, BaseFragment fragment, Theme.ResourcesProvider resourcesProvider, Delegate delegate) {
         this(context, fragment, new SwitchingResourcesProvider(resourcesProvider), delegate);
@@ -123,6 +133,20 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         this.delegate = delegate;
         takeTranslationIntoAccount = true;
         occupyNavigationBar = true;
+
+        previewSpacer = new View(context) {
+            @Override
+            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp(PlayerSettingsPreviewView.getPreferredHeightDp()));
+            }
+        };
+        previewView = new PlayerSettingsPreviewView(context, colors);
+        previewView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
+        final int actionBarIndex = actionBar != null ? containerView.indexOfChild(actionBar) : -1;
+        containerView.addView(previewView, actionBarIndex >= 0 ? actionBarIndex : containerView.getChildCount(),
+                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, PlayerSettingsPreviewView.getPreferredHeightDp(), Gravity.TOP));
+        containerView.getViewTreeObserver().addOnPreDrawListener(previewPreDrawListener);
+
         applyColors();
         recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, dp(12) + AndroidUtilities.navigationBarHeight);
         recyclerListView.setClipToPadding(false);
@@ -139,6 +163,12 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         itemAnimator.setDurations(EXPAND_DURATION_MS);
         recyclerListView.setItemAnimator(itemAnimator);
         recyclerListView.setSections();
+        recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@androidx.annotation.NonNull RecyclerView recyclerView, int dx, int dy) {
+                updatePreviewPosition();
+            }
+        });
         recyclerListView.setOnItemClickListener((view, position) -> {
             final UItem item = adapter.getItem(position - 1);
             if (item != null) {
@@ -146,6 +176,19 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
             }
         });
         adapter.update(false);
+        updatePreviewPosition();
+    }
+
+    private void updatePreviewPosition() {
+        if (previewView == null || containerView == null) {
+            return;
+        }
+        final int dockTop = actionBar != null && actionBar.getMeasuredHeight() > 0 ? actionBar.getMeasuredHeight() : 0;
+        final float spacerY = previewSpacer != null && previewSpacer.getParent() == recyclerListView
+                ? previewSpacer.getTop() + recyclerListView.getY()
+                : Float.NEGATIVE_INFINITY;
+        final float sheetTop = Math.max(0, shadowDrawable != null ? shadowDrawable.getBounds().top : 0);
+        previewView.setTranslationY(Math.max(dockTop, Math.max(sheetTop, spacerY)));
     }
 
     public void updateColors(Theme.ResourcesProvider provider) {
@@ -178,6 +221,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
             actionBar.setItemsColor(getThemedColor(Theme.key_actionBarActionModeDefaultIcon), false);
         }
         containerView.invalidate();
+        if (previewView != null) {
+            previewView.refresh();
+        }
     }
 
     private void captureSnapshot() {
@@ -251,6 +297,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
     @Override
     public void dismissInternal() {
         super.dismissInternal();
+        if (containerView != null) {
+            containerView.getViewTreeObserver().removeOnPreDrawListener(previewPreDrawListener);
+        }
         releaseSnapshot();
     }
 
@@ -270,7 +319,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         if (delegate == null) {
             return;
         }
-        items.add(UItem.asShadow(null));
+        if (previewSpacer != null) {
+            items.add(UItem.asCustom(ID_PREVIEW, previewSpacer));
+        }
         items.add(UItem.asHeader(getString(R.string.Appearance)));
         final boolean full = ExteraConfig.getPlayerCoverColors();
         final boolean mini = ExteraConfig.getPlayerMiniCoverColors();
@@ -318,6 +369,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
                 getString(R.string.PlayerLyricsProgressVertical)
         }, ExteraConfig.getLyricsProgress(), index -> {
             ExteraConfig.setLyricsProgress(index);
+            if (previewView != null) {
+                previewView.refresh();
+            }
             delegate.onLyricsProgressChanged();
         }));
         items.add(UItem.asShadow(getString(R.string.PlayerLyricsProgressInfo)));
@@ -327,6 +381,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
                 getString(R.string.PlayerLyricsAnimStyleHeartGram)
         }, ExteraConfig.getLyricsAnimStyle(), index -> {
             ExteraConfig.setLyricsAnimStyle(index);
+            if (previewView != null) {
+                previewView.refresh();
+            }
             delegate.onLyricsAnimStyleChanged();
         }));
         items.add(UItem.asShadow(getString(R.string.PlayerLyricsAnimStyleInfo)));
@@ -337,6 +394,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
                 getString(R.string.PlayerLyricsSubtitleRomanization)
         }, ExteraConfig.getLyricsSubtitle(), index -> {
             ExteraConfig.setLyricsSubtitle(index);
+            if (previewView != null) {
+                previewView.refresh();
+            }
             delegate.onLyricsSubtitleChanged();
         }));
         items.add(UItem.asShadow(getString(R.string.PlayerLyricsSubtitleInfo)));
@@ -358,6 +418,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
                 final boolean enabled = !ExteraConfig.getPlayerMotionCovers();
                 ExteraConfig.setPlayerMotionCovers(enabled);
                 setChecked(view, enabled);
+                if (previewView != null) {
+                    previewView.refresh();
+                }
                 delegate.onMotionCoversChanged();
                 break;
             }
@@ -395,6 +458,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
                 final boolean enabled = !ExteraConfig.getPlayerRhythmBackground();
                 ExteraConfig.setPlayerRhythmBackground(enabled);
                 setChecked(view, enabled);
+                if (previewView != null) {
+                    previewView.refresh();
+                }
                 delegate.onRhythmBackgroundChanged();
                 break;
             }
@@ -402,6 +468,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
                 final boolean enabled = !ExteraConfig.getPlayerParticles();
                 ExteraConfig.setPlayerParticles(enabled);
                 setChecked(view, enabled);
+                if (previewView != null) {
+                    previewView.refresh();
+                }
                 delegate.onRhythmBackgroundChanged();
                 break;
             }
@@ -423,6 +492,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
     private void setLyricsOnline(boolean enabled) {
         ExteraConfig.setLyricsOnline(enabled);
         adapter.update(true);
+        if (previewView != null) {
+            previewView.refresh();
+        }
         delegate.onLyricsOnlineChanged();
     }
 
@@ -440,6 +512,9 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         }
         ExteraConfig.setLyricsProviders(enabled);
         adapter.update(true);
+        if (previewView != null) {
+            previewView.refresh();
+        }
         delegate.onLyricsProvidersChanged();
     }
 
@@ -447,12 +522,18 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         ExteraConfig.setPlayerCoverColors(full);
         ExteraConfig.setPlayerMiniCoverColors(mini);
         adapter.update(true);
+        if (previewView != null) {
+            previewView.refresh();
+        }
         delegate.onCoverColorsChanged();
     }
 
     private void setYandexCanvas(boolean enabled) {
         ExteraConfig.setPlayerYandexCanvas(enabled);
         adapter.update(true);
+        if (previewView != null) {
+            previewView.refresh();
+        }
         delegate.onCanvasChanged();
     }
 

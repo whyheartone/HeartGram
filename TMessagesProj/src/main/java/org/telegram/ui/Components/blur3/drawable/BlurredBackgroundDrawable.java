@@ -768,11 +768,11 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
     }
 
     private boolean isLiquidGlassEffectEnabled() {
-        return liquidGlassEffectAllowed && getGlassSettings().isLiquidGlassEnabled && Build.VERSION.SDK_INT >= 33;
+        return liquidGlassEffectAllowed && getGlassSettings().isLiquidGlassEnabled && Build.VERSION.SDK_INT >= 33 && !app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
     }
 
     private GlassSource pickSource() {
-        if (!getGlassSettings().isBlurEnabled) {
+        if (!getGlassSettings().isBlurEnabled || app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
             return staticSource;
         }
         return isLiquidGlassEffectEnabled() ? glassSource : frostedSource;
@@ -854,7 +854,9 @@ public class BlurredBackgroundDrawable extends GlassDrawable implements Theme.Co
             impl = directImpl(drawn);
         }
         impl.draw(canvas, drawn);
-        drawRim(canvas, getAlpha() / 255f);
+        if (!app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking()) {
+            drawRim(canvas, getAlpha() / 255f);
+        }
     }
 
     private static GlassSource softwareSource(GlassSource source) {

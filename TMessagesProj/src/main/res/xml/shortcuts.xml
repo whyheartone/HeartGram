@@ -9,7 +9,7 @@
         <intent
             android:action="app.exteraless.action.TOGGLE_GHOST_MODE"
             android:targetPackage="@string/hg_app_package"
-            android:targetClass="app.exteraless.shortcuts.QuickToggleActivity" />
+            android:targetClass="org.telegram.ui.LaunchActivity" />
     </shortcut>
 
     <shortcut
@@ -21,7 +21,7 @@
         <intent
             android:action="app.exteraless.action.TOGGLE_SAFE_MODE"
             android:targetPackage="@string/hg_app_package"
-            android:targetClass="app.exteraless.shortcuts.QuickToggleActivity" />
+            android:targetClass="org.telegram.ui.LaunchActivity" />
     </shortcut>
 
     <share-target android:targetClass="org.telegram.ui.LaunchActivity">

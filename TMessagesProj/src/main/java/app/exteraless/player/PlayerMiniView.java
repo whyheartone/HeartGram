@@ -809,7 +809,8 @@ public class PlayerMiniView extends FrameLayout implements NotificationCenter.No
     public void update(boolean animated) {
         checkThemeColors();
         MessageObject mo = MediaController.getInstance().getPlayingMessageObject();
-        boolean want = Md3Player.miniEnabled() && mo != null && mo.isMusic() && mo.getId() != 0;
+        // Use exteraGram's top FragmentContextView / MiniPlayerUiHelper in chats & chat list instead of bottom overlay
+        boolean want = false;
         if (want) {
             bind(mo);
         }

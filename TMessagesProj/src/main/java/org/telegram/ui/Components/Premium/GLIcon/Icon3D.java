@@ -134,6 +134,10 @@ public class Icon3D {
             modelPaths = dealModel;
         } else if (type == TYPE_HEART) {
             modelPaths = heartModel;
+            diffuse = 0.45f;
+            spec1 = 1.85f;
+            spec2 = 0.45f;
+            normalSpec = 0.08f;
         } else if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             modelPaths = starModel;
         } else {

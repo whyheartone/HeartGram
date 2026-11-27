@@ -8474,11 +8474,12 @@ public class ProfileActivity extends BaseFragment implements NotificationCenter.
             buttonsGlass.setButtonColor(topView.btnColor, topView.hasColorById);
         }
         buttonsGlass.setPhotoProgress(buttonsPhotoProgress);
+        final boolean noGlass = app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
         if (actionsView != null) {
-            actionsView.setGlassFactory(buttonsGlass.actionsFactory);
+            actionsView.setGlassFactory(noGlass ? null : buttonsGlass.actionsFactory);
         }
         if (musicView != null) {
-            musicView.setGlassFactory(buttonsGlass.actionsFactory);
+            musicView.setGlassFactory(noGlass ? null : buttonsGlass.actionsFactory);
         }
         simpleActionBar.setButtonsGlass(buttonsGlass.headerFactory);
         simpleActionBar.setMenuGlassStroke(false);

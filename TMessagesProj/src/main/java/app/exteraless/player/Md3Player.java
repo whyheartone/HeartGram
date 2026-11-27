@@ -46,10 +46,6 @@ public final class Md3Player {
     }
 
     public static boolean hidesContextPlayer(BaseFragment fragment, MessageObject messageObject) {
-        if (!miniEnabled() || fragment == null || messageObject == null || !messageObject.isMusic()) {
-            return false;
-        }
-        Bundle args = fragment.getArguments();
-        return args != null && args.getBoolean("hasMainTabs", false);
+        return false;
     }
 }

@@ -366,7 +366,10 @@ object AppearanceConfig {
 
     /** Иконка кнопки отправки в чате: 0 — стандартная (Telegram), 1 — стрелочка exteraGram, 2 — сердечко. */
     @JvmField
-    val sendButtonIcon = addConfig("OESendButtonIcon", ConfigItem.configTypeInt, 0)
+    val sendButtonIcon = addConfig("OESendButtonIcon", ConfigItem.configTypeInt, 2)
+
+    @JvmField
+    val md3NoGlassBacking = addConfig("OEMd3NoGlassBacking", ConfigItem.configTypeBool, false)
 
     @JvmStatic
     fun sendButtonIcon(): Int {
@@ -778,6 +781,9 @@ object AppearanceConfig {
     fun ensureLoaded() {
         if (!configLoaded) loadConfig(false)
     }
+
+    @JvmStatic
+    fun md3NoGlassBacking(): Boolean = md3NoGlassBacking.Bool()
 
     @JvmStatic
     fun init() {

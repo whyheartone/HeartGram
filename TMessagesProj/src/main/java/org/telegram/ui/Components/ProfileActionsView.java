@@ -491,13 +491,17 @@ public class ProfileActionsView extends View {
             return;
         }
 
+        final boolean hasGlass = glassFactory != null && !app.exteraless.appearance.AppearanceConfig.md3NoGlassBacking();
         final boolean themeColors = !hasColorById && Theme.isCurrentThemeMonet(resourcesProvider);
         final float useFilledWhiteIcon = getFilledIconProgress(themeColors || isButtonColorLight());
         final boolean dark = Theme.isCurrentThemeDark();
         final int filledColor = ColorUtils.blendARGB(textColor, Color.WHITE, parentExpanded);
+        final int accentColor = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
         final int contentColor = ColorUtils.blendARGB(themeColors ? MonetUtils.getOnSecondaryContainerColor(dark) : Theme.getColor(Theme.key_windowBackgroundWhiteBlueText, resourcesProvider), filledColor, useFilledWhiteIcon);
         final int labelColor = hasColorById ? filledColor : ColorUtils.blendARGB(Theme.getColor(Theme.key_profile_title, resourcesProvider), Color.WHITE, parentExpanded);
-        final int containerColor = themeColors ? ColorUtils.blendARGB(MonetUtils.getSecondaryContainerColor(dark), paint.getColor(), useFilledWhiteIcon) : paint.getColor();
+        final int flatTonalColor = ColorUtils.blendARGB(Theme.getColor(Theme.key_windowBackgroundWhite, resourcesProvider), accentColor, dark ? 0.22f : 0.14f);
+        final int fallbackContainer = (!hasColorById && !hasGlass) ? ColorUtils.blendARGB(flatTonalColor, paint.getColor(), useFilledWhiteIcon) : paint.getColor();
+        final int containerColor = themeColors ? ColorUtils.blendARGB(MonetUtils.getSecondaryContainerColor(dark), paint.getColor(), useFilledWhiteIcon) : fallbackContainer;
         final boolean drawGradient = !themeColors && radialGradient != null;
 
         final int stateLayerColor = ProfileUiHelper.getStateLayerColor(contentColor);
@@ -509,13 +513,13 @@ public class ProfileActionsView extends View {
             final float alpha = action.getAlpha() * containerAlpha;
             final float r = action.containerRadius;
 
-            if (glassFactory != null) {
+            if (hasGlass) {
                 Arrays.fill(radii, action.containerRadiusInView);
                 drawGlass(canvas, action.containerInView, radii, alpha);
             }
             canvas.save();
             canvas.concat(action.layoutMatrix);
-            if (glassFactory == null) {
+            if (!hasGlass) {
                 containerPaint.setColor(containerColor);
                 containerPaint.setAlpha((int) (Color.alpha(containerColor) * alpha * (drawGradient ? 0.1f : 1f)));
                 canvas.drawRoundRect(action.container, r, r, containerPaint);

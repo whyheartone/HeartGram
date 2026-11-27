@@ -69,8 +69,8 @@ public final class HeartGramBadgeSheet {
         root.setBackgroundColor(Theme.getColor(Theme.key_dialogBackground));
 
         FrameLayout art = new FrameLayout(context);
-        // два слоя: звёзды Telegram внизу (в цвет эмодзи/сердца), сверху 3D-сердце по умолчанию или кастомное эмодзи
-        final StarsView stars = new StarsView(context);
+        // два слоя: звёзды Telegram внизу вокруг значка (не внутри), сверху 3D-сердце или кастомное эмодзи
+        final StarsView stars = new StarsView(context, 50, 128);
         if (!HeartGramBadges.isCustomEmoji(peer)) {
             int accent = Theme.getColor(Theme.key_featuredStickers_addButton, fragment.getResourceProvider());
             stars.setColor(accent);
@@ -241,6 +241,11 @@ public final class HeartGramBadgeSheet {
         });
     }
 
+    public static android.view.View createEmojiView(Context context, long documentId, java.util.function.IntConsumer onColor) {
+        return new EmojiView(context, documentId, onColor != null ? onColor : color -> {
+        });
+    }
+
     /** Интерактивная 3D-модель сердца HeartGram (адаптивная под тему пользователя). */
     public static GLIconTextureView createHeart3DView(Context context, StarParticlesView stars) {
         return createHeart3DView(context, stars, null);
@@ -261,13 +266,18 @@ public final class HeartGramBadgeSheet {
             }
         };
         int accent = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
-        int bgColor = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
-        Bitmap bg = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
+        Bitmap bg = Bitmap.createBitmap(64, 64, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bg);
-        canvas.drawColor(ColorUtils.blendARGB(accent, bgColor, 0.55f));
+        Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        bgPaint.setShader(new android.graphics.LinearGradient(
+                0f, 0f, 64f, 64f,
+                ColorUtils.blendARGB(accent, 0xFFFFFFFF, 0.30f),
+                ColorUtils.blendARGB(accent, 0xFF000000, 0.25f),
+                android.graphics.Shader.TileMode.CLAMP));
+        canvas.drawRect(0, 0, 64, 64, bgPaint);
         view.setBackgroundBitmap(bg);
-        view.mRenderer.customColor1 = ColorUtils.blendARGB(accent, 0xFFFFFFFF, 0.24f);
-        view.mRenderer.customColor2 = ColorUtils.blendARGB(accent, 0xFF000000, 0.16f);
+        view.mRenderer.customColor1 = ColorUtils.blendARGB(accent, 0xFFFFFFFF, 0.22f);
+        view.mRenderer.customColor2 = ColorUtils.blendARGB(accent, 0xFF000000, 0.26f);
         view.mRenderer.updateColors();
         if (stars != null) {
             view.setStarParticlesView(stars);
@@ -350,16 +360,34 @@ public final class HeartGramBadgeSheet {
         }
     }
 
-    /** Звёзды Telegram позади значка: летают, мерцают; цвет подстраивается под эмодзи. */
-    private static final class StarsView extends org.telegram.ui.Components.Premium.StarParticlesView {
+    /** Создаёт слой мерцающих звёзд вокруг центрального значка/сердца. */
+    static StarsView createStarsView(Context context, int color, int excludeDp, int rectDp) {
+        StarsView view = new StarsView(context, excludeDp, rectDp);
+        view.setColor(color);
+        return view;
+    }
+
+    /** Звёзды Telegram позади значка: летают строго снаружи; цвет подстраивается под эмодзи или тему. */
+    static final class StarsView extends org.telegram.ui.Components.Premium.StarParticlesView {
         private final Paint tint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final int excludeDp;
+        private final int rectDp;
 
         StarsView(Context context) {
-            super(context, 50);
+            this(context, 48, 126);
+        }
+
+        StarsView(Context context, int excludeDp, int rectDp) {
+            super(context, 46);
+            this.excludeDp = excludeDp;
+            this.rectDp = rectDp;
             tint.setColorFilter(new android.graphics.PorterDuffColorFilter(
                     Theme.getColor(Theme.key_featuredStickers_addButton), android.graphics.PorterDuff.Mode.SRC_IN));
             drawable.overridePaint = tint;
-            drawable.speedScale = 1.3f;
+            drawable.speedScale = 1.15f;
+            drawable.isCircle = true;
+            drawable.startFromCenter = true;
+            drawable.excludeRadius = dp(excludeDp);
         }
 
         private boolean shown;
@@ -380,8 +408,15 @@ public final class HeartGramBadgeSheet {
         }
 
         @Override
+        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            final float ex = dp(Math.max(20, excludeDp - 6));
+            drawable.excludeRect.set(w / 2f - ex, h / 2f - ex, w / 2f + ex, h / 2f + ex);
+        }
+
+        @Override
         protected int getStarsRectWidth() {
-            return dp(150);
+            return dp(rectDp);
         }
     }
 }

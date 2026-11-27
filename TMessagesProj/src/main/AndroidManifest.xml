@@ -541,6 +541,11 @@
                 <action android:name="android.intent.action.MAIN" />
             </intent-filter>
             <intent-filter>
+                <action android:name="app.exteraless.action.TOGGLE_GHOST_MODE" />
+                <action android:name="app.exteraless.action.TOGGLE_SAFE_MODE" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
                 <action android:name="android.intent.action.SEND"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <data android:mimeType="image/*"/>

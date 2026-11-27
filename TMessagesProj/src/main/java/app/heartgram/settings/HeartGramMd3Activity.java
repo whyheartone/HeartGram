@@ -165,6 +165,10 @@ public class HeartGramMd3Activity extends BaseFragment {
             AppearanceConfig.newProfileActionsStyle.setConfigBool(on);
             rebuildOthers();
         }));
+        content.addView(check(context, tr("Убрать подложку жидкого стекла", "Remove liquid glass backing"), AppearanceConfig.md3NoGlassBacking.Bool(), false, on -> {
+            AppearanceConfig.md3NoGlassBacking.setConfigBool(on);
+            rebuildOthers();
+        }));
         content.addView(new ShadowSectionCell(context));
     }
 

@@ -454,6 +454,10 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
 
         instance = this;
+        final String launchAction = getIntent() != null ? getIntent().getAction() : null;
+        if (app.exteraless.shortcuts.QuickToggleActivity.ACTION_SAFE_MODE.equals(launchAction)) {
+            app.exteraless.plugins.PluginsController.getInstance().setSafeMode(true);
+        }
         ApplicationLoader.postInitApplication();
         AndroidUtilities.checkDisplaySize(this, getResources().getConfiguration());
         currentAccount = UserConfig.selectedAccount;
@@ -1694,6 +1698,39 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         return handleIntentInternal(intent, isNew, restore, fromPassword, progress, rebuildFragments, openedTelegram);
     }
 
+    private boolean handleQuickToggleIntentAction(Intent intent, String action) {
+        if (app.exteraless.shortcuts.QuickToggleActivity.ACTION_GHOST_MODE.equals(action)) {
+            try {
+                tw.nekomimi.nekogram.NekoConfig.init();
+                if (!tw.nekomimi.nekogram.NekoConfig.isGhostModeActive()) {
+                    tw.nekomimi.nekogram.NekoConfig.toggleGhostMode();
+                }
+                NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.mainUserInfoChanged);
+                Toast.makeText(this, LocaleController.getString(tw.nekomimi.nekogram.NekoConfig.isGhostModeActive()
+                        ? R.string.GhostModeEnabled
+                        : R.string.GhostModeDisabled), Toast.LENGTH_SHORT).show();
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+            intent.setAction(Intent.ACTION_MAIN);
+            return true;
+        }
+        if (app.exteraless.shortcuts.QuickToggleActivity.ACTION_SAFE_MODE.equals(action)) {
+            try {
+                final app.exteraless.plugins.PluginsController controller = app.exteraless.plugins.PluginsController.getInstance();
+                if (!controller.isSafeMode()) {
+                    controller.restart(true);
+                }
+                Toast.makeText(this, LocaleController.getString(R.string.PluginsSafeModeEnabledNow), Toast.LENGTH_SHORT).show();
+            } catch (Throwable e) {
+                FileLog.e(e);
+            }
+            intent.setAction(Intent.ACTION_MAIN);
+            return true;
+        }
+        return false;
+    }
+
     @SuppressLint("Range")
     private boolean handleIntentInternal(Intent intent, boolean isNew, boolean restore, boolean fromPassword, Browser.Progress progress, boolean rebuildFragments, boolean openedTelegram) {
         if (GiftInfoBottomSheet.handleIntent(intent, progress)) {
@@ -1718,6 +1755,9 @@ public class LaunchActivity extends BasePermissionsActivity implements INavigati
         }
         int flags = intent.getFlags();
         String action = intent.getAction();
+        if (handleQuickToggleIntentAction(intent, action)) {
+            action = intent.getAction();
+        }
         final int[] intentAccount = new int[]{intent.getIntExtra("currentAccount", UserConfig.selectedAccount)};
         switchToAccount(intentAccount[0], true);
         final boolean isVoipIntent = action != null && action.equals("voip");
