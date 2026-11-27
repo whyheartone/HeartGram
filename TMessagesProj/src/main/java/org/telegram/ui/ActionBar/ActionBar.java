@@ -2581,7 +2581,7 @@ public class ActionBar extends FrameLayout implements FactorAnimator.Target, The
         final boolean hasAvatar = chatAvatarContainer != null && chatAvatarContainer.hasVisibleAvatar() && !chatAvatarContainer.isAvatarCentered();
         final int rightOffset = hasAvatar ? menuWidthWithPadding : Math.max(menuWidthWithPadding, p + s);
         final int widthDefault = getMeasuredWidth() - rightOffset - leftDefault;
-        return Math.max(0, widthDefault - p * 2 - Math.round(glassAvatarGap) + dp(8));
+        return Math.max(0, widthDefault - (drawGlassMiddlePill ? p : dp(2)));
     }
 
     private final FactorAnimator animatorAvatarContainerWidth = new FactorAnimator(0, this, CubicBezierInterpolator.EASE_OUT_QUINT, 380);

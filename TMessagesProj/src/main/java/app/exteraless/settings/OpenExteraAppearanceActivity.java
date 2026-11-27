@@ -1518,6 +1518,7 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
         AppearanceConfig.m3ListItems.setConfigBool(enable);
         AppearanceConfig.md3Player.setConfigBool(enable);
         AppearanceConfig.md3MiniPlayer.setConfigBool(enable);
+        AppearanceConfig.newProfileActionsStyle.setConfigBool(enable);
         app.heartgram.HeartGramPrefs.prefs().edit().putBoolean("tiles", enable).apply();
         hgRefreshTiles(true);
         onM3ListItemsChanged();

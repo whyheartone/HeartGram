@@ -44,6 +44,7 @@ public class IconPacksActivity extends BaseNekoSettingsActivity {
     private int baseDefaultRow;
     private int baseSolarRow;
     private int baseRemixRow;
+    private int sendButtonRow;
     private int basePacksDividerRow;
 
     private int enableHeaderRow;
@@ -87,6 +88,7 @@ public class IconPacksActivity extends BaseNekoSettingsActivity {
         baseDefaultRow = addRow("iconPackBaseDefault");
         baseSolarRow = addRow("iconPackBaseSolar");
         baseRemixRow = addRow("iconPackBaseRemix");
+        sendButtonRow = addRow("sendButtonIcon");
         basePacksDividerRow = addRow();
 
         enableHeaderRow = addRow("iconPacksHeader");
@@ -173,6 +175,8 @@ public class IconPacksActivity extends BaseNekoSettingsActivity {
             IconPackManager.getInstance().reload();
             // IconsResources кэширует выбранный набор до перезапуска процесса
             showRestartHint();
+        } else if (position == sendButtonRow) {
+            showSendButtonSelector();
         } else if (position == enableRow) {
             boolean value = IconPacksConfig.enabled.toggleConfigBool();
             if (view instanceof TextCheckCell) {
@@ -517,7 +521,17 @@ public class IconPacksActivity extends BaseNekoSettingsActivity {
                             : position == baseRemixRow ? BaseIconPacks.BASE_REMIX
                             : BaseIconPacks.BASE_DEFAULT;
                     cell.setTextAndValueAndCheck(BaseIconPacks.getName(type), BaseIconPacks.getAuthor(type),
-                            BaseIconPacks.getSelected() == type, false, position != baseRemixRow);
+                            BaseIconPacks.getSelected() == type, false, true);
+                    break;
+                }
+                case TYPE_SETTINGS: {
+                    org.telegram.ui.Cells.TextSettingsCell cell = (org.telegram.ui.Cells.TextSettingsCell) holder.itemView;
+                    if (position == sendButtonRow) {
+                        cell.setTextAndValue(
+                                app.heartgram.HeartGramLabels.tr("Кнопка отправки", "Send button"),
+                                sendButtonLabel(app.exteraless.appearance.AppearanceConfig.sendButtonIcon()),
+                                false);
+                    }
                     break;
                 }
                 case TYPE_TEXT: {
@@ -556,6 +570,8 @@ public class IconPacksActivity extends BaseNekoSettingsActivity {
                 return TYPE_HEADER;
             } else if (position == baseDefaultRow || position == baseSolarRow || position == baseRemixRow) {
                 return TYPE_RADIO;
+            } else if (position == sendButtonRow) {
+                return TYPE_SETTINGS;
             } else if (position == basePacksDividerRow) {
                 return TYPE_SHADOW;
             } else if (position == enableDividerRow || position == packsDividerRow) {
@@ -576,5 +592,37 @@ public class IconPacksActivity extends BaseNekoSettingsActivity {
             return count;
         }
         return pack.getAuthor() + ", " + count;
+    }
+
+    private static String sendButtonLabel(int mode) {
+        if (mode == 1) {
+            return app.heartgram.HeartGramLabels.tr("Стрелочка exteraGram", "exteraGram arrow");
+        } else if (mode == 2) {
+            return app.heartgram.HeartGramLabels.tr("Сердечко HeartGram", "HeartGram heart");
+        }
+        return app.heartgram.HeartGramLabels.tr("Официальный Telegram", "Official Telegram");
+    }
+
+    private void showSendButtonSelector() {
+        Activity activity = getParentActivity();
+        if (activity == null) {
+            return;
+        }
+        CharSequence[] options = new CharSequence[]{
+                sendButtonLabel(0),
+                sendButtonLabel(1),
+                sendButtonLabel(2)
+        };
+        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
+        builder.setTitle(app.heartgram.HeartGramLabels.tr("Кнопка отправки", "Send button"));
+        builder.setItems(options, (dialog, which) -> {
+            app.exteraless.appearance.AppearanceConfig.sendButtonIcon.setConfigInt(which);
+            if (listAdapter != null && sendButtonRow >= 0) {
+                listAdapter.notifyItemChanged(sendButtonRow);
+            }
+            org.telegram.messenger.NotificationCenter.getGlobalInstance().postNotificationName(org.telegram.messenger.NotificationCenter.reloadInterface);
+        });
+        builder.setNegativeButton(getString(R.string.Cancel), null);
+        showDialog(builder.create());
     }
 }

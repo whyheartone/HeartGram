@@ -132,7 +132,7 @@ public class LyricsView extends FrameLayout {
     private static final float FILL_FEATHER_WORD_DP = 12f;
     private static final float INACTIVE_SCALE = 0.95f;
     private static final float HEARTGRAM_INACTIVE_ALPHA = 0.5f;
-    private static final float HEARTGRAM_ACTIVE_SCALE = 1.05f;
+    private static final float HEARTGRAM_ACTIVE_SCALE = 1.0f;
     private static final int MAX_BLUR_DISTANCE = 4;
     private static final float BLUR_PER_LINE_DP = 1.25f;
     private static final long MIN_LINE_FILL_MS = 2000;
@@ -340,7 +340,7 @@ public class LyricsView extends FrameLayout {
     }
 
     private float inactiveScale() {
-        return animStyle == ANIM_HEARTGRAM ? 1f : INACTIVE_SCALE;
+        return INACTIVE_SCALE;
     }
 
     private float activeScale() {

@@ -278,8 +278,19 @@ public class Icon3D {
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, mBackgroundTextureHandle);
 
         Bitmap bitmap = null;
-        if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR || type == TYPE_HEART) {
+        if (type == TYPE_STAR || type == TYPE_GOLDEN_STAR) {
             bitmap = SvgHelper.getBitmap(R.raw.start_texture, 240, 240, Color.WHITE);
+        } else if (type == TYPE_HEART) {
+            bitmap = Bitmap.createBitmap(240, 240, Bitmap.Config.ARGB_8888);
+            Canvas c = new Canvas(bitmap);
+            Paint p = new Paint(Paint.ANTI_ALIAS_FLAG);
+            p.setShader(new android.graphics.RadialGradient(
+                    120f, 110f, 110f,
+                    new int[]{0xD0FFFFFF, 0x55FFFFFF, 0x00FFFFFF},
+                    new float[]{0f, 0.55f, 1f},
+                    Shader.TileMode.CLAMP
+            ));
+            c.drawRect(0, 0, 240, 240, p);
         } else if (type == TYPE_COIN) {
             bitmap = getBitmapFromAsset(context, "models/coin_border.png");
         } else if (type == TYPE_DEAL) {

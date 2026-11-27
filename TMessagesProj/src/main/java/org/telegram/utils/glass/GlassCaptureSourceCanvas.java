@@ -181,12 +181,17 @@ public class GlassCaptureSourceCanvas {
     }
 
     public void invalidate() {
+        if (rootView == null || rootView.getWidth() <= 0 || rootView.getHeight() <= 0) {
+            return;
+        }
         for (int a = 0; a < positionsCount; a++) {
             final Position position = positions.get(a);
             position.capture(capture, frostedFilteredRequested, rootView.getWidth(), rootView.getHeight());
         }
 
-        debugRenderNode.setPosition(0, 0, rootView.getWidth(), rootView.getHeight());
+        if (debugRenderNode != null) {
+            debugRenderNode.setPosition(0, 0, rootView.getWidth(), rootView.getHeight());
+        }
         final RecordingCanvas recordingCanvas = debugRenderNode.beginRecording();
         for (int a = 0; a < positionsCount; a++) {
             final Position position = positions.get(a);

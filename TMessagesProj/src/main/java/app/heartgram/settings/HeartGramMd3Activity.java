@@ -157,8 +157,12 @@ public class HeartGramMd3Activity extends BaseFragment {
             AppearanceConfig.md3Player.setConfigBool(on);
             rebuildOthers();
         }));
-        content.addView(check(context, getString(R.string.OEAppearanceMd3MiniPlayer), AppearanceConfig.md3MiniPlayer.Bool(), false, on -> {
+        content.addView(check(context, getString(R.string.OEAppearanceMd3MiniPlayer), AppearanceConfig.md3MiniPlayer.Bool(), true, on -> {
             AppearanceConfig.md3MiniPlayer.setConfigBool(on);
+            rebuildOthers();
+        }));
+        content.addView(check(context, getString(R.string.NewProfileActionsStyle), AppearanceConfig.newProfileActionsStyle.Bool(), false, on -> {
+            AppearanceConfig.newProfileActionsStyle.setConfigBool(on);
             rebuildOthers();
         }));
         content.addView(new ShadowSectionCell(context));

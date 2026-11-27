@@ -331,6 +331,9 @@ public class ProfileActionsView extends View {
                 MeasureSpec.getSize(widthMeasureSpec),
                 MeasureSpec.makeMeasureSpec((int) (targetHeight + top + ypadding), MeasureSpec.EXACTLY)
         );
+        if (hasColorById && radialGradient == null && getMeasuredWidth() > 0) {
+            createColorShader();
+        }
         measureActions();
     }
 

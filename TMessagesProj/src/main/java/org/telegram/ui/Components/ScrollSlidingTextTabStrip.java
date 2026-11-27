@@ -165,7 +165,7 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
         this.resourcesProvider = resourcesProvider;
 
         selectorDrawable = new GradientDrawable(GradientDrawable.Orientation.LEFT_RIGHT, null);
-        float rad = AndroidUtilities.dpf2(10);
+        float rad = AndroidUtilities.dpf2(14);
         selectorDrawable.setCornerRadii(new float[]{rad, rad, rad, rad, rad, rad, rad, rad});
 //        selectorDrawable.setCornerRadii(new float[]{rad, rad, rad, rad, 0, 0, 0, 0});
 
@@ -662,12 +662,12 @@ public class ScrollSlidingTextTabStrip extends HorizontalScrollView implements T
             TextView tab = (TextView) tabsContainer.getChildAt(a);
             tab.setTextColor(processColor(Theme.getColor(currentPosition == a ? activeTextColorKey : unactiveTextColorKey, resourcesProvider)));
 //            tab.setBackground(Theme.createSelectorDrawable(Theme.multAlpha(processColor(Theme.getColor(activeTextColorKey, resourcesProvider)), .15f), 3));
-            tab.setBackground(
-                new InsetDrawable(
-                    Theme.createSelectorDrawable(Theme.multAlpha(processColor(Theme.getColor(activeTextColorKey, resourcesProvider)), .15f), Theme.RIPPLE_MASK_ROUNDRECT_6DP, dp(14)),
-                    dp(4), dp(4), dp(4), dp(4)
-                )
-            );
+//            tab.setBackground(
+//                new InsetDrawable(
+//                    Theme.createSelectorDrawable(Theme.multAlpha(processColor(Theme.getColor(activeTextColorKey, resourcesProvider)), .15f), Theme.RIPPLE_MASK_ROUNDRECT_6DP, dp(14)),
+//                    dp(4), dp(4), dp(4), dp(4)
+//                )
+//            );
         }
 //        selectorDrawable.setColor(processColor(Theme.getColor(tabLineColorKey, resourcesProvider)));
         selectorDrawable.setColor(Theme.multAlpha(processColor(Theme.getColor(activeTextColorKey, resourcesProvider)), .15f));

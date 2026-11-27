@@ -362,7 +362,17 @@ object AppearanceConfig {
     val playerMiniClose = addConfig("OEPlayerMiniClose", ConfigItem.configTypeBool, true)
 
     @JvmField
-    val playerMiniTop = addConfig("OEPlayerMiniTop", ConfigItem.configTypeBool, false)
+    val playerMiniTop = addConfig("OEPlayerMiniTop", ConfigItem.configTypeBool, true)
+
+    /** Иконка кнопки отправки в чате: 0 — стандартная (Telegram), 1 — стрелочка exteraGram, 2 — сердечко. */
+    @JvmField
+    val sendButtonIcon = addConfig("OESendButtonIcon", ConfigItem.configTypeInt, 0)
+
+    @JvmStatic
+    fun sendButtonIcon(): Int {
+        ensureLoaded()
+        return sendButtonIcon.Int()
+    }
 
     // ---- Настройки нового плеера exteraGram ----
     @JvmField

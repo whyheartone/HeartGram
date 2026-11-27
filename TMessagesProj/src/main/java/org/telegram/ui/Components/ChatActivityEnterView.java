@@ -3713,7 +3713,7 @@ public class ChatActivityEnterView extends FrameLayout implements
             }
         });
 
-        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : R.drawable.send_plane_24, resourcesProvider, true) {
+        sendButton = new SendButton(context, isInScheduleMode() ? R.drawable.input_schedule : getSendButtonDrawableRes(), resourcesProvider, true) {
             @Override
             public boolean isInScheduleMode() {
                 return ChatActivityEnterView.this.isInScheduleMode();
@@ -16880,6 +16880,16 @@ public class ChatActivityEnterView extends FrameLayout implements
     }
 
     @SuppressLint("ViewConstructor")
+    private static int getSendButtonDrawableRes() {
+        int icon = app.exteraless.appearance.AppearanceConfig.sendButtonIcon();
+        if (icon == 1) {
+            return R.drawable.send_extera_24;
+        } else if (icon == 2) {
+            return R.drawable.ic_send_heart;
+        }
+        return R.drawable.send_plane_24;
+    }
+
     public static class SendButton extends View implements ItemOptions.ScrimView {
         public static final float INFINITE_LOADING = -3f;
 
@@ -16971,6 +16981,9 @@ public class ChatActivityEnterView extends FrameLayout implements
                 drawable = getContext().getResources().getDrawable(resId).mutate();
                 inactiveDrawable = getContext().getResources().getDrawable(resId).mutate();
                 drawableInverse = getContext().getResources().getDrawable(resId).mutate();
+                drawableColor = 0;
+                inactiveDrawableColor = 0;
+                drawableInverseColor = 0;
                 invalidate();
             }
         }
@@ -17428,6 +17441,12 @@ public class ChatActivityEnterView extends FrameLayout implements
         private int drawableColor, inactiveDrawableColor, drawableInverseColor;
 
         public void updateColors() {
+            if ((resId == R.drawable.send_plane_24 || resId == R.drawable.send_extera_24 || resId == R.drawable.ic_send_heart) && !isInScheduleMode()) {
+                int wanted = getSendButtonDrawableRes();
+                if (resId != wanted) {
+                    setResourceId(wanted);
+                }
+            }
             int color = isNewDesignSendButton ? Color.WHITE : Theme.getColor(Theme.key_chat_messagePanelSend, resourcesProvider);
             int c = Theme.getColor(Theme.key_glass_defaultIcon, resourcesProvider);
             int inverseColor = Theme.getColor(Theme.key_chat_messagePanelVoicePressed, resourcesProvider);

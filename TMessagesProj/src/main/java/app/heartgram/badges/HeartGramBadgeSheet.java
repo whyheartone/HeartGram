@@ -72,9 +72,10 @@ public final class HeartGramBadgeSheet {
         // два слоя: звёзды Telegram внизу (в цвет эмодзи/сердца), сверху 3D-сердце по умолчанию или кастомное эмодзи
         final StarsView stars = new StarsView(context);
         if (!HeartGramBadges.isCustomEmoji(peer)) {
-            stars.setColor(0xFFF7889E);
+            int accent = Theme.getColor(Theme.key_featuredStickers_addButton, fragment.getResourceProvider());
+            stars.setColor(accent);
             art.addView(stars, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT));
-            GLIconTextureView heart3d = createHeart3DView(context, stars);
+            GLIconTextureView heart3d = createHeart3DView(context, stars, fragment.getResourceProvider());
             art.addView(heart3d, new FrameLayout.LayoutParams(dp(168), dp(168), Gravity.CENTER));
         } else {
             // звёзды появляются, когда цвет эмодзи уже известен (иначе они сначала в цвете темы, потом перекрашиваются)
@@ -240,8 +241,12 @@ public final class HeartGramBadgeSheet {
         });
     }
 
-    /** Интерактивная 3D-модель сердца HeartGram (как 3D-стрелка у exteraGram). */
+    /** Интерактивная 3D-модель сердца HeartGram (адаптивная под тему пользователя). */
     public static GLIconTextureView createHeart3DView(Context context, StarParticlesView stars) {
+        return createHeart3DView(context, stars, null);
+    }
+
+    public static GLIconTextureView createHeart3DView(Context context, StarParticlesView stars, Theme.ResourcesProvider resourcesProvider) {
         GLIconTextureView view = new GLIconTextureView(context, GLIconRenderer.DIALOG_STYLE, Icon3D.TYPE_HEART) {
             @Override
             protected void onAttachedToWindow() {
@@ -255,12 +260,14 @@ public final class HeartGramBadgeSheet {
                 setPaused(true);
             }
         };
+        int accent = Theme.getColor(Theme.key_featuredStickers_addButton, resourcesProvider);
+        int bgColor = Theme.getColor(Theme.key_dialogBackground, resourcesProvider);
         Bitmap bg = Bitmap.createBitmap(50, 50, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bg);
-        canvas.drawColor(ColorUtils.blendARGB(0xFFF7889E, Theme.getColor(Theme.key_dialogBackground), 0.5f));
+        canvas.drawColor(ColorUtils.blendARGB(accent, bgColor, 0.55f));
         view.setBackgroundBitmap(bg);
-        view.mRenderer.customColor1 = 0xFFFF86A6;
-        view.mRenderer.customColor2 = 0xFFE23E71;
+        view.mRenderer.customColor1 = ColorUtils.blendARGB(accent, 0xFFFFFFFF, 0.24f);
+        view.mRenderer.customColor2 = ColorUtils.blendARGB(accent, 0xFF000000, 0.16f);
         view.mRenderer.updateColors();
         if (stars != null) {
             view.setStarParticlesView(stars);

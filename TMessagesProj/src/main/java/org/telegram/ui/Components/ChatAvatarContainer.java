@@ -909,7 +909,8 @@ public class ChatAvatarContainer extends FrameLayout implements FactorAnimator.T
         }
         // Ширина под текст считается от размера аватарки,
         // сама аватарка меряется с отступом ChatHeaderUiHelper.getAvatarInsetPx (при 42dp — как было)
-        final int availableWidth = width - dp(((avatarImageView.getVisibility() == VISIBLE || isCentered()) ? avatarSizeInDp + 12 : 0) + 16);
+        final int extraSide = (glassMode && !isCentered()) ? 6 : 16;
+        final int availableWidth = width - dp(((avatarImageView.getVisibility() == VISIBLE || isCentered()) ? avatarSizeInDp + 12 : 0) + extraSide);
         final int avatarSizePx = ChatHeaderUiHelper.getAvatarSizePx(avatarSizeInDp);
         avatarImageView.measure(MeasureSpec.makeMeasureSpec(avatarSizePx, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(avatarSizePx, MeasureSpec.EXACTLY));
         titleTextView.measure(MeasureSpec.makeMeasureSpec(availableWidth - padding, MeasureSpec.AT_MOST), MeasureSpec.makeMeasureSpec(dp(24 + 8), MeasureSpec.AT_MOST));

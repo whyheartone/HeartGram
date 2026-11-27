@@ -98,7 +98,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
         super(context);
 
         this.type = type;
-        animationsCount = type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DIAMOND || type == Icon3D.TYPE_DEAL ? 1 : 5;
+        animationsCount = type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DIAMOND || type == Icon3D.TYPE_DEAL || type == Icon3D.TYPE_HEART ? 1 : 5;
         idleDelay = type == Icon3D.TYPE_DIAMOND ? 0 : 2000;
         setOpaque(false);
         setRenderer(new GLIconRenderer(context, style, type));
@@ -828,7 +828,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
             v1.setDuration(12000);
             v1.setInterpolator(new LinearInterpolator());
             animatorSet.playTogether(v1);
-        } else if (i == 0 && type != Icon3D.TYPE_COIN && type != Icon3D.TYPE_DEAL) {
+        } else if (i == 0 && type != Icon3D.TYPE_COIN && type != Icon3D.TYPE_DEAL && type != Icon3D.TYPE_HEART) {
             int a = 48;
 
             ValueAnimator v1 = ValueAnimator.ofFloat(mRenderer.angleY, a);
@@ -845,7 +845,7 @@ public class GLIconTextureView extends TextureView implements TextureView.Surfac
             animatorSet.playTogether(v1, v2);
         } else {
             int dg = 485;
-            if (type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DEAL) {
+            if (type == Icon3D.TYPE_COIN || type == Icon3D.TYPE_DEAL || type == Icon3D.TYPE_HEART) {
                 dg = 360;
             }
             int a = dg;

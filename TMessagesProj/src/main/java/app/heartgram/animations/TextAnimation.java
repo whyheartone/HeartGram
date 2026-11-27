@@ -86,10 +86,14 @@ public final class TextAnimation {
 
         /** Стираемые буквы (до изменения): текст и позиции в координатах поля. */
         private Ghost pending;
+        private int pendingAddStart = -1;
+        private int pendingAddEnd = -1;
 
         @Override
         public void beforeTextChanged(CharSequence s, int start, int count, int after) {
             pending = null;
+            pendingAddStart = -1;
+            pendingAddEnd = -1;
             if (!enabled() || !deleteAnim() || count <= after || isPassword()) {
                 return;
             }
@@ -131,49 +135,68 @@ public final class TextAnimation {
                 pending = null;
                 g.start(DURATION_MS[duration()], blur());
             }
-            // набор, свайп-ввод целым словом и подсказки клавиатуры: анимируются только новые символы
-            if (!enabled() || count <= before || count - before > 80 || !(s instanceof Spannable)) {
+            // набор, свайп-ввод целым словом и подсказки клавиатуры: запоминаем диапазон и вешаем спан в afterTextChanged
+            if (!enabled() || count <= before || count - before > 80 || isPassword() || !(s instanceof Spannable)) {
                 return;
             }
-            if (view.getInputType() != 0 && (view.getInputType() & android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD) != 0) {
-                return;
-            }
-            Spannable sp = (Spannable) s;
             int from = start + before;
             int to = start + count;
-            if (from >= to || to > sp.length()) {
+            if (from < 0 || from >= to || to > s.length()) {
                 return;
             }
-            AppearSpan span = new AppearSpan(character(), blur(), view.getTextSize());
-            sp.setSpan(span, from, to, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-            ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
-            a.setDuration(DURATION_MS[duration()]);
-            a.addUpdateListener(v -> {
-                span.progress = (float) v.getAnimatedValue();
-                Editable e = view.getText();
-                int s0 = e == null ? -1 : e.getSpanStart(span);
-                if (s0 >= 0) {
-                    // повторный setSpan сбрасывает кэш отрисовки блока текста у EditText
-                    e.setSpan(span, s0, e.getSpanEnd(span), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-                } else {
-                    v.cancel();
+            for (int i = from; i < to; i++) {
+                char c = s.charAt(i);
+                if (c == '\n' || c == '\r' || c == '\uFEFF') {
+                    return;
                 }
-            });
-            a.addListener(new android.animation.AnimatorListenerAdapter() {
-                @Override
-                public void onAnimationEnd(android.animation.Animator animation) {
-                    Editable e = view.getText();
-                    if (e != null) {
-                        e.removeSpan(span);
-                    }
-                    view.invalidate();
-                }
-            });
-            a.start();
+            }
+            pendingAddStart = from;
+            pendingAddEnd = to;
         }
 
         @Override
         public void afterTextChanged(Editable s) {
+            int from = pendingAddStart;
+            int to = pendingAddEnd;
+            pendingAddStart = -1;
+            pendingAddEnd = -1;
+            if (from < 0 || from >= to || s == null || to > s.length() || !enabled() || view.hasSelection()) {
+                return;
+            }
+            try {
+                AppearSpan span = new AppearSpan(character(), blur(), view.getTextSize());
+                s.setSpan(span, from, to, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                ValueAnimator a = ValueAnimator.ofFloat(0f, 1f);
+                a.setDuration(DURATION_MS[duration()]);
+                a.addUpdateListener(v -> {
+                    span.progress = (float) v.getAnimatedValue();
+                    Editable e = view.getText();
+                    int s0 = e == null ? -1 : e.getSpanStart(span);
+                    int s1 = e == null ? -1 : e.getSpanEnd(span);
+                    if (s0 >= 0 && s1 > s0 && s1 <= e.length()) {
+                        if (!view.hasSelection()) {
+                            // повторный setSpan сбрасывает кэш отрисовки блока текста у EditText
+                            e.setSpan(span, s0, s1, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                        } else {
+                            view.invalidate();
+                        }
+                    } else {
+                        v.cancel();
+                    }
+                });
+                a.addListener(new android.animation.AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(android.animation.Animator animation) {
+                        Editable e = view.getText();
+                        if (e != null) {
+                            e.removeSpan(span);
+                        }
+                        view.invalidate();
+                    }
+                });
+                a.start();
+            } catch (Throwable ignored) {
+            }
         }
     }
 

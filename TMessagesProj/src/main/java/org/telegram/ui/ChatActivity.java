@@ -11738,36 +11738,36 @@ public class ChatActivity extends BaseFragment implements
         selectedMessagesCountTextView.setEllipsizeByGradient(true);
         selectedMessagesCountTextView.setRightPadding(dp(8));
         selectedMessagesCountTextView.getDrawable().setOverrideFullWidth(dp(300));
-        actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 85, 0, 5, 0));
+        actionMode.addView(selectedMessagesCountTextView, LayoutHelper.createLinear(0, LayoutHelper.MATCH_PARENT, 1.0f, 68, 0, 22, 0));
         actionMode.setOnLayoutListener(actionBar::invalidate);
 
         DisplayMetrics displayMetrics = new DisplayMetrics();
         getParentActivity().getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
         int maxActionBarItems = (int) (Math.ceil(displayMetrics.widthPixels / (double) dp(54))) - 2;
         isActionBarTooNarrow = maxActionBarItems < 6;
-        actionModeViews.add(actionMode.addItemWithWidth(nkactionbarbtn_reply, R.drawable.menu_reply, dp(54), LocaleController.getString(R.string.Reply)));
-        actionModeViews.add(actionMode.addItemWithWidth(edit, R.drawable.msg_edit, dp(54), LocaleController.getString(R.string.Edit)));
-        actionModeViews.add(actionMode.addItemWithWidth(nkactionbarbtn_selectBetween, R.drawable.ic_select_between, dp(54), LocaleController.getString(R.string.SelectBetween)));
-        actionModeViews.add(actionMode.addItemWithWidth(star, R.drawable.msg_fave, dp(54), LocaleController.getString(R.string.AddToFavorites)));
-        actionModeViews.add(actionMode.addItemWithWidth(copy, R.drawable.msg_copy, dp(54), LocaleController.getString(R.string.Copy)));
-        actionModeViews.add(actionMode.addItemWithWidth(combine_message, R.drawable.msg_replace, dp(54), LocaleController.getString(R.string.CombineMessage)));
+        actionModeViews.add(actionMode.addItemWithWidth(nkactionbarbtn_reply, R.drawable.menu_reply, dp(48), LocaleController.getString(R.string.Reply)));
+        actionModeViews.add(actionMode.addItemWithWidth(edit, R.drawable.msg_edit, dp(48), LocaleController.getString(R.string.Edit)));
+        actionModeViews.add(actionMode.addItemWithWidth(nkactionbarbtn_selectBetween, R.drawable.ic_select_between, dp(48), LocaleController.getString(R.string.SelectBetween)));
+        actionModeViews.add(actionMode.addItemWithWidth(star, R.drawable.msg_fave, dp(48), LocaleController.getString(R.string.AddToFavorites)));
+        actionModeViews.add(actionMode.addItemWithWidth(copy, R.drawable.msg_copy, dp(48), LocaleController.getString(R.string.Copy)));
+        actionModeViews.add(actionMode.addItemWithWidth(combine_message, R.drawable.msg_replace, dp(48), LocaleController.getString(R.string.CombineMessage)));
         if (currentEncryptedChat == null && getDialogId() != UserObject.VERIFY && NaConfig.INSTANCE.getActionBarButtonForward().Bool()) {
-            actionModeViews.add(actionMode.addItemWithWidth(forward, R.drawable.msg_forward_noquote, dp(54), LocaleController.getString(R.string.Forward)));
+            actionModeViews.add(actionMode.addItemWithWidth(forward, R.drawable.msg_forward_noquote, dp(48), LocaleController.getString(R.string.Forward)));
         }
-        actionModeViews.add(actionMode.addItemWithWidth(export_image, R.drawable.msg_photos, dp(48), LocaleController.getString(R.string.MessageExport)));
-        actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, dp(54), LocaleController.getString(R.string.Delete)));
+        actionModeViews.add(actionMode.addItemWithWidth(export_image, R.drawable.msg_photos, dp(44), LocaleController.getString(R.string.MessageExport)));
+        actionModeViews.add(actionMode.addItemWithWidth(delete, R.drawable.msg_delete, dp(48), LocaleController.getString(R.string.Delete)));
 
         if (currentEncryptedChat == null) {
             final boolean isSavedMessages = getDialogId() == getUserConfig().getClientUserId() && (chatMode == 0 || chatMode == MODE_SAVED);
-            actionModeViews.add(actionMode.addItemWithWidth(save_to, R.drawable.msg_download, dp(54), LocaleController.getString(R.string.SaveToMusic)));
+            actionModeViews.add(actionMode.addItemWithWidth(save_to, R.drawable.msg_download, dp(48), LocaleController.getString(R.string.SaveToMusic)));
             if (isSavedMessages) {
-                actionModeViews.add(actionMode.addItemWithWidth(tag_message, R.drawable.menu_tag_edit, dp(48), LocaleController.getString(R.string.AccDescrTagMessage)));
+                actionModeViews.add(actionMode.addItemWithWidth(tag_message, R.drawable.menu_tag_edit, dp(44), LocaleController.getString(R.string.AccDescrTagMessage)));
             }
         }
 
         boolean noforward = getMessagesController().isChatNoForwards(currentChat);
         boolean canSendMessages = ChatObject.canSendMessages(currentChat);
-        actionModeViews.add(actionModeOtherItem = actionMode.addItemWithWidth(nkactionbarbtn_action_mode_other, R.drawable.ic_ab_other, dp(54), LocaleController.getString(R.string.MessageMenu)));
+        actionModeViews.add(actionModeOtherItem = actionMode.addItemWithWidth(nkactionbarbtn_action_mode_other, R.drawable.ic_ab_other, dp(48), LocaleController.getString(R.string.MessageMenu)));
 
         if (currentEncryptedChat == null && !noforward) {
             actionModeOtherItem.addSubItem(nkbtn_forward_noquote, R.drawable.msg_forward_noquote, LocaleController.getString(R.string.NoQuoteForward));

@@ -68,7 +68,7 @@ public final class HeartGramSupportSheet {
         if (shown != 0 && !HeartGramBadges.isDefaultHeartDocument(shown)) {
             art.addView(HeartGramBadgeSheet.createEmojiView(context, shown), new FrameLayout.LayoutParams(dp(84), dp(84), Gravity.CENTER));
         } else {
-            art.addView(HeartGramBadgeSheet.createHeart3DView(context, null), new FrameLayout.LayoutParams(dp(120), dp(120), Gravity.CENTER));
+            art.addView(HeartGramBadgeSheet.createHeart3DView(context, null, fragment.getResourceProvider()), new FrameLayout.LayoutParams(dp(120), dp(120), Gravity.CENTER));
         }
         LinearLayout.LayoutParams artLp = new LinearLayout.LayoutParams(dp(120), dp(120));
         artLp.gravity = Gravity.CENTER_HORIZONTAL;
