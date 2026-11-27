@@ -59,8 +59,10 @@ public class AvatarCornersSeekBar extends FrameLayout {
         headerTextView.setTypeface(AndroidUtilities.getTypeface(AndroidUtilities.TYPEFACE_ROBOTO_MEDIUM));
         headerTextView.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
         headerTextView.setGravity(LocaleController.isRTL ? Gravity.RIGHT : Gravity.LEFT);
+        headerTextView.setSingleLine(true);
+        headerTextView.setEllipsize(android.text.TextUtils.TruncateAt.END);
         headerTextView.setText(title);
-        headerLayout.addView(headerTextView, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.CENTER_VERTICAL));
+        headerLayout.addView(headerTextView, LayoutHelper.createLinear(0, LayoutHelper.WRAP_CONTENT, 1f, Gravity.CENTER_VERTICAL));
 
         headerValue = new AnimatedTextView(context, false, true, true) {
             final Drawable backgroundDrawable = Theme.createRoundRectDrawable(dp(4),
@@ -82,7 +84,7 @@ public class AvatarCornersSeekBar extends FrameLayout {
         headerValue.setTextColor(Theme.getColor(Theme.key_windowBackgroundWhiteBlueHeader));
         headerLayout.addView(headerValue, LayoutHelper.createLinear(LayoutHelper.WRAP_CONTENT, 17, Gravity.CENTER_VERTICAL, 6, 1, 0, 0));
 
-        addView(headerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 21, 17, 21, 0));
+        addView(headerLayout, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 21, 14, 21, 0));
 
         seekBarView = new SeekBarView(context, true, null);
         seekBarView.setReportChanges(true);
@@ -100,7 +102,7 @@ public class AvatarCornersSeekBar extends FrameLayout {
             public void onSeekBarPressed(boolean pressed) {
             }
         });
-        addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38 + 6, Gravity.TOP, 6, 68, 6, 0));
+        addView(seekBarView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, 38 + 6, Gravity.TOP, 6, 62, 6, 0));
 
         FrameLayout valuesView = new FrameLayout(context);
 
@@ -118,7 +120,7 @@ public class AvatarCornersSeekBar extends FrameLayout {
         rightTextView.setText(right);
         valuesView.addView(rightTextView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, Gravity.RIGHT | Gravity.CENTER_VERTICAL));
 
-        addView(valuesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 21, 52, 21, 0));
+        addView(valuesView, LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, LayoutHelper.WRAP_CONTENT, Gravity.TOP | Gravity.FILL_HORIZONTAL, 21, 44, 21, 0));
     }
 
     private void updateValues() {

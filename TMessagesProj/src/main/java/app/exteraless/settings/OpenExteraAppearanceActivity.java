@@ -1468,12 +1468,20 @@ public class OpenExteraAppearanceActivity extends BaseNekoSettingsActivity {
     private void onM3ListItemsChanged() {
         AppearanceConfig.invalidateDividerStyle();
         Theme.applyCommonTheme();
-        if (listAdapter != null && separateHeadersRow >= 0) {
-            listAdapter.notifyItemChanged(separateHeadersRow);
-        }
         if (listView != null) {
+            listView.setSections(AndroidUtilities.dp(12), AndroidUtilities.dp(AppearanceConfig.sectionRadius()), true);
+            if (layoutManager != null && listAdapter != null) {
+                int first = layoutManager.findFirstVisibleItemPosition();
+                View topChild = first != RecyclerView.NO_POSITION ? layoutManager.findViewByPosition(first) : null;
+                int topOffset = topChild != null ? topChild.getTop() - listView.getPaddingTop() : 0;
+                listView.setAdapter(listAdapter);
+                if (first != RecyclerView.NO_POSITION) {
+                    layoutManager.scrollToPositionWithOffset(first, topOffset);
+                }
+            }
             listView.invalidateItemDecorations();
         }
+        NotificationCenter.getGlobalInstance().postNotificationName(NotificationCenter.reloadInterface);
     }
 
     /**

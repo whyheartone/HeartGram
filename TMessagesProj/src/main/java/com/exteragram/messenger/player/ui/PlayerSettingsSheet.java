@@ -26,9 +26,7 @@ import android.graphics.Canvas;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
-import android.view.Gravity;
 import android.view.View;
-import android.view.ViewTreeObserver;
 
 import androidx.recyclerview.widget.DefaultItemAnimator;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -49,7 +47,6 @@ import org.telegram.ui.Cells.TextCheckCell;
 import org.telegram.ui.Components.BottomSheetWithRecyclerListView;
 import org.telegram.ui.Components.BulletinFactory;
 import org.telegram.ui.Components.CubicBezierInterpolator;
-import org.telegram.ui.Components.LayoutHelper;
 import org.telegram.ui.Components.RecyclerListView;
 import org.telegram.ui.Components.UItem;
 import org.telegram.ui.Components.UniversalAdapter;
@@ -116,12 +113,7 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
     private int snapshotTop;
     private boolean capturing;
     private ValueAnimator snapshotAnimator;
-    private PlayerSettingsPreviewView previewView;
-    private View previewSpacer;
-    private final ViewTreeObserver.OnPreDrawListener previewPreDrawListener = () -> {
-        updatePreviewPosition();
-        return true;
-    };
+    private final PlayerSettingsPreviewView previewView;
 
     public PlayerSettingsSheet(Context context, BaseFragment fragment, Theme.ResourcesProvider resourcesProvider, Delegate delegate) {
         this(context, fragment, new SwitchingResourcesProvider(resourcesProvider), delegate);
@@ -133,20 +125,7 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         this.delegate = delegate;
         takeTranslationIntoAccount = true;
         occupyNavigationBar = true;
-
-        previewSpacer = new View(context) {
-            @Override
-            protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-                setMeasuredDimension(MeasureSpec.getSize(widthMeasureSpec), dp(PlayerSettingsPreviewView.getPreferredHeightDp()));
-            }
-        };
         previewView = new PlayerSettingsPreviewView(context, colors);
-        previewView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, 0);
-        final int actionBarIndex = actionBar != null ? containerView.indexOfChild(actionBar) : -1;
-        containerView.addView(previewView, actionBarIndex >= 0 ? actionBarIndex : containerView.getChildCount(),
-                LayoutHelper.createFrame(LayoutHelper.MATCH_PARENT, PlayerSettingsPreviewView.getPreferredHeightDp(), Gravity.TOP));
-        containerView.getViewTreeObserver().addOnPreDrawListener(previewPreDrawListener);
-
         applyColors();
         recyclerListView.setPadding(backgroundPaddingLeft, 0, backgroundPaddingLeft, dp(12) + AndroidUtilities.navigationBarHeight);
         recyclerListView.setClipToPadding(false);
@@ -163,12 +142,6 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         itemAnimator.setDurations(EXPAND_DURATION_MS);
         recyclerListView.setItemAnimator(itemAnimator);
         recyclerListView.setSections();
-        recyclerListView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrolled(@androidx.annotation.NonNull RecyclerView recyclerView, int dx, int dy) {
-                updatePreviewPosition();
-            }
-        });
         recyclerListView.setOnItemClickListener((view, position) -> {
             final UItem item = adapter.getItem(position - 1);
             if (item != null) {
@@ -176,19 +149,12 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
             }
         });
         adapter.update(false);
-        updatePreviewPosition();
     }
 
-    private void updatePreviewPosition() {
-        if (previewView == null || containerView == null) {
-            return;
+    public void setMiniPreviewOnly(boolean miniOnly) {
+        if (previewView != null) {
+            previewView.setMiniOnly(miniOnly);
         }
-        final int dockTop = actionBar != null && actionBar.getMeasuredHeight() > 0 ? actionBar.getMeasuredHeight() : 0;
-        final float spacerY = previewSpacer != null && previewSpacer.getParent() == recyclerListView
-                ? previewSpacer.getTop() + recyclerListView.getY()
-                : Float.NEGATIVE_INFINITY;
-        final float sheetTop = Math.max(0, shadowDrawable != null ? shadowDrawable.getBounds().top : 0);
-        previewView.setTranslationY(Math.max(dockTop, Math.max(sheetTop, spacerY)));
     }
 
     public void updateColors(Theme.ResourcesProvider provider) {
@@ -297,9 +263,6 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
     @Override
     public void dismissInternal() {
         super.dismissInternal();
-        if (containerView != null) {
-            containerView.getViewTreeObserver().removeOnPreDrawListener(previewPreDrawListener);
-        }
         releaseSnapshot();
     }
 
@@ -319,8 +282,8 @@ public class PlayerSettingsSheet extends BottomSheetWithRecyclerListView {
         if (delegate == null) {
             return;
         }
-        if (previewSpacer != null) {
-            items.add(UItem.asCustom(ID_PREVIEW, previewSpacer));
+        if (previewView != null) {
+            items.add(UItem.asCustom(ID_PREVIEW, previewView));
         }
         items.add(UItem.asHeader(getString(R.string.Appearance)));
         final boolean full = ExteraConfig.getPlayerCoverColors();

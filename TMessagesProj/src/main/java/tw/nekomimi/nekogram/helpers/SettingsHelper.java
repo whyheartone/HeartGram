@@ -145,7 +145,7 @@ public class SettingsHelper {
     }
 
     private static final Set<String> EXTERALESS_SCREENS = new HashSet<>(Arrays.asList(
-            "settings", "general", "appearance", "chats", "plugins", "pillstack", "other",
+            "settings", "general", "appearance", "md3", "chats", "plugins", "pillstack", "other",
             "ayumoments", "navigation", "menus", "media", "hiding", "bypass"));
 
     public static boolean isDeepLink(String path) {
@@ -175,6 +175,8 @@ public class SettingsHelper {
                 return HOST_EXTERALESS + "/general";
             case "exteraless_appearance":
                 return HOST_EXTERALESS + "/appearance";
+            case "exteraless_md3":
+                return HOST_EXTERALESS + "/md3";
             case "exteraless_chats":
                 return HOST_EXTERALESS + "/chats";
             case "exteraless_menus":
@@ -255,6 +257,9 @@ public class SettingsHelper {
                     fragment = neko_fragment = "useSystemEmoji".equals(row)
                             ? new NekoEmojiSettingsActivity() : new OpenExteraAppearanceActivity();
                     break;
+                case "md3":
+                    fragment = neko_fragment = new app.heartgram.settings.HeartGramMd3Activity();
+                    break;
                 case "chats":
                     fragment = neko_fragment = new OpenExteraChatsActivity();
                     break;
@@ -324,6 +329,9 @@ public class SettingsHelper {
                 case "exteraless_appearance":
                     fragment = neko_fragment = "useSystemEmoji".equals(row)
                             ? new NekoEmojiSettingsActivity() : new OpenExteraAppearanceActivity();
+                    break;
+                case "exteraless_md3":
+                    fragment = neko_fragment = new app.heartgram.settings.HeartGramMd3Activity();
                     break;
                 case "exteraless_chats":
                     fragment = neko_fragment = new OpenExteraChatsActivity();

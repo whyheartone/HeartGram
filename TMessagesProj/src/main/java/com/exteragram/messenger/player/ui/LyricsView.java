@@ -131,10 +131,11 @@ public class LyricsView extends FrameLayout {
     private static final float FILL_FEATHER_VERTICAL_DP = 10f;
     private static final float FILL_FEATHER_WORD_DP = 12f;
     private static final float INACTIVE_SCALE = 0.95f;
-    private static final float HEARTGRAM_INACTIVE_ALPHA = 0.5f;
-    private static final float HEARTGRAM_ACTIVE_SCALE = 1.0f;
+    private static final float HEARTGRAM_INACTIVE_SCALE = 0.935f;
+    private static final float HEARTGRAM_INACTIVE_ALPHA = 0.42f;
+    private static final float HEARTGRAM_ACTIVE_SCALE = 1.06f;
     private static final int MAX_BLUR_DISTANCE = 4;
-    private static final float BLUR_PER_LINE_DP = 1.25f;
+    private static final float BLUR_PER_LINE_DP = 1.55f;
     private static final long MIN_LINE_FILL_MS = 2000;
     private static final long LINE_FILL_MS_PER_CHAR = 200;
 
@@ -340,7 +341,7 @@ public class LyricsView extends FrameLayout {
     }
 
     private float inactiveScale() {
-        return INACTIVE_SCALE;
+        return animStyle == ANIM_HEARTGRAM ? HEARTGRAM_INACTIVE_SCALE : INACTIVE_SCALE;
     }
 
     private float activeScale() {
@@ -734,9 +735,16 @@ public class LyricsView extends FrameLayout {
             return;
         }
         final float scale = current ? activeScale() : inactiveScale();
+        final boolean heartgram = animStyle == ANIM_HEARTGRAM;
+        final long duration = heartgram ? 400L : LINE_FADE_MS;
+        final android.animation.TimeInterpolator interp = heartgram ? CubicBezierInterpolator.EASE_OUT_QUINT : CubicBezierInterpolator.DEFAULT;
         for (LineView line : ((LineView) view).group()) {
             line.animate().cancel();
-            final ViewPropertyAnimator animator = line.animate().alpha(targetAlpha).scaleX(scale).scaleY(scale).setDuration(LINE_FADE_MS).setInterpolator(CubicBezierInterpolator.DEFAULT);
+            if (line.getWidth() > 0 && line.getHeight() > 0) {
+                line.setPivotX(line.alignEnd ? line.getWidth() : 0f);
+                line.setPivotY(line.getHeight() * 0.5f);
+            }
+            final ViewPropertyAnimator animator = line.animate().alpha(targetAlpha).scaleX(scale).scaleY(scale).setDuration(duration).setInterpolator(interp);
             line.setFadingProgress(current ? -1f : line.drawnProgress);
             line.drawnProgress = -1f;
             if (!current) {
@@ -893,9 +901,9 @@ public class LyricsView extends FrameLayout {
             paint.setColor(fillColor);
             float glowAmount = 0f;
             if (animStyle == ANIM_HEARTGRAM && current) {
-                glowAmount = progress < 0.15f ? progress / 0.15f : (progress < 0.6f ? 1f : Math.max(0f, 1f - (progress - 0.6f) / 0.4f));
+                glowAmount = progress < 0.15f ? progress / 0.15f : (progress < 0.65f ? 1f : Math.max(0f, 1f - (progress - 0.65f) / 0.35f));
                 if (glowAmount > 0.01f) {
-                    paint.setShadowLayer(dp(4 + 2 * glowAmount), 0, 0, ColorUtils.setAlphaComponent(color, (int) (glowAmount * 0.35f * Color.alpha(color))));
+                    paint.setShadowLayer(dp(6 + 3 * glowAmount), 0, 0, ColorUtils.setAlphaComponent(color, (int) (glowAmount * 0.50f * Color.alpha(color))));
                 } else {
                     paint.clearShadowLayer();
                 }

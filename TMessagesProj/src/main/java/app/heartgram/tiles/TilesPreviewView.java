@@ -150,7 +150,9 @@ public class TilesPreviewView extends View {
 
     @Override
     protected void onDraw(Canvas canvas) {
-        canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        if (app.exteraless.appearance.AppearanceConfig.sectionRadius() <= 0) {
+            canvas.drawColor(Theme.getColor(Theme.key_windowBackgroundWhite));
+        }
         if (rows.isEmpty()) {
             return;
         }
