@@ -195,6 +195,10 @@ public class ActionBarPopupWindow extends PopupWindow {
                     ThemeBind.backgroundColor(this, Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
                 }
             }
+            if (noBacking) {
+                setClipChildren(false);
+                setClipToPadding(false);
+            }
 
 
             setWillNotDraw(false);
@@ -218,7 +222,15 @@ public class ActionBarPopupWindow extends PopupWindow {
                         }
                     });
                     scrollView.setVerticalScrollBarEnabled(false);
+                    if (noBacking) {
+                        scrollView.setClipChildren(false);
+                        scrollView.setClipToPadding(false);
+                    }
                     if (swipeBackLayout != null) {
+                        if (noBacking) {
+                            swipeBackLayout.setClipChildren(false);
+                            swipeBackLayout.setClipToPadding(false);
+                        }
                         swipeBackLayout.addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT, shownFromBottom ? Gravity.BOTTOM : Gravity.TOP));
                     } else {
                         addView(scrollView, LayoutHelper.createFrame(LayoutHelper.WRAP_CONTENT, LayoutHelper.WRAP_CONTENT));
@@ -238,11 +250,23 @@ public class ActionBarPopupWindow extends PopupWindow {
                     return app.heartgram.tiles.ChatTiles.menus();
                 }
 
+                private boolean hgIsTileChild(View v) {
+                    if (v == null || v instanceof GapView) {
+                        return false;
+                    }
+                    if (v instanceof ActionBarMenuSubItem) {
+                        return true;
+                    }
+                    // В режиме без общей подложки (и для нижней панели иконок) тоже рисуем карточку,
+                    // чтобы элементы не висели прозрачным текстом/иконками поверх обоев.
+                    return v instanceof LinearLayout || app.heartgram.tiles.ChatTiles.menuNoBacking();
+                }
+
                 private boolean hgFirst(int index) {
                     for (int i = index - 1; i >= 0; i--) {
                         View v = getChildAt(i);
                         if (v.getVisibility() != GONE) {
-                            return !(v instanceof ActionBarMenuSubItem);
+                            return !hgIsTileChild(v);
                         }
                     }
                     return true;
@@ -252,7 +276,7 @@ public class ActionBarPopupWindow extends PopupWindow {
                     for (int i = index + 1, n = getChildCount(); i < n; i++) {
                         View v = getChildAt(i);
                         if (v.getVisibility() != GONE) {
-                            return !(v instanceof ActionBarMenuSubItem);
+                            return !hgIsTileChild(v);
                         }
                     }
                     return true;
@@ -268,7 +292,8 @@ public class ActionBarPopupWindow extends PopupWindow {
                         final boolean first = hgFirst(a), last = hgLast(a);
                         final int state = 4 | (first ? 1 : 0) | (last ? 2 : 0);
                         Object tag = child.getTag(R.id.parent_tag);
-                        if (tag instanceof Integer && (Integer) tag == state) {
+                        if (tag instanceof Integer && (Integer) tag == state
+                                && child.getBackground() instanceof android.graphics.drawable.InsetDrawable) {
                             continue;
                         }
                         child.setTag(R.id.parent_tag, state);
@@ -333,16 +358,16 @@ public class ActionBarPopupWindow extends PopupWindow {
                     if (child instanceof GapView && backgroundDrawable != null) {
                         return false;
                     }
-                    if (hgMd3() && child instanceof ActionBarMenuSubItem && child.getVisibility() == VISIBLE && child.getAlpha() > 0) {
+                    if (hgMd3() && hgIsTileChild(child) && child.getVisibility() == VISIBLE && child.getAlpha() > 0) {
                         int bg = Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, resourcesProvider);
                         int fg = Theme.getColor(Theme.key_actionBarDefaultSubmenuItem, resourcesProvider);
                         boolean isDark = resourcesProvider != null ? resourcesProvider.isDark() : Theme.isCurrentThemeDark();
                         boolean noBacking = app.heartgram.tiles.ChatTiles.menuNoBacking();
-                        int tileColor = app.heartgram.tiles.ChatTiles.adjust(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, noBacking ? (isDark ? 0.10f : 0.04f) : (isDark ? 0.14f : 0.09f)));
-                        hgTilePaint.setColor(tileColor);
-                        hgTilePaint.setAlpha((int) ((noBacking ? 250 : (isDark ? 220 : 245)) * child.getAlpha()));
+                        int tileColor = app.heartgram.tiles.ChatTiles.adjust(androidx.core.graphics.ColorUtils.blendARGB(bg, fg, noBacking ? (isDark ? 0.11f : 0.04f) : (isDark ? 0.14f : 0.09f)));
+                        hgTilePaint.setColor(androidx.core.graphics.ColorUtils.setAlphaComponent(tileColor, 255));
+                        hgTilePaint.setAlpha((int) ((noBacking ? 255 : (isDark ? 225 : 245)) * child.getAlpha()));
                         if (noBacking) {
-                            hgTilePaint.setShadowLayer(dp(4), 0, dp(1.5f), android.graphics.Color.argb(Math.round(52 * child.getAlpha()), 0, 0, 0));
+                            hgTilePaint.setShadowLayer(dp(4), 0, dp(1.5f), android.graphics.Color.argb(Math.round(64 * child.getAlpha()), 0, 0, 0));
                         } else {
                             hgTilePaint.clearShadowLayer();
                         }
@@ -372,19 +397,28 @@ public class ActionBarPopupWindow extends PopupWindow {
                                 .mapToObj(this::getChildAt)
                                 .filter(childAt -> childAt instanceof ActionBarMenuSubItem && childAt.getVisibility() == View.VISIBLE)
                                 .count();
-                        child.post(() -> child.animate()
-                                .alpha(child.isEnabled() ? 1f : 0.5f)
-                                .translationY(0)
-                                .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
-                                .setStartDelay(10L + itemIndex * 35L)
-                                .setDuration(400L)
-                                .start());
+                        child.post(() -> {
+                            final android.view.ViewPropertyAnimator anim = child.animate()
+                                    .alpha(child.isEnabled() ? 1f : 0.5f)
+                                    .translationY(0)
+                                    .setInterpolator(CubicBezierInterpolator.EASE_OUT_QUINT)
+                                    .setStartDelay(10L + itemIndex * 35L)
+                                    .setDuration(400L)
+                                    .setUpdateListener(a -> invalidate())
+                                    .withEndAction(this::invalidate);
+                            anim.start();
+                        });
                     } else {
                         child.setAlpha(child.isEnabled() ? 1f : 0.5f);
                         child.setTranslationY(0);
+                        invalidate();
                     }
                 }
             };
+            if (noBacking) {
+                linearLayout.setClipChildren(false);
+                linearLayout.setClipToPadding(false);
+            }
             linearLayout.setOrientation(LinearLayout.VERTICAL);
             if (scrollView != null) {
                 scrollView.addView(linearLayout, new ScrollView.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -513,6 +547,15 @@ public class ActionBarPopupWindow extends PopupWindow {
         }
 
         @Override
+        public void setBackground(Drawable background) {
+            if (background != null && app.heartgram.tiles.ChatTiles.menus() && app.heartgram.tiles.ChatTiles.menuNoBacking()) {
+                super.setBackground(null);
+                return;
+            }
+            super.setBackground(background);
+        }
+
+        @Override
         public void setBackgroundDrawable(Drawable drawable) {
             backgroundColor = Color.WHITE;
             backgroundDrawable = drawable;
@@ -525,15 +568,18 @@ public class ActionBarPopupWindow extends PopupWindow {
 
         private void startChildAnimation(View child) {
             if (animationEnabled) {
+                ValueAnimator alphaAnim = ObjectAnimator.ofFloat(child, View.ALPHA, 0f, child.isEnabled() ? 1f : 0.5f);
+                alphaAnim.addUpdateListener(a -> linearLayout.invalidate());
                 AnimatorSet animatorSet = new AnimatorSet();
                 animatorSet.playTogether(
-                        ObjectAnimator.ofFloat(child, View.ALPHA, 0f, child.isEnabled() ? 1f : 0.5f),
+                        alphaAnim,
                         ObjectAnimator.ofFloat(child, View.TRANSLATION_Y, dp(shownFromBottom ? 6 : -6), 0));
                 animatorSet.setDuration(180);
                 animatorSet.addListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         itemAnimators.remove(animatorSet);
+                        linearLayout.invalidate();
 
                         if (child instanceof ActionBarMenuSubItem) {
                             ((ActionBarMenuSubItem) child).onItemShown();
@@ -1089,6 +1135,7 @@ public class ActionBarPopupWindow extends PopupWindow {
                 child.setTranslationY((1f - at) * dp(-6));
                 child.setAlpha(at * (child.isEnabled() ? 1f : 0.5f));
             }
+            content.linearLayout.invalidate();
         });
         content.updateAnimation = false;
         content.clipChildren = true;
@@ -1111,6 +1158,7 @@ public class ActionBarPopupWindow extends PopupWindow {
                     child.setTranslationY(0);
                     child.setAlpha(child.isEnabled() ? 1f : 0.5f);
                 }
+                content.linearLayout.invalidate();
             }
         });
         windowAnimatorSet.start();

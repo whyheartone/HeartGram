@@ -565,7 +565,7 @@ public class ActionBarMenuItem extends FrameLayout {
         location = new int[2];
         popupLayout = new ActionBarPopupWindow.ActionBarPopupWindowLayout(getContext(), R.drawable.popup_fixed_alert4, resourcesProvider, ActionBarPopupWindow.ActionBarPopupWindowLayout.FLAG_USE_SWIPEBACK);
 
-        if (subMenuFactory != null) {
+        if (subMenuFactory != null && !(app.heartgram.tiles.ChatTiles.menus() && app.heartgram.tiles.ChatTiles.menuNoBacking())) {
             popupLayout.setBackground(subMenuFactory.create(popupLayout, true)
                     .setColorProvider(subMenuProvider)
                     .setRadius(dp(12))
@@ -929,7 +929,8 @@ public class ActionBarMenuItem extends FrameLayout {
     public void setBlurredBackgroundFactory(BlurredBackgroundDrawableViewFactory subMenuFactory, BlurredBackgroundProvider subMenuProvider) {
         this.subMenuFactory = subMenuFactory;
         this.subMenuProvider = subMenuProvider;
-        if (popupLayout != null && subMenuFactory != null) {
+        if (popupLayout != null && subMenuFactory != null
+                && !(app.heartgram.tiles.ChatTiles.menus() && app.heartgram.tiles.ChatTiles.menuNoBacking())) {
             popupLayout.setBackground(subMenuFactory.create(popupLayout, true)
                     .setColorProvider(subMenuProvider)
                     .setRadius(dp(12))

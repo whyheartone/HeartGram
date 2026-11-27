@@ -152,7 +152,9 @@ public class PopupSwipeBackLayout extends FrameLayout {
     @Override
     protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
         int i = indexOfChild(child);
-        if (foregroundOnGlass && foregroundDrawable == null) {
+        final boolean fadeNoBacking = foregroundDrawable == null
+                && (foregroundOnGlass || (app.heartgram.tiles.ChatTiles.menus() && app.heartgram.tiles.ChatTiles.menuNoBacking()));
+        if (fadeNoBacking) {
             // the main page is gone by the middle of the slide, so the two never read over each other
             final float alpha = i == 0 ? 1f - Math.min(1f, transitionProgress * 2f) : Math.max(0f, transitionProgress * 2f - 1f);
             if (alpha <= 0) {

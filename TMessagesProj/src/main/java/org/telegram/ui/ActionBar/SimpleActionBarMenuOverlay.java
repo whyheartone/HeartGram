@@ -610,40 +610,50 @@ public class SimpleActionBarMenuOverlay extends FrameLayout {
 
         // the one glass shape: the button's pill stretched into the menu
         final int p = dp(6);
+        final boolean noBacking = app.heartgram.tiles.ChatTiles.menus() && app.heartgram.tiles.ChatTiles.menuNoBacking();
         // an action mode button has no glass of its own: the menu's glass appears over its pill
-        final float glassAlpha = startFromPill ? 1f : Utilities.clamp01(m / 0.25f);
-        if (glass != null) {
-            // from the color of the button's glass (a tinted header) to the menu's
-            glassColorsFactor = startFromPill ? Utilities.clamp01(m) : 1f;
-            // and from the button's glass to the frosted glass of the open menu
-            bar.setMenuGlassFrostedProgress(glassColorsFactor);
-            glass.updateColors();
-            // the stroke's width goes over too: the buttons' glass may have thinner or thicker lines than the menu's
-            glass.setStrokeWidth(
-                lerp(strokeWidth(bar.getButtonsGlassColorProvider(), true), strokeWidth(glassColors, true), glassColorsFactor),
-                lerp(strokeWidth(bar.getButtonsGlassColorProvider(), false), strokeWidth(glassColors, false), glassColorsFactor));
-            if (bulge > 0) {
-                glass.setRadius(topRadius, topRadius, radius, radius, false);
+        final float rawGlassAlpha = startFromPill ? 1f : Utilities.clamp01(m / 0.25f);
+        final float glassAlpha = noBacking
+                ? (startFromPill ? rawGlassAlpha * (1f - smooth(0.08f, 0.45f, m)) : 0f)
+                : rawGlassAlpha;
+        if (glassAlpha > 0.004f) {
+            if (glass != null) {
+                // from the color of the button's glass (a tinted header) to the menu's
+                glassColorsFactor = startFromPill ? Utilities.clamp01(m) : 1f;
+                // and from the button's glass to the frosted glass of the open menu
+                bar.setMenuGlassFrostedProgress(glassColorsFactor);
+                glass.updateColors();
+                // the stroke's width goes over too: the buttons' glass may have thinner or thicker lines than the menu's
+                glass.setStrokeWidth(
+                    lerp(strokeWidth(bar.getButtonsGlassColorProvider(), true), strokeWidth(glassColors, true), glassColorsFactor),
+                    lerp(strokeWidth(bar.getButtonsGlassColorProvider(), false), strokeWidth(glassColors, false), glassColorsFactor));
+                if (bulge > 0) {
+                    glass.setRadius(topRadius, topRadius, radius, radius, false);
+                } else {
+                    glass.setRadius(radius);
+                }
+                // rounded, not truncated: at the start and the end the shape is the button's, it must not move by a pixel
+                glass.setBounds(Math.round(bulgedRect.left) - p, Math.round(bulgedRect.top) - p, Math.round(bulgedRect.right) + p, Math.round(bulgedRect.bottom) + p);
+                reserveGlass();
+                glass.setAlpha((int) (255 * glassAlpha));
+                glass.draw(canvas);
             } else {
-                glass.setRadius(radius);
+                fallbackPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, bar.getMenuResourcesProvider()));
+                fallbackPaint.setAlpha((int) (fallbackPaint.getAlpha() * glassAlpha));
+                clipPath.rewind();
+                clipPath.addRoundRect(bulgedRect, shapeRadii, Path.Direction.CW);
+                canvas.drawPath(clipPath, fallbackPaint);
             }
-            // rounded, not truncated: at the start and the end the shape is the button's, it must not move by a pixel
-            glass.setBounds(Math.round(bulgedRect.left) - p, Math.round(bulgedRect.top) - p, Math.round(bulgedRect.right) + p, Math.round(bulgedRect.bottom) + p);
-            reserveGlass();
-            glass.setAlpha((int) (255 * glassAlpha));
-            glass.draw(canvas);
-        } else {
-            fallbackPaint.setColor(Theme.getColor(Theme.key_actionBarDefaultSubmenuBackground, bar.getMenuResourcesProvider()));
-            fallbackPaint.setAlpha((int) (fallbackPaint.getAlpha() * glassAlpha));
-            clipPath.rewind();
-            clipPath.addRoundRect(bulgedRect, shapeRadii, Path.Direction.CW);
-            canvas.drawPath(clipPath, fallbackPaint);
+        } else if (glass != null) {
+            glass.clearReservedBounds();
         }
 
         canvas.save();
-        clipPath.rewind();
-        clipPath.addRoundRect(bulgedRect, shapeRadii, Path.Direction.CW);
-        canvas.clipPath(clipPath);
+        if (!noBacking || m < 0.96f) {
+            clipPath.rewind();
+            clipPath.addRoundRect(bulgedRect, shapeRadii, Path.Direction.CW);
+            canvas.clipPath(clipPath);
+        }
 
         // the buttons (the whole pill, or just this button) fade and shrink away inside the shape (the first ~30%),
         // come back while the items are still fading out on closing
